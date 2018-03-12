@@ -83,6 +83,7 @@ DEV_PACKAGES=(
 	"neovim"
 	"yarn"
 	"docker-ce"
+	"insomnia"
 )
 
 KDE_PACKAGES=(
@@ -106,6 +107,7 @@ KDE_PACKAGES=(
     "filelight"
     "kfind"
     "kfilereplace"
+    "kleopatra"
     "kcharselect"
     "kronometer"
     "okteta"
@@ -195,6 +197,7 @@ stage_install_remote_packages(){
 }
 
 stage_rvm(){
+    [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
 	(type rvm | head -1) | grep -q "rvm — "
 	if [ $? -eq 0 ]
 	then
@@ -220,8 +223,6 @@ stage_disable_services(){
 }
 
 stage_rvm_rubies(){
-    [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
-
     for rv in "${RVM_RUBIES[@]}"
     do
     echo "${rv}"
@@ -248,4 +249,9 @@ add_manual_ppas(){
         "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
         $(lsb_release -cs) \
         stable"
+
+    echo "deb https://dl.bintray.com/getinsomnia/Insomnia /" \
+    | sudo tee -a /etc/apt/sources.list.d/insomnia.list
+    wget --quiet -O - https://insomnia.rest/keys/debian-public.key.asc \
+    | sudo apt-key add -
 }
