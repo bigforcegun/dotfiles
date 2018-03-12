@@ -5,6 +5,7 @@ dotfiles_dir="$(cd "$(dirname "$0")"; pwd)"
 cd "$dotfiles_dir"
 
 source ./lib/functions.sh
+source ./lib/stages/setup_sources.sh
 source ./lib/stages/setup_packages.sh
 source ./lib/stages/setup_configs.sh
 
@@ -12,6 +13,9 @@ if [ "$(whoami)" != "root" ]; then
     head "Setting up dotfiles for current user..."
     stage_setup_bin
     stage_setup_configs
+
+    head "Setup git sources for current user..."
+    stage_setup_sources
 
     head "Switching to root user to continue..."
     sudo -s "$dotfiles_dir/$script_name"
@@ -22,32 +26,35 @@ if [[ "$(whoami)" == "root" ]]; then
     head "GoTo root user"
 
     head "Adding PPAs..."
-    #stage_add_ppas
+    stage_add_ppas
 
     head "Purging packages..."
-    #stage_purge_packages
+    stage_purge_packages
 
     head "Install user packages..."
-    #stage_install_user_packages
+    stage_install_user_packages
 
     head "Install utils packages..."
-    #stage_install_utils_packages
+    stage_install_utils_packages
 
     head "Install dev packages..."
-    #stage_install_dev_packages
+    stage_install_dev_packages
 
     head "Install KDE packages..."
-    #stage_install_kde_packages
+    stage_install_kde_packages
 
     head "Install remote packages..."
-    #stage_install_remote_packages
+    stage_install_remote_packages
 
     head "Disable services..."
-    #stage_disable_services
+    stage_disable_services
 
     head "Install RVM..."
-    #stage_rvm
+    stage_rvm
 
     head "Install RVM rubies..."
-    #stage_rvm_rubies
+    stage_rvm_rubies
+
+    head "Finalising..."
+    stage_finalize_install
 fi

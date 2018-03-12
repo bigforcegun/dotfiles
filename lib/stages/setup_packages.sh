@@ -165,7 +165,7 @@ RVM_RUBIES=(
 
 stage_add_ppas() {
 	for i in "${PPAS[@]}"; do
-		add_ppa $i
+		add_ppa ${i}
 	done
 	add_manual_ppas
 	sudo apt update
