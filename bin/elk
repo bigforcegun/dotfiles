@@ -1,0 +1,64 @@
+#!/usr/bin/env bash 
+
+function start(){
+    sudo service kibana start
+    sudo service elasticsearch start
+    sudo service filebeat start
+}
+
+function stop(){
+    sudo service kibana stop
+    sudo service elasticsearch stop
+    sudo service filebeat stop
+}
+
+function status(){
+    sudo service kibana status
+    sudo service elasticsearch status
+    sudo service filebeat status
+}
+
+function enable(){
+    sudo systemctl enable kibana
+    sudo systemctl enable elasticsearch
+    sudo systemctl enable filebeat
+}
+
+function disable(){
+    sudo systemctl disable kibana
+    sudo systemctl disable elasticsearch
+    sudo systemctl disable filebeat
+}
+
+case "$1" in
+        start)
+            start
+            ;;
+            
+        enable)
+            enalbe
+            ;;
+            
+        disable)
+            disable
+            ;;
+         
+        stop)
+            stop
+            ;;
+         
+        status)
+            status
+            ;;
+        restart)
+            stop
+            start
+            ;;
+        *)
+            echo $"Usage: $0 {start|stop|restart|status|enable|disable}"
+            exit 1
+ 
+esac 
+ 
+
+ 

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash 
+
+function start(){
+    sudo service redis-server start
+    sudo service postgresql start
+}
+
+function stop(){
+    sudo service redis-server stop
+    sudo service postgresql stop
+}
+
+function status(){
+    sudo service redis-server status
+    sudo service postgresql status
+}
+
+case "$1" in
+        start)
+            start
+            ;;
+         
+        stop)
+            stop
+            ;;
+         
+        status)
+            status
+            ;;
+        restart)
+            stop
+            start
+            ;;
+        *)
+            echo $"Usage: $0 {start|stop|restart|status}"
+            exit 1
+ 
+esac 
+ 
+
+ 

@@ -1,0 +1,9 @@
+[user]
+	name = BigForceGun
+	email = BigForceGun@gmail.com
+[core]
+	autocrlf = input
+[gc]
+	autoDetach = false
+[push]
+	followTags = true

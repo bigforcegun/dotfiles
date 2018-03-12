@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+sudo msikeyboard -k on -b 600
+sleep 3
+sudo msikeyboard -k off -m normal
