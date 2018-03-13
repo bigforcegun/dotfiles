@@ -124,6 +124,7 @@ UTILITIES_PACKAGES=(
     "ca-certificates"
     "jq"
     "ab"
+    "wrk"
 	"net-tools"
 	"htop"
 	"mc"
