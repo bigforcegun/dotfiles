@@ -55,6 +55,7 @@ USER_PACKAGES=(
 	"hardcode-tray"
 	"nextcloud-client"
 	"nextcloud-client-dolphin"
+	"dolphin-plugins"
 	"gnome-encfs-manager"
 	"backintime-qt4"
 	"liferea"
