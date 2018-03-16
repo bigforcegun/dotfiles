@@ -85,6 +85,8 @@ DEV_PACKAGES=(
 	"yarn"
 	"docker-ce"
 	"insomnia"
+	"gdb"
+	"lldb"
 )
 
 KDE_PACKAGES=(
