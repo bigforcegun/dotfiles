@@ -115,7 +115,7 @@ KDE_PACKAGES=(
     "sweeper"
     "kjots"
     "marble"
-    "kup-backup"
+    # "kup-backup" - # need build from source
     "rsibreak"
     "kget"
 )
