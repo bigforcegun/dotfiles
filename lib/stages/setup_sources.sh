@@ -10,7 +10,7 @@ ORIGINS=(
     "https://github.com/d4nj1/TLPUI"
 )
 
-SOURCES_DIR="${HOME}/source"
+SOURCES_DIR="${HOME}/sources"
 
 stage_setup_sources(){
     mkdir -p ${SOURCES_DIR}
