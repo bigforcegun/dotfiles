@@ -87,6 +87,7 @@ DEV_PACKAGES=(
 	"insomnia"
 	"gdb"
 	"lldb"
+	"libxml2-dev"
 )
 
 KDE_PACKAGES=(

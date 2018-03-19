@@ -2,7 +2,7 @@
 
 ORIGINS=(
     "https://github.com/maximbaz/dotfiles"
-    "git@github.com:spersson/Kup.git"
+    "https://github.com/spersson/Kup.git"
     "http://github.com/bulletmark/libinput-gestures"
     "https://github.com/stockrt/nginx2goaccess"
     "https://github.com/KDE/plasma-browser-integration"
