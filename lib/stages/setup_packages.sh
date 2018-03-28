@@ -168,8 +168,9 @@ REMOTE_PACKAGES=(
 RVM_RUBIES=(
 	"ruby-2.3.4"
 	"ruby-2.3.5"
-	"ruby-2.4.1"
-	"ruby-2.4.2"
+	# "ruby-2.4.1"
+	# "ruby-2.4.2"
+	"ruby-2.4.3"
 	"ruby-2.5.0"
 )
 
