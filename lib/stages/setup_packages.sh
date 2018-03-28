@@ -88,6 +88,7 @@ DEV_PACKAGES=(
 	"gdb"
 	"lldb"
 	"libxml2-dev"
+	"python3-pip"
 )
 
 KDE_PACKAGES=(
@@ -124,10 +125,12 @@ KDE_PACKAGES=(
 )
 
 UTILITIES_PACKAGES=(
+    # "urlwatch"
+    "samba"
     "apt-transport-https"
     "ca-certificates"
     "jq"
-    "ab"
+    "apache2-utils"
     "wrk"
 	"net-tools"
 	"htop"

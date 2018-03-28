@@ -1,0 +1,7 @@
+name: "Alacritty's config"
+url: "https://raw.githubusercontent.com/jwilm/alacritty/master/alacritty.yml"
+---
+name: "xps 13 new bios"
+url: "https://www.dell.com/support/home/us/en/19/drivers/driversdetails?driverId=G05NR"
+filter: html2text,grep:XPS 13 9360.*BIOS,strip
+---
