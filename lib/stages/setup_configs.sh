@@ -9,6 +9,7 @@ stage_setup_configs(){
     link ".bundle/config"
     link ".gitconfig"
     link ".gitignore"
+    link ".agignore"
 
     link ".tmux.conf"
 
@@ -16,6 +17,7 @@ stage_setup_configs(){
     link ".zshrc"
     link ".zsh"
 
+    link ".config/alacritty/alacritty.yml"
     link ".config/nvim"
     link ".config/libinput-gestures.conf"
 

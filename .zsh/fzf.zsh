@@ -1,10 +1,23 @@
 # Source default FZF aliases
+
+if [[ ! "$PATH" == */home/bigforcegun/.fzf/bin* ]]; then
+  export PATH="$PATH:/home/bigforcegun/.fzf/bin"
+fi
+
 if [ -f /usr/share/fzf/key-bindings.zsh ]; then
   . /usr/share/fzf/key-bindings.zsh
 fi
 
 if [ -f /usr/share/fzf/completion.zsh ]; then
   . /usr/share/fzf/completion.zsh
+fi
+
+if [ -f ~/.fzf/shell/completion.zsh ]; then
+  . ~/.fzf/shell/completion.zsh
+fi
+
+if [ -f ~/.fzf/shell/key-bindings.zsh ]; then
+  . ~/.fzf/shell/key-bindings.zsh
 fi
 
 # Better FZF
