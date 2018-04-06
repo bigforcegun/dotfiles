@@ -13,5 +13,6 @@
 .wine/
 .idea/
 node_modules/
-
+.Idea*/
+.RubyMine*/
 *.class

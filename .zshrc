@@ -10,7 +10,7 @@ source ~/.zsh/sandboxd.zsh
 
 # Load environment variables
 source ~/.zsh/environment.zsh
-# source ~/.dircolors.zsh
+source ~/.dircolors.zsh
 # Load prompt configuration
 source ~/.zsh/prompt.zsh
 
@@ -23,8 +23,7 @@ source ~/.zsh/antigen.zsh
 # Load custom configurations
 source ~/.zsh/opts.zsh
 #source ~/.zsh/keybindings.zsh
-#source ~/.zsh/aliases.zsh
+source ~/.zsh/aliases.zsh
 #source ~/.zsh/git.zsh
 source ~/.zsh/fzf.zsh
-#source ~/.zsh/ssh.zsh
-#source ~/.zsh/mse.zsh
+source ~/.zsh/ssh.zsh

@@ -15,7 +15,6 @@ antigen bundles <<EOB
   robbyrussell/oh-my-zsh plugins/git-flow
   robbyrussell/oh-my-zsh plugins/docker
   robbyrussell/oh-my-zsh plugins/capistrano
-  robbyrussell/oh-my-zsh plugins/cargo
   hlissner/zsh-autopair
   marzocchi/zsh-notify
   rupa/z

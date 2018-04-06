@@ -15,13 +15,19 @@ tmux_bg_color_reset() {
 }
 
 tmux_bg_color_set() {
-  color='default'
+  color='#47221F'
+  good_color='#323228'
+  danger_color='#322828'
   for arg in "$@"; do
     if [[ "${arg:0:1}" != "-" ]]; then
       if [[ "$arg" =~ '^prod[0-9]?-' ]]; then
-        color='#322828'
+        color=$danger_color
+      elif [[ "$arg" =~ '.amazon' ]]; then
+        color=$danger_color
+      elif [[ "$arg" =~ '.office' ]]; then
+        color=$good_color
       elif [[ "$arg" =~ '^int[0-9]?-' ]]; then
-        color='#323228'
+        color=$good_color
       fi
       break
     fi

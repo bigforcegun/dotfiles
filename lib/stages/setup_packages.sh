@@ -60,6 +60,7 @@ USER_PACKAGES=(
 	"backintime-qt4"
 	"liferea"
 	"borgbackup"
+	"fonts-powerline"
 )
 
 DEV_PACKAGES=(

@@ -241,6 +241,8 @@ live_config_reload: false
 
 shell:
   program: /bin/zsh
+  args:
+    - --login
 
 # Key bindings
 #

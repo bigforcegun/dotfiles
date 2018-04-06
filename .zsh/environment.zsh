@@ -27,7 +27,6 @@ export FZ_SUBDIR_CMD=jj
 #export PATH="$JAVA_HOME/bin:$PATH"
 
 # Ruby configuration
-
 [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm  
 
 # RVM configuration
@@ -41,8 +40,8 @@ export FZ_SUBDIR_CMD=jj
 #sandbox_hook rvm eyaml
 
 # Go configuration
-#export GOPATH=/home/maximbaz/.go
-#export PATH="$GOPATH/bin:$PATH"
+export GOPATH=$HOME/.go
+export PATH="$GOPATH/bin:$PATH"
 
 # NPM configuration
 export PATH="$HOME/.node_modules/bin:$PATH"
