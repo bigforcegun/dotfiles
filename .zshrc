@@ -16,6 +16,7 @@ source ~/.zsh/prompt.zsh
 
 # Load plugins
 source ~/.zsh/prezto.zsh
+source ~/.zsh/completions.zsh
 source ~/.zsh/zsh-notify.zsh
 source ~/.zsh/antigen.zsh
 # source ~/.zsh/prezto-patches.zsh

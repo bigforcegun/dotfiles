@@ -6,6 +6,14 @@ export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
 
+if [ -z ${HOSTTYPE+x} ]; then
+    if [[ -f ~/.hosttype ]]; then
+       HOSTTYPE=`cat ~/.hosttype`
+   else
+       HOSTTYPE="unknown"
+   fi
+fi
+
 # My own binaries
 export PATH="$HOME/bin:$PATH"
 

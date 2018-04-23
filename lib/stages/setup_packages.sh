@@ -21,7 +21,43 @@ PPAS=(
 	"costamagnagianfranco/borgbackup"
 )
 
-USER_PACKAGES=(
+
+BASE_PACKAGES=(
+    "trash-cli"
+    "git"
+	"git-flow"
+    "whois"
+    "goaccess"
+    "neovim"
+    "python3-pip"
+    "apt-transport-https"
+    "ca-certificates"
+    "jq"
+    "apache2-utils"
+    "wrk"
+    "net-tools"
+    "htop"
+    "mc"
+    "curl"
+    "wget"
+    "apache2-utils"
+    "screenfetch"
+    "neofetch"
+    "stress"
+    "unrar"
+    "rar"
+    "finger"
+    "tmux"
+    "tree"
+    "unrar"
+    "unzip"
+    "ranger"
+    "zsh"
+    "zsh-antigen"
+)
+
+
+DESKTOP_USER_PACKAGES=(
     "weechat"
     "thunderbird"
     "thunderbird-enigmail"
@@ -63,36 +99,42 @@ USER_PACKAGES=(
 	"fonts-powerline"
 )
 
-DEV_PACKAGES=(
+DESKTOP_DEV_PACKAGES=(
     "mongodb"
     "mongodb-dev"
-    "whois"
-    "goaccess"
 	"postgresql-client"
 	"postgresql-client-common"
 	"build-essential"
 	"nodejs"
-	"git"
-	"git-flow"
 	"redis-server"
 	"mysql-server"
 	"mysql-client"
 	"postgresql"
 	"postgresql-contrib"
-	"libmysqlclient-dev"
-	"libreadline6-dev"
-	"libpq-dev"
-	"neovim"
 	"yarn"
 	"docker-ce"
 	"insomnia"
 	"gdb"
+	"libmysqlclient-dev"
+    "libreadline6-dev"
+    "libpq-dev"
 	"lldb"
 	"libxml2-dev"
-	"python3-pip"
-)
+    "libmagickwand-dev"
+    "libharfbuzz-dev"
+    "libfontconfig1-dev"
+    "libharfbuzz-dev"
+    "libxi-dev"
+    "libxrandr-dev"
+    "libxinerama-dev"
+    "libxcursor-dev"
+    "libunistring-dev"
+    "libxcb-xkb-dev"
+    "libpng-dev"
+    "python3-pil"
+	)
 
-KDE_PACKAGES=(
+DESKTOP_KDE_PACKAGES=(
     "kdesrc-build"
     "kipi-plugins"
     "kde-config-systemd"
@@ -105,6 +147,7 @@ KDE_PACKAGES=(
     "kio-extras"
     "kio-dev"
     "kio gettext"
+    "qtdeclarative5-dev"
     "libkf5activities-dev"
     "libkf5runner-dev"
     "libkf5notifications-dev"
@@ -123,40 +166,28 @@ KDE_PACKAGES=(
     # "kup-backup" - # need build from source
     "rsibreak"
     "kget"
-)
+    "kdenlive"
+    "libqt5websockets5"
+    "qml-module-qt-websockets"
+    "libqt5websockets5-dev"
+    "libcurl4-doc"
+    "libidn11-dev"
+    "libkrb5-dev"
+    "libldap2-dev"
+    "librtmp-dev"
+    )
 
-UTILITIES_PACKAGES=(
+DESKTOP_UTILS_PACKAGES=(
     # "urlwatch"
     "samba"
-    "apt-transport-https"
-    "ca-certificates"
-    "jq"
-    "apache2-utils"
-    "wrk"
-	"net-tools"
-	"htop"
-	"mc"
     "linux-tools-common"
 	"linux-tools-generic"
 	"software-properties-common"
-	"curl"
-	"wget"
-    "apache2-utils"
-    "screenfetch"
-    "neofetch"
-    "hardinfo"
-	"rar"
+	"hardinfo"
 	#"laptop-mode-tools"
 	"tlp"
 	"tlp-rdw"
-	"unrar"
-	"finger"
-    "tmux"
-    "tree"
-    "unrar"
-    "unzip"
 	"powertop"
-	"stress"
 	"i7z"
 	#"cpufreqd"
 	#"cpufrequtils"
@@ -169,8 +200,6 @@ REMOTE_PACKAGES=(
 RVM_RUBIES=(
 	"ruby-2.3.4"
 	"ruby-2.3.5"
-	# "ruby-2.4.1"
-	# "ruby-2.4.2"
 	"ruby-2.4.3"
 	"ruby-2.5.0"
 )
@@ -183,21 +212,25 @@ stage_add_ppas() {
 	sudo apt update
 }
 
+stage_install_base_packgages(){
+    apt install ${BASE_PACKAGES[@]} -y
+}
+
 stage_install_user_packages() {
-	apt install ${USER_PACKAGES[@]} -y
+	apt install ${DESKTOP_USER_PACKAGES[@]} -y
 }
 
 stage_install_utils_packages() {
-	apt install ${UTILITIES_PACKAGES[@]} -y
+	apt install ${DESKTOP_UTILS_PACKAGES[@]} -y
 }
 
 stage_install_dev_packages() {
 	export DEBIAN_FRONTEND=noninteractive
-	apt install ${DEV_PACKAGES[@]} -y
+	apt install ${DESKTOP_DEV_PACKAGES[@]} -y
 }
 
 stage_install_kde_packages() {
-	apt install ${KDE_PACKAGES[@]} -y
+	apt install ${DESKTOP_KDE_PACKAGES[@]} -y
 }
 
 stage_install_remote_packages(){
@@ -243,6 +276,7 @@ stage_rvm_rubies(){
 stage_finalize_install(){
     usermod -a -G rvm bigforcegun
     usermod -a -G docker bigforcegun
+    usermod -a -G input bigforcegun
 }
 
 add_manual_ppas(){
@@ -260,8 +294,6 @@ add_manual_ppas(){
         $(lsb_release -cs) \
         stable"
 
-    echo "deb https://dl.bintray.com/getinsomnia/Insomnia /" \
-    | sudo tee -a /etc/apt/sources.list.d/insomnia.list
-    wget --quiet -O - https://insomnia.rest/keys/debian-public.key.asc \
-    | sudo apt-key add -
+    wget --quiet -O - https://insomnia.rest/keys/debian-public.key.asc | sudo apt-key add -
+    echo "deb https://dl.bintray.com/getinsomnia/Insomnia /" | sudo tee /etc/apt/sources.list.d/insomnia.list
 }
