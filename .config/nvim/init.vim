@@ -91,6 +91,8 @@ call dein#add('fishbullet/deoplete-ruby')                             " Ruby
 call dein#add('wellle/tmux-complete.vim')                             " Tmux panes
 call dein#add('zchee/deoplete-go', {'build': 'make'})                 " Go
 call dein#add('zchee/deoplete-zsh')                                   " ZSH
+call dein#add('yoru/deoplete-crystal')                                " Crystal
+
 
 """" Git
 call dein#add('tpope/vim-fugitive')                                   " Git integration
@@ -112,6 +114,7 @@ call dein#add('eagletmt/ghcmod-vim')                                  " Ghc Mod
 call dein#add('enomsg/vim-haskellConcealPlus')                        " Use unicode symbols for haskell keywords
 call dein#add('Twinside/vim-hoogle')                                  " Query hoogle
 call dein#add('mpickering/hlint-refactor-vim')                        " Fix lint issues
+call dein#add('rhysd/vim-crystal')                                    " Crystal support
 
 """"" Go
 call dein#add('fatih/vim-go')                                         " Go development
@@ -166,6 +169,7 @@ set spelllang=en,da,ru
 set splitbelow
 set splitright
 set tabstop=2
+set title                                                          " Change terminal title based on the file name
 set updatetime=100
 set virtualedit=all
 set wildmode=longest,list,full
@@ -431,18 +435,22 @@ let g:tern_request_timeout = 1
 let g:tern#command = ["tern"]
 let g:tern#arguments = ["--persistent"]
 
+"""" Deoplete crystal
+let g:deoplete#sources#crystal#lib = '/usr/lib/crystal'
+let g:deoplete#sources#crystal#bin = '/usr/local/bin/cracker'
+
 """" EasyAlign
 nmap <Leader>= <Plug>(EasyAlign)
 xmap <Leader>= <Plug>(EasyAlign)
 
 """" FZF
 " Make :Ag not match file names, only file contents
-command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, '--hidden', {'options': '--delimiter : --nth 4..'}, <bang>0)
+command! -bang -nargs=* AgContents call fzf#vim#ag(<q-args>, '--hidden', {'options': '--delimiter : --nth 4..'}, <bang>0)
 
 nnoremap <silent> <Leader>f :Files<CR>
 nnoremap <silent> <Leader>F :Files ~<CR>
 nnoremap <silent> <Leader>b :Buffers<CR>
-nnoremap <silent> <Leader>G :Ag<CR>
+nnoremap <silent> <Leader>G :AgContents<CR>
 
 """" Ghc-mod
 nnoremap <silent> <leader>ht :w<CR>:GhcModType<CR>:GhcModTypeClear<CR>
@@ -661,6 +669,18 @@ function! ExecuteMacroOverVisualRange()
   execute ":'<,'>normal @".nr2char(getchar())
 endfunction
 
+"""" Set terminal title
+function! SetTerminalTitle()
+  let bufnr = bufnr('%')
+  if buflisted(bufnr)
+    if bufname(bufnr) == ''
+      let &titlestring = 'unnamed'
+    else
+      let &titlestring = expand('%:~')
+    endif
+  endif
+endfunction
+
 xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
 
 """ AutoCmd
@@ -676,6 +696,11 @@ augroup reload-files-changed-outside
   autocmd BufEnter,FocusGained * checktime
 augroup END
 
+augroup title
+  autocmd!
+  autocmd BufEnter * call SetTerminalTitle()
+augroup END
+
 
 "" vim:foldmethod=expr:foldlevel=0
-"" vim:foldexpr=getline(v\:lnum)=~'^""'?'>'.(matchend(getline(v\:lnum),'""*')-2)\:'=' 
+"" vim:foldexpr=getline(v\:lnum)=~'^""'?'>'.(matchend(getline(v\:lnum),'""*')-2)\:'='
