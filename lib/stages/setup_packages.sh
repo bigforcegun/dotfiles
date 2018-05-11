@@ -19,6 +19,7 @@ PPAS=(
 	"linrunner/tlp"
 	"ubuntuhandbook1/apps"
 	"costamagnagianfranco/borgbackup"
+	"ppa:tista/adapta"
 )
 
 
@@ -144,6 +145,8 @@ DESKTOP_KDE_PACKAGES=(
     "qml-module-org-kde-kio"
     "arc-kde"
     "adapta-kde"
+    "adapta-gtk-theme"
+    "adapta-kde"
     "kio-extras"
     "kio-dev"
     "kio gettext"
@@ -212,6 +215,7 @@ stage_add_ppas() {
 	sudo apt update
 }
 
+# TODO: --install-recommends
 stage_install_base_packgages(){
     apt install ${BASE_PACKAGES[@]} -y
 }

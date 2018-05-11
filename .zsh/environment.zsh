@@ -53,3 +53,5 @@ export PATH="$GOPATH/bin:$PATH"
 
 # NPM configuration
 export PATH="$HOME/.node_modules/bin:$PATH"
+
+export PATH="$HOME/.cargo/bin:$PATH"

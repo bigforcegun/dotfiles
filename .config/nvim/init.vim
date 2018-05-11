@@ -19,6 +19,7 @@ call dein#add('haya14busa/dein-command.vim')
 
 """" Look & feel
 call dein#add('morhetz/gruvbox')                                      " Color theme
+" call dein#add('altercation/vim-colors-solarized')                     " Color theme
 call dein#add('itchyny/lightline.vim')                                " Bottom bar
 call dein#add('mgee/lightline-bufferline')                            " Top bar
 call dein#add('maximbaz/lightline-trailing-whitespace')               " Trailing whitespace indicator
@@ -176,7 +177,7 @@ set wildmode=longest,list,full
 
 """" Theme
 set termguicolors
-set background=dark
+set background=light
 let g:gruvbox_italic=1
 let g:gruvbox_invert_selection=0
 colorscheme gruvbox
