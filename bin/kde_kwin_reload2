@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+killall -9 kwin_x11
+nohup kwin_x11 --replace &>/dev/null &
