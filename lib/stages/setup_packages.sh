@@ -59,6 +59,7 @@ BASE_PACKAGES=(
 
 
 DESKTOP_USER_PACKAGES=(
+    "urlview"
     "weechat"
     "thunderbird"
     "thunderbird-enigmail"
@@ -301,3 +302,8 @@ add_manual_ppas(){
     wget --quiet -O - https://insomnia.rest/keys/debian-public.key.asc | sudo apt-key add -
     echo "deb https://dl.bintray.com/getinsomnia/Insomnia /" | sudo tee /etc/apt/sources.list.d/insomnia.list
 }
+
+
+#install_fpp(){
+    #git clone https://github.com/facebook/PathPicker.git
+#}

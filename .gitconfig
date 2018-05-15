@@ -1,9 +1,12 @@
 [user]
 	name = BigForceGun
 	email = BigForceGun@gmail.com
+	signingkey = BE9C8BCF2398599C
 [core]
 	autocrlf = input
 [gc]
 	autoDetach = false
 [push]
 	followTags = true
+[commit]
+	gpgsign = true

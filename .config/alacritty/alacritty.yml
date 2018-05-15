@@ -106,7 +106,7 @@ render_timer: false
 custom_cursor_colors: false
 
 # Colors (Solarized Light)
-colors:
+colors3:
   # Default colors
   primary:
     background: '0xfdf6e3'
@@ -135,7 +135,7 @@ colors:
     white:   '0xfdf6e3'
 
 # Colors (Gruvbox light)
-colors2:
+colors:
   # Default colors
   primary:
     # hard contrast: background = '0xf9f5d7'
@@ -317,7 +317,7 @@ shell:
 # https://docs.rs/glutin/*/glutin/enum.VirtualKeyCode.html#variants
 #
 # Possible values for `mods`
-# `Command`, `Super` refer to the super/command/windows key
+# `Comm and`, `Super` refer to the super/command/windows key
 # `Control` for the control key
 # `Shift` for the Shift key
 # `Alt` and `Option` refer to alt/option

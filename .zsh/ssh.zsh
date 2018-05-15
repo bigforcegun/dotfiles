@@ -15,9 +15,9 @@ tmux_bg_color_reset() {
 }
 
 tmux_bg_color_set() {
-  color='#47221F'
+  color='#BE6B6A'
   good_color='#323228'
-  danger_color='#322828'
+  danger_color='#FFBEBD'
   for arg in "$@"; do
     if [[ "${arg:0:1}" != "-" ]]; then
       if [[ "$arg" =~ '^prod[0-9]?-' ]]; then
@@ -33,4 +33,5 @@ tmux_bg_color_set() {
     fi
   done
   tmux set window-style "bg=$color"
+  # tmux setw -g window-active-style "bg=$color"
 }
