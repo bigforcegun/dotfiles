@@ -4,6 +4,7 @@
 	signingkey = BE9C8BCF2398599C
 [core]
 	autocrlf = input
+	excludesfile = ~/.gitignore
 [gc]
 	autoDetach = false
 [push]

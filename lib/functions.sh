@@ -59,3 +59,22 @@ link() {
 copy() {
   assign "copy" "$dotfiles_dir/$1" "/$1"
 }
+
+systemctl_enable_start() {
+  if [ "$#" -eq 1 ]; then
+    target="system"
+    name="$1"
+  else
+    target="$1"
+    name="$2"
+  fi
+  if [[ "$target" == "user" ]]; then
+    echo "systemctl --user enable & start "$name""
+    systemctl --user enable "$name"
+    systemctl --user start  "$name"
+  else
+    echo "systemctl enable & start "$name""
+    systemctl enable "$name"
+    systemctl start  "$name"
+  fi
+}

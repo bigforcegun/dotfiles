@@ -35,7 +35,7 @@ BASE_PACKAGES=(
     "ca-certificates"
     "jq"
     "apache2-utils"
-    "wrk"
+    # "wrk"
     "net-tools"
     "htop"
     "mc"
@@ -102,6 +102,7 @@ DESKTOP_USER_PACKAGES=(
 )
 
 DESKTOP_DEV_PACKAGES=(
+    "crystal"
     "mongodb"
     "mongodb-dev"
 	"postgresql-client"
@@ -137,6 +138,7 @@ DESKTOP_DEV_PACKAGES=(
 	)
 
 DESKTOP_KDE_PACKAGES=(
+    "kdesudo"
     "kdesrc-build"
     "kipi-plugins"
     "kde-config-systemd"
@@ -179,6 +181,7 @@ DESKTOP_KDE_PACKAGES=(
     "libkrb5-dev"
     "libldap2-dev"
     "librtmp-dev"
+    "qalculate"
     )
 
 DESKTOP_UTILS_PACKAGES=(
@@ -301,6 +304,9 @@ add_manual_ppas(){
 
     wget --quiet -O - https://insomnia.rest/keys/debian-public.key.asc | sudo apt-key add -
     echo "deb https://dl.bintray.com/getinsomnia/Insomnia /" | sudo tee /etc/apt/sources.list.d/insomnia.list
+
+    apt-key adv --keyserver keys.gnupg.net --recv-keys 09617FD37CC06B54
+    echo "deb https://dist.crystal-lang.org/apt crystal main" | sudo tee /etc/apt/sources.list.d/crystal.list
 }
 
 
