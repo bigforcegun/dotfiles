@@ -13,28 +13,31 @@ source ./lib/stages/setup_configs.sh
 #  . /usr/share/fzf/completion.zsh
 #fi
 
-if [[ -v HOSTTYPE ]]; then
-    head "Working with host type ${HOSTTYPE}"
+if [[ -v MYHOSTTYPE ]]; then
+    head "Working with host type ${MYHOSTTYPE}"
     else
     if [[ -f ~/.hosttype ]]; then
-        HOSTTYPE=`cat ~/.hosttype`
+        MYHOSTTYPE=`cat ~/.hosttype`
     else
-        HOSTTYPE="unknown"
+        MYHOSTTYPE="unknown"
     fi
 fi
 
 if [ "$(whoami)" != "root" ]; then
     head "Setting up dotfiles for current user..."
-    stage_setup_bin
-    stage_setup_configs
+    stage_setup_user_bin
+    stage_setup_user_configs
+    state_setup_user_services
 
-    if [[ "$HOSTTYPE" =~ "desktop" ]]; then
+    if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
         head "Setup git sources for current user..."
         stage_setup_sources
     fi
 
     head "Switching to root user to continue..."
-    sudo -s "HOSTTYPE=${HOSTTYPE} $dotfiles_dir/$script_name"
+    # echo "sudo -s MYHOSTTYPE=${MYHOSTTYPE} $dotfiles_dir/$script_name"
+    #exit
+    sudo -s "$dotfiles_dir/$script_name"
     exit
 fi
 
@@ -43,10 +46,10 @@ if [[ "$(whoami)" == "root" ]]; then
     head "Setup base packgages..."
     stage_install_base_packgages
 
-    if [[ "$HOSTTYPE" =~ "desktop" ]]; then
+    if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
 
-        head "Adding PPAs..."
-        stage_add_ppas
+        #head "Adding PPAs..."
+        #stage_add_ppas
 
         head "Purging packages..."
         stage_purge_packages
