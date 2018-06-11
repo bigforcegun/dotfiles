@@ -1,3 +1,6 @@
+typeset -gA ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[comment]='fg=white,bold'
+
 spaceship_reset_tmux_pane_title() {
   # Reset tmux pane title
   printf '\033]2;%s\033\\' ''

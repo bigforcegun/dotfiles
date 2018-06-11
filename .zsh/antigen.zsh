@@ -22,6 +22,7 @@ antigen bundles <<EOB
   Tarrasch/zsh-bd
   zsh-users/zsh-syntax-highlighting
   zsh-users/zsh-history-substring-search
+  mafredri/zsh-async
 EOB
 
 antigen theme maximbaz/spaceship-prompt
