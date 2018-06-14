@@ -11,6 +11,7 @@ stage_setup_user_configs(){
     link ".gitignore"
     link ".agignore"
     link ".tmux.conf"
+    link ".tmux.conf.local"
     link ".zprofile"
     link ".zshrc"
     link ".zsh"
