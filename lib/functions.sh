@@ -12,7 +12,7 @@ add_ppa() {
   if [ $? -ne 0 ]
   then
     echo "Adding ppa:$1"
-    sudo add-apt-repository -y ppa:$1
+    sudo add-apt-repository -y --no-update ppa:$1
     return 0
   fi
 

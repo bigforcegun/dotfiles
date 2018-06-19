@@ -38,7 +38,7 @@ if [ "$(whoami)" != "root" ]; then
     # echo "sudo -s MYHOSTTYPE=${MYHOSTTYPE} $dotfiles_dir/$script_name"
     #exit
     sudo -s "$dotfiles_dir/$script_name"
-    exit
+    #exit
 fi
 
 if [[ "$(whoami)" == "root" ]]; then
@@ -48,8 +48,8 @@ if [[ "$(whoami)" == "root" ]]; then
 
     if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
 
-        #head "Adding PPAs..."
-        #stage_add_ppas
+        head "Adding PPAs..."
+        stage_add_ppas
 
         head "Purging packages..."
         stage_purge_packages
