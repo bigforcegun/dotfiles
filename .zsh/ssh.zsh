@@ -15,7 +15,7 @@ tmux_bg_color_reset() {
 }
 
 tmux_bg_color_set() {
-  color='#BE6B6A'
+  color='#FFBEBD'
   good_color='#323228'
   danger_color='#FFBEBD'
   for arg in "$@"; do
