@@ -8,6 +8,8 @@ ORIGINS=(
     "https://github.com/KDE/plasma-browser-integration"
     "https://github.com/crystal-lang-tools/scry.git"
     "https://github.com/d4nj1/TLPUI"
+    "https://github.com/junegunn/fzf.git"
+    "https://github.com/zsh-users/antigen"
 )
 
 SOURCES_DIR="${HOME}/sources"
