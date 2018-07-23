@@ -8,7 +8,7 @@ PPAS=(
 	"bit-team/stable"
 	"nextcloud-devs/client"
 	"jtaylor/keepass"
-	"mhsabbagh/greenproject"
+	# "mhsabbagh/greenproject"
 	"nilarimogard/webupd8"
 	"pbek/qownnotes"
 	"peek-developers/stable"
@@ -18,8 +18,8 @@ PPAS=(
 	"ubuntuhandbook1/corebird"
 	"linrunner/tlp"
 	"ubuntuhandbook1/apps"
-	"costamagnagianfranco/borgbackup"
-	"ppa:tista/adapta"
+	# "costamagnagianfranco/borgbackup"
+	"tista/adapta"
 )
 
 
@@ -138,7 +138,7 @@ DESKTOP_DEV_PACKAGES=(
 	)
 
 DESKTOP_KDE_PACKAGES=(
-    "kdesudo"
+    # "kdesudo"
     "kdesrc-build"
     "kipi-plugins"
     "kde-config-systemd"
