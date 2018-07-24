@@ -24,6 +24,7 @@ PPAS=(
 
 
 BASE_PACKAGES=(
+    "tldr"
     "trash-cli"
     "git"
 	"git-flow"
@@ -60,6 +61,9 @@ BASE_PACKAGES=(
 
 DESKTOP_USER_PACKAGES=(
     "urlview"
+    "googler"
+    "nnn"
+    "translate-shell"
     "weechat"
     "thunderbird"
     "thunderbird-enigmail"
@@ -102,8 +106,14 @@ DESKTOP_USER_PACKAGES=(
 )
 
 DESKTOP_DEV_PACKAGES=(
+    "autoconf"
+    "automake"
+    "autopoint"
+    "libtool"
     "crystal"
     "mongodb"
+    "pgcli"
+    "mycli"
     "mongodb-dev"
 	"postgresql-client"
 	"postgresql-client-common"
@@ -135,7 +145,11 @@ DESKTOP_DEV_PACKAGES=(
     "libxcb-xkb-dev"
     "libpng-dev"
     "python3-pil"
-	)
+    "libboost-locale-dev"
+    "libboost-system-dev"
+    "libncurses5-dev"
+    "libreadline-dev"
+)
 
 DESKTOP_KDE_PACKAGES=(
     # "kdesudo"

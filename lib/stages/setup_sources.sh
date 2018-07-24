@@ -10,6 +10,9 @@ ORIGINS=(
     "https://github.com/d4nj1/TLPUI"
     "https://github.com/junegunn/fzf.git"
     "https://github.com/zsh-users/antigen"
+    "https://github.com/hunspell/hunspell"
+    "https://github.com/Fakerr/git-recall"
+    "https://github.com/adtac/climate.git"
 )
 
 SOURCES_DIR="${HOME}/sources"
