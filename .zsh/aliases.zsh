@@ -17,6 +17,10 @@ alias rsync='rsync --verbose --archive --info=progress2 --human-readable --compr
 alias sudo='sudo -E '
 alias vi='nvim'
 alias vim='nvim'
+alias hunspell='hunspell --with-ui'
+alias cat='bat --theme="Monokai Extended Light" --style=plain --paging=never '
+alias fcat='bat --theme="Monokai Extended Light" '
+
 
 alias ls="exa --git --group-directories-first"
 alias ll="ls -l"
