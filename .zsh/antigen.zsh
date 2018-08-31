@@ -22,6 +22,8 @@ antigen bundles <<EOB
   Tarrasch/zsh-bd
   zsh-users/zsh-syntax-highlighting
   zsh-users/zsh-history-substring-search
+  zsh-users/zsh-completions
+  zsh-users/zaw
   mafredri/zsh-async
 EOB
 # soimort/translate-shell

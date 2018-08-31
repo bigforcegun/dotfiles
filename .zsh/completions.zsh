@@ -1,2 +1,4 @@
-source /etc/bash_completion.d/climate_completion #TODO: fix - dont work
+# echo $ZSH_VERSION
 fpath=($HOME/.zsh/completions $fpath)
+#fpath=(/etc/bash_completion.d $fpath)
+# source /etc/bash_completion.d/climate_completion

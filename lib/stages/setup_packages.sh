@@ -60,6 +60,8 @@ BASE_PACKAGES=(
 
 
 DESKTOP_USER_PACKAGES=(
+    "mkchromecast"
+    "sirikali"
     "urlview"
     "googler"
     "nnn"
