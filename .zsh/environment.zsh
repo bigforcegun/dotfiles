@@ -34,8 +34,7 @@ export FZ_SUBDIR_CMD=jj
 #export JAVA_HOME="/usr/lib/jvm/java-8-jdk"
 #export PATH="$JAVA_HOME/bin:$PATH"
 
-# Ruby configuration
-[[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm  
+
 
 # RVM configuration
 #sandbox_init_rvm() {
@@ -55,3 +54,7 @@ export PATH="$GOPATH/bin:$PATH"
 export PATH="$HOME/.node_modules/bin:$PATH"
 
 export PATH="$HOME/.cargo/bin:$PATH"
+
+
+# Ruby configuration
+[[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
