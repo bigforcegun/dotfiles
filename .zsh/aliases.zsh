@@ -20,7 +20,8 @@ alias vim='nvim'
 alias hunspell='hunspell --with-ui'
 alias cat='bat --theme="Monokai Extended Light" --style=plain --paging=never '
 alias fcat='bat --theme="Monokai Extended Light" '
-
+alias hpath="tr ':' '\n' <<< \"$PATH\""
+alias bfg='java -jar ~/bin/bfg-1.13.0.jar'
 
 alias ls="exa --git --group-directories-first"
 alias ll="ls -l"

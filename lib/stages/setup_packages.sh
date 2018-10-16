@@ -70,6 +70,7 @@ DESKTOP_USER_PACKAGES=(
     "thunderbird"
     "thunderbird-enigmail"
 	"qownnotes"
+	"smb4k"
 	"papirus-icon-theme"
 	"arc-theme"
 	"indicator-sound-switcher"
@@ -323,6 +324,9 @@ add_manual_ppas(){
 
     apt-key adv --keyserver keys.gnupg.net --recv-keys 09617FD37CC06B54
     echo "deb https://dist.crystal-lang.org/apt crystal main" | sudo tee /etc/apt/sources.list.d/crystal.list
+
+    sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 11E9DE8848F2B65222AA75B8D1820DB22A11534E
+    echo "deb https://weechat.org/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/weechat.list
 }
 
 
