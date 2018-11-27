@@ -1,14 +1,13 @@
 # Setup workspace
 
-simple hardcore setup scrpits
+simple hardcore setup scripts
 
 Many copy paste from https://github.com/maximbaz/dotfiles
-
 
 # Req
 
 System: Ubuntu
-DE: KDE plazma
+DE: KDE plasma
 
 # Why
 

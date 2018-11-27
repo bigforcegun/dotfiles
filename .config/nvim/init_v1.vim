@@ -17,7 +17,19 @@ call dein#begin(expand('~/.cache/dein'))
 call dein#add('Shougo/dein.vim')
 call dein#add('haya14busa/dein-command.vim')
 
-"""" Format code:
+"""" Look & feel
+call dein#add('morhetz/gruvbox')                                      " Color theme
+" call dein#add('altercation/vim-colors-solarized')                     " Color theme
+call dein#add('itchyny/lightline.vim')                                " Bottom bar
+call dein#add('mgee/lightline-bufferline')                            " Top bar
+call dein#add('maximbaz/lightline-trailing-whitespace')               " Trailing whitespace indicator
+call dein#add('maximbaz/lightline-ale')                               " ALE indicator
+call dein#add('gcavallanti/vim-noscrollbar')                          " Scrollbar for statusline
+call dein#add('cskeeters/vim-smooth-scroll')                          " Smooth scroll
+call dein#add('moll/vim-bbye')                                        " Keep window when closing a buffer
+call dein#add('romainl/vim-qf')                                       " Quickfix / Loclist improvements
+
+"""" Format code
 call dein#add('tpope/vim-sleuth')                                     " Automatically detect tabs vs spaces
 call dein#add('sbdchd/neoformat')                                     " Automatically format code
 call dein#add('dhruvasagar/vim-table-mode')                           " Format tables
@@ -64,24 +76,15 @@ call dein#add('farmergreg/vim-lastplace')                             " Restore 
 call dein#add('ludovicchabant/vim-gutentags')                         " Automatically generate tags
 
 """" Navigate files, buffers and panes
-call dein#add('scrooloose/nerdtree')                                  " v2
-call dein#add('majutsushi/tagbar')                                    " v2
-call dein#add('wesQ3/vim-windowswap')                                 " v2
-
 call dein#add('airblade/vim-rooter')                                  " Change working directory to the project root
 call dein#add('junegunn/fzf', {'build': './install --bin'})           " Fuzzy search - binary
 call dein#add('junegunn/fzf.vim')                                     " Fuzzy search - vim plugin
-" call dein#add('ctrlpvim/ctrlp.vim')                                 " v2 g
-" call dein#add('jeetsukumaran/vim-buffergator')                      " v2
 call dein#add('benizi/vim-automkdir')                                 " Automatically create missing folders on save
 call dein#add('christoomey/vim-tmux-navigator')                       " Easy navigation between vim and tmux panes
 
 """" Autocomplete
 call dein#add('Shougo/deoplete.nvim')                                 " Autocomplete engine
 call dein#add('Shougo/neco-vim')                                      " Vim
-
-call dein#add('SirVer/ultisnips')                                     " v2
-
 call dein#add('eagletmt/neco-ghc')                                    " Haskell
 call dein#add('zchee/deoplete-jedi')                                  " Python
 call dein#add('carlitux/deoplete-ternjs')                             " Javascript
@@ -112,43 +115,10 @@ call dein#add('eagletmt/ghcmod-vim')                                  " Ghc Mod
 call dein#add('enomsg/vim-haskellConcealPlus')                        " Use unicode symbols for haskell keywords
 call dein#add('Twinside/vim-hoogle')                                  " Query hoogle
 call dein#add('mpickering/hlint-refactor-vim')                        " Fix lint issues
-
-""""" Crystal
 call dein#add('rhysd/vim-crystal')                                    " Crystal support
 
 """"" Go
 call dein#add('fatih/vim-go')                                         " Go development
-
-"""" Look & feel
-call dein#add('ryanoasis/vim-devicons')                               " Quickfix / Loclist improvements
-call dein#add('itchyny/lightline.vim')                                " Bottom bar
-call dein#add('mgee/lightline-bufferline')                            " Top bar
-call dein#add('maximbaz/lightline-trailing-whitespace')               " Trailing whitespace indicator
-call dein#add('maximbaz/lightline-ale')                               " ALE indicator
-call dein#add('gcavallanti/vim-noscrollbar')                          " Scrollbar for statusline
-call dein#add('cskeeters/vim-smooth-scroll')                          " Smooth scroll
-call dein#add('moll/vim-bbye')                                        " Keep window when closing a buffer
-call dein#add('romainl/vim-qf')                                       " Quickfix / Loclist improvements
-
-call dein#add('sjl/badwolf')                                          " Color theme
-call dein#add('tomasr/molokai')                                       " Color theme
-call dein#add('morhetz/gruvbox')                                      " Color theme
-call dein#add('zenorocha/dracula-theme', {'rtp': 'vim/'})             " Color theme
-call dein#add('junegunn/limelight.vim')                               " Color theme
-call dein#add('mkarmona/colorsbox')                                   " Color theme
-call dein#add('romainl/Apprentice')                                   " Color theme
-call dein#add('Lokaltog/vim-distinguished')                           " Color theme
-call dein#add('chriskempson/base16-vim')                              " Color theme
-call dein#add('w0ng/vim-hybrid')                                      " Color theme
-call dein#add('AlessandroYorba/Sierra')                               " Color theme
-call dein#add('daylerees/colour-schemes')                             " Color theme
-call dein#add('effkay/argonaut.vim')                                  " Color theme
-call dein#add('ajh17/Spacegray.vim')                                  " Color theme
-call dein#add('atelierbram/Base2Tone-vim')                            " Color theme
-call dein#add('colepeters/spacemacs-theme.vim')                       " Color theme
-call dein#add('morhetz/gruvbox')                                      " Color theme
-call dein#add('altercation/vim-colors-solarized')                     " Color theme
-
 
 """" Dein-end
 call dein#end()
@@ -162,18 +132,7 @@ endif
 filetype plugin indent on
 syntax on
 let &fillchars="vert:|,fold: ,diff: "
-
-"if (has("termguicolors"))
-"  set termguicolors
-"endif
-
-" Show linenumbers
-set number
-set ruler
-set laststatus=2 " Always display the status line
 set cursorline                                                     " Spot the cursor easier
-
-set encoding=UTF-8
 set diffopt+=iwhite                                                " Ignore whitespace changes
 set expandtab                                                      " Use spaces by default, not tabs
 set formatoptions+=l                                               " Don't wrap long lines when editing them
@@ -217,7 +176,6 @@ set virtualedit=all
 set wildmode=longest,list,full
 
 """" Theme
-set guifont=DroidSansMono\ Nerd\ Font\ Mono\ 11
 set termguicolors
 set background=dark
 let g:gruvbox_italic=1

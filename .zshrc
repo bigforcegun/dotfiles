@@ -9,6 +9,9 @@ fi
 source ~/.zsh/sandboxd.zsh
 
 # Load environment variables
+# . /usr/share/LS_COLORS/dircolors.sh
+
+# Load environment variables
 source ~/.zsh/environment.zsh
 source ~/.dircolors.zsh
 # Load prompt configuration
@@ -26,6 +29,6 @@ source ~/.zsh/antigen.zsh
 source ~/.zsh/opts.zsh
 #source ~/.zsh/keybindings.zsh
 source ~/.zsh/aliases.zsh
-#source ~/.zsh/git.zsh
-source ~/.zsh/fzf.zsh
+source ~/.zsh/git.zsh
+source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh

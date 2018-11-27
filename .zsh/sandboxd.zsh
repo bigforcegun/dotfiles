@@ -5,7 +5,7 @@
 sandbox_hooks=()
 
 # deletes all hooks associated with cmd
-function sandbox_delete_hooks() {
+sandbox_delete_hooks() {
   local cmd=$1
   for i in "${sandbox_hooks[@]}";
   do
@@ -17,7 +17,7 @@ function sandbox_delete_hooks() {
 }
 
 # prepares environment and removes hooks
-function sandbox() {
+sandbox() {
   local cmd=$1
   if [[ "$(type $cmd | grep -o function)" = "function" ]]; then
     (>&2 echo "Lazy-loading $cmd for the first time...")
@@ -29,7 +29,7 @@ function sandbox() {
   fi
 }
 
-function sandbox_hook() {
+sandbox_hook() {
   local cmd=$1
   local hook=$2
 
@@ -37,3 +37,14 @@ function sandbox_hook() {
 
   eval "$hook(){ sandbox $cmd; $hook \$@ }"
 }
+
+
+# RVM configuration
+sandbox_init_rvm() {
+  if [ -f /usr/local/rvm/scripts/rvm ]; then
+     source /usr/local/rvm/scripts/rvm
+  fi
+}
+sandbox_hook rvm rvm
+sandbox_hook rvm eyaml
+sandbox_hook rvm ruby

@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-echo "123"
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+MY_GPG_KEY_ID="BE9C8BCF2398599C"
+
 script_name="$(basename "$0")"
 dotfiles_dir="$(cd "$(dirname "$0")"; pwd)"
 cd "$dotfiles_dir"
@@ -9,76 +14,77 @@ source ./lib/stages/setup_sources.sh
 source ./lib/stages/setup_packages.sh
 source ./lib/stages/setup_configs.sh
 
-#if [ -f /usr/share/fzf/completion.zsh ]; then
-#  . /usr/share/fzf/completion.zsh
-#fi
 
 if [[ -v MYHOSTTYPE ]]; then
-    head "Working with host type ${MYHOSTTYPE}"
-    else
-    if [[ -f ~/.hosttype ]]; then
-        MYHOSTTYPE=`cat ~/.hosttype`
-    else
-        MYHOSTTYPE="unknown"
-    fi
+  head "Working with host type ${MYHOSTTYPE}"
+  else
+  if [[ -f ~/.hosttype ]]; then
+    MYHOSTTYPE=`cat ~/.hosttype`
+  else
+    MYHOSTTYPE="unknown"
+  fi
 fi
 
 if [ "$(whoami)" != "root" ]; then
-    head "Setting up dotfiles for current user..."
-    stage_setup_user_bin
-    stage_setup_user_configs
-    state_setup_user_services
+  head "Setting up dotfiles for current user..."
+  stage_setup_user_bin
+  stage_setup_user_configs
+  state_setup_user_services
 
-    if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
-        head "Setup git sources for current user..."
-        stage_setup_sources
-    fi
+  if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
+    head "Setup git sources for current user..."
+    #stage_setup_sources
+  fi
 
-    head "Switching to root user to continue..."
-    # echo "sudo -s MYHOSTTYPE=${MYHOSTTYPE} $dotfiles_dir/$script_name"
-    #exit
-    sudo -s "$dotfiles_dir/$script_name"
-    #exit
+  if ! gpg -k | grep "$MY_GPG_KEY_ID" > /dev/null; then
+    head "Importing my public PGP key"
+    curl -s https://keybase.io/bigforcegun/pgp_keys.asc | gpg --import
+    gpg --trusted-key "$MY_GPG_KEY_ID" > /dev/null
+  fi
+
+  head "Switching to root user to continue..."
+  # echo "sudo -s MYHOSTTYPE=${MYHOSTTYPE} $dotfiles_dir/$script_name"
+  sudo -s "$dotfiles_dir/$script_name"
 fi
 
 if [[ "$(whoami)" == "root" ]]; then
-    head "GoTo root user"
-    head "Setup base packgages..."
-    stage_install_base_packgages
+  head "GoTo root user"
+  head "Setup base packgages..."
+  #stage_install_base_packgages
 
-    if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
+  if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
 
-        head "Adding PPAs..."
-        stage_add_ppas
+    #head "Adding PPAs..."
+    #stage_add_ppas
 
-        head "Purging packages..."
-        stage_purge_packages
+    #head "Purging packages..."
+    #stage_purge_packages
 
-        head "Install user packages..."
-        stage_install_user_packages
+    #head "Install user packages..."
+    #stage_install_user_packages
 
-        head "Install utils packages..."
-        stage_install_utils_packages
+    #head "Install utils packages..."
+    #stage_install_utils_packages
 
-        head "Install dev packages..."
-        stage_install_dev_packages
+    #head "Install dev packages..."
+    #stage_install_dev_packages
 
-        head "Install KDE packages..."
-        stage_install_kde_packages
+    #head "Install KDE packages..."
+    #stage_install_kde_packages
 
-        head "Install remote packages..."
-        stage_install_remote_packages
+    #head "Install remote packages..."
+    #stage_install_remote_packages
 
-        head "Disable services..."
-        stage_disable_services
+    #head "Disable services..."
+    #stage_disable_services
 
-        head "Install RVM..."
-        stage_rvm
+    #head "Install RVM..."
+    #stage_rvm
 
-        head "Install RVM rubies..."
-        stage_rvm_rubies
+    #head "Install RVM rubies..."
+    #stage_rvm_rubies
 
-        head "Finalising..."
-        stage_finalize_install
-    fi
+    #head "Finalising..."
+    stage_finalize_install
+  fi
 fi

@@ -1,4 +1,8 @@
 .cache/
+Cache/
+cached/
+cache/
+.cached/
 .docker/
 .dropbox/
 .gem/
@@ -13,6 +17,9 @@
 .wine/
 .idea/
 node_modules/
+bower_components/
 .Idea*/
 .RubyMine*/
 *.class
+ant-build
+ant-gen

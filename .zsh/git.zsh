@@ -37,6 +37,7 @@ alias gcob='git checkout -b'
 alias gcop='git checkout -p'
 
 alias gcp='git cherry-pick'
+alias gcpm='git cherry -v master | wc -l'
 alias gcpa='git cherry-pick --abort'
 alias gcpc='git cherry-pick --continue'
 

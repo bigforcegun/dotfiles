@@ -56,6 +56,8 @@ BASE_PACKAGES=(
     "ranger"
     "zsh"
     "zsh-antigen"
+    "ripgrep"
+    "fzy"
 )
 
 
@@ -73,6 +75,10 @@ DESKTOP_USER_PACKAGES=(
 	"smb4k"
 	"papirus-icon-theme"
 	"arc-theme"
+    "claws-mail-themes-papirus"
+    "filezilla-theme-papirus"
+    "materia-kde"
+    "materia-gtk-theme"
 	"indicator-sound-switcher"
 	"krita"
 	"gimp"
@@ -328,8 +334,3 @@ add_manual_ppas(){
     sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 11E9DE8848F2B65222AA75B8D1820DB22A11534E
     echo "deb https://weechat.org/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/weechat.list
 }
-
-
-#install_fpp(){
-    #git clone https://github.com/facebook/PathPicker.git
-#}

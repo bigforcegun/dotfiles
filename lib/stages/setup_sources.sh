@@ -25,3 +25,19 @@ stage_setup_sources(){
     done
     cd -
 }
+
+
+stage_setup_rust_utils(){
+  cargo install --git https://github.com/jwilm/alacritty --force
+  cargo install bat --force
+  cargo install exa --force
+  sudo cp /home/bigforcegun/.cargo/bin/exa /usr/local/bin
+  sudo cp /home/bigforcegun/.cargo/bin/bat /usr/local/bin
+  sudo chmod +x /usr/local/bin/exa
+  sudo chmod +x /usr/local/bin/bat
+}
+
+
+#install_fpp(){
+    #git clone https://github.com/facebook/PathPicker.git
+#}
