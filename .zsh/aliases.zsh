@@ -8,7 +8,6 @@ alias e='nvim'
 alias grep='grep --color'
 alias http-serve='python3 -m http.server'
 alias locate='locate -i'
-alias makepkg-compress="PKGEXT='.pkg.tar.xz' makepkg"
 alias mkdir='mkdir -p'
 alias o='xdg-open'
 alias rm='rmtrash -rf'
@@ -18,9 +17,11 @@ alias sudo='sudo -E '
 alias vi='nvim'
 alias vim='nvim'
 alias hunspell='hunspell --with-ui'
-alias cat='bat --theme="Monokai Extended Light" --style=plain --paging=never '
-alias fcat='bat --theme="Monokai Extended Light" '
+alias cat='bat --theme="Monokai Extended" --style=plain --paging=never '
+alias fcat='bat --theme="Monokai Extended" '
 alias hpath="tr ':' '\n' <<< \"$PATH\""
+alias fpath="hpath | fzf"
+alias fenv="env | fzf"
 alias bfg='java -jar ~/bin/bfg-1.13.0.jar'
 
 alias ls="exa --git --group-directories-first"
@@ -30,6 +31,10 @@ alias lk="ll -s=size"                # Sorted by size
 alias lm="ll -s=modified"            # Sorted by modified date
 alias lc="ll --created -s=created"   # Sorted by created date
 
-function mkdcd {
+mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
+}
+
+tcat(){
+  bat --list-themes | fzf --preview="bat --theme={} --color=always $1"
 }
