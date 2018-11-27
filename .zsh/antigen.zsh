@@ -18,6 +18,7 @@ antigen bundles <<EOB
   hlissner/zsh-autopair
   marzocchi/zsh-notify
   rupa/z
+  aperezdc/zsh-fzy
   changyuheng/fz
   Tarrasch/zsh-bd
   zsh-users/zsh-syntax-highlighting
