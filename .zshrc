@@ -1,9 +1,9 @@
 source ~/.zsh/autorun-tmux.zsh
-if [[ "$HOST" =~ "desktop-" ]]; then
-  source ~/.zsh/autorun-tmux.zsh
-elif [[ "$HOST" =~ "crmdevvm-" ]]; then
-  source ~/.zsh/autorun-same-tmux.zsh
-fi
+#if [[ "$HOST" =~ "desktop-" ]]; then
+#  source ~/.zsh/autorun-tmux.zsh
+#elif [[ "$HOST" =~ "crmdevvm-" ]]; then
+#  source ~/.zsh/autorun-same-tmux.zsh
+#fi
 
 # Lazy-loading functionality
 source ~/.zsh/sandboxd.zsh
@@ -12,7 +12,6 @@ source ~/.zsh/sandboxd.zsh
 # . /usr/share/LS_COLORS/dircolors.sh
 
 # Load environment variables
-source ~/.zsh/environment.zsh
 source ~/.dircolors.zsh
 # Load prompt configuration
 source ~/.zsh/prompt.zsh

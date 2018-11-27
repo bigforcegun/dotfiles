@@ -14,24 +14,23 @@ source ./lib/stages/setup_sources.sh
 source ./lib/stages/setup_packages.sh
 source ./lib/stages/setup_configs.sh
 
-
-if [[ -v MYHOSTTYPE ]]; then
-  head "Working with host type ${MYHOSTTYPE}"
+if [[ -v SETUP_HOST_TYPE ]]; then
+  head "Working with host type ${SETUP_HOST_TYPE}"
   else
   if [[ -f ~/.hosttype ]]; then
-    MYHOSTTYPE=`cat ~/.hosttype`
+    SETUP_HOST_TYPE=`cat ~/.hosttype`
   else
-    MYHOSTTYPE="unknown"
+    SETUP_HOST_TYPE="unknown"
   fi
 fi
 
-if [ "$(whoami)" != "root" ]; then
+if [[ "$(whoami)" != "root" ]]; then
   head "Setting up dotfiles for current user..."
   stage_setup_user_bin
   stage_setup_user_configs
-  state_setup_user_services
+  stage_setup_user_services
 
-  if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
+  if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
     head "Setup git sources for current user..."
     #stage_setup_sources
   fi
@@ -43,16 +42,22 @@ if [ "$(whoami)" != "root" ]; then
   fi
 
   head "Switching to root user to continue..."
-  # echo "sudo -s MYHOSTTYPE=${MYHOSTTYPE} $dotfiles_dir/$script_name"
   sudo -s "$dotfiles_dir/$script_name"
 fi
 
 if [[ "$(whoami)" == "root" ]]; then
-  head "GoTo root user"
+  head "Setting up /etc configs..."
+  stage_setup_etc_configs
+  echo "Done"
+
   head "Setup base packgages..."
   #stage_install_base_packgages
 
-  if [[ "$MYHOSTTYPE" =~ "desktop" ]]; then
+  head "Setting dash as /usr/bin/sh..."
+  ln -sfT dash /usr/bin/sh
+  echo "Done"
+
+  if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
 
     #head "Adding PPAs..."
     #stage_add_ppas

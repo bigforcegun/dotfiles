@@ -2,10 +2,16 @@
 
 ORIGINS=(
     "https://github.com/maximbaz/dotfiles"
-    "https://github.com/spersson/Kup.git"
+    "https://github.com/amberframework/amber.git"
+    "https://github.com/alexanderepstein/Bash-Snippets"
+    # "https://github.com/spersson/Kup.git"
+    # "https://github.com/KDE/plasma-browser-integration"
+    "https://github.com/mwh/dragon"
     "http://github.com/bulletmark/libinput-gestures"
+    "https://github.com/ryanoasis/nerd-fonts"
     "https://github.com/stockrt/nginx2goaccess"
-    "https://github.com/KDE/plasma-browser-integration"
+    "git://github.com/magnumripper/JohnTheRipper"
+    "https://github.com/LastPass/lastpass-cli"
     "https://github.com/crystal-lang-tools/scry.git"
     "https://github.com/d4nj1/TLPUI"
     "https://github.com/junegunn/fzf.git"
@@ -13,6 +19,9 @@ ORIGINS=(
     "https://github.com/hunspell/hunspell"
     "https://github.com/Fakerr/git-recall"
     "https://github.com/adtac/climate.git"
+    "https://github.com/facebook/PathPicker.git"
+    "https://github.com/PhrozenByte/rmtrash.git"
+    "https://github.com/ikruglov/slapper"
 )
 
 SOURCES_DIR="${HOME}/sources"
