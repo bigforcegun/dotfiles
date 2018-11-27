@@ -45,4 +45,5 @@ stage_setup_user_services(){
 stage_setup_etc_configs(){
   copy "etc/environment"
   copy "etc/profile.d/zz_custom.sh"
+  copy "etc/zsh/zprofile"
 }
