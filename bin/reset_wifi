@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# FUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+sudo modprobe -r ath10k_pci ath10k_core
+sudo modprobe ath10k_pci
+sudo modprobe ath10k_core
+sudo service network-manager restart
