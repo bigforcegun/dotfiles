@@ -42,8 +42,23 @@ stage_setup_user_services(){
   fi
 }
 
-stage_setup_etc_configs(){
+stage_setup_root_configs(){
   copy "etc/environment"
   copy "etc/profile.d/zz_custom.sh"
   copy "etc/zsh/zprofile"
+  
+  copy "etc/systemd/system/clock_mod_fix.service"
+}
+
+stage_setup_root_services(){
+  sysctl --system > /dev/null
+  systemctl daemon-reload
+
+  if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
+   systemctl_enable_start "system" "clock_mod_fix.service"
+
+  # TLP
+   systemctl_enable_start "system" "tlp.service"
+   systemctl_enable_start "system" "tlp-sleep.service"
+  fi
 }

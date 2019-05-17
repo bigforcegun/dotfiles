@@ -1,0 +1,13 @@
+[Unit]
+Description=Flushes the cpu clock modulation MSR to relase cpu lock caused by BIOS bug
+After=suspend.target
+
+[Service]
+User=root
+Type=oneshot
+ExecStart=/home/bigforcegun/bin/zero_clock_mod_msr
+TimeoutSec=0
+StandardOutput=syslog
+
+[Install]
+WantedBy=suspend.target

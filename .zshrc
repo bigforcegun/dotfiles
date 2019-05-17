@@ -31,3 +31,5 @@ source ~/.zsh/aliases.zsh
 source ~/.zsh/git.zsh
 source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
+
+# [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm

@@ -47,7 +47,11 @@ fi
 
 if [[ "$(whoami)" == "root" ]]; then
   head "Setting up /etc configs..."
-  stage_setup_etc_configs
+  stage_setup_root_configs
+  echo "Done"
+
+  head "Setting up root services..."
+  stage_setup_root_services
   echo "Done"
 
   head "Setup base packgages..."

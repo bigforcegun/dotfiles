@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+percentage_limit=5
+batpath="/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/BAT0"
+
+extra_commands="status"
+
+current_charge () {
+  expr cat $batpath/charge_now \* 100 \/ cat $batpath/charge_full
+}
+
+start() {
+
+  ebegin "Starting monitor battery charge status"
+  einfo "Current charge: current_charge%"
+  einfo "Percentage limit: ${percentage_limit}%"
+
+  (while [ 1 ]
+  do
+    if [ cat $batpath/status = "Discharging" ]
+    then
+      if [ current_charge -le $percentage_limit ]
+      then
+        /usr/sbin/pm-suspend
+      fi
+    fi
+    sleep 90
+  done)&
+  echo $! > /var/run/bcs.pid
+
+  eend ${?}
+}
+
+stop() {
+  ebegin "Stopping monitor battery charge status"
+  start-stop-daemon --stop --quiet --pidfile /var/run/bcs.pid
+  eend ${?}
+}
+
+status() {
+
+echo "Current charge: current_charge%"
+echo "Percentage limit: ${percentage_limit}% then suspend"
+echo "Status: cat $batpath/status"
+echo "Battery life: $(expr cat $batpath/charge_full \* 100 \/ cat $batpath/charge_full_design)%"
+
+}
+
+status
