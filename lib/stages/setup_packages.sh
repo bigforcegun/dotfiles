@@ -2,6 +2,7 @@
 
 PPAS=(
 	"papirus/papirus"
+	"daniruiz/flat-remix"
 	"kubuntu-ppa/backports"
 	"graphics-drivers/ppa"
 	"gencfsm"
@@ -20,6 +21,8 @@ PPAS=(
 	"ubuntuhandbook1/apps"
 	# "costamagnagianfranco/borgbackup"
 	"tista/adapta"
+  "ansible/ansible"
+  "mmstick76/alacritty"
 )
 
 
@@ -58,10 +61,12 @@ BASE_PACKAGES=(
   "zsh-antigen"
   "ripgrep"
   "fzy"
+  "ansible"
 )
 
 
 DESKTOP_USER_PACKAGES=(
+  "alacritty"
   "mkchromecast"
   "sirikali"
   "urlview"

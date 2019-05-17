@@ -13,13 +13,13 @@ alias o='xdg-open'
 alias rm='rmtrash -rf'
 alias rm!='\rm -rf'
 alias rsync='rsync --verbose --archive --info=progress2 --human-readable --compress --partial'
-alias sudo='sudo -E '
+# alias ssudo='sudo'
+# alias sudo='sudo -E '
 alias vi='nvim'
 alias vim='nvim'
 alias hunspell='hunspell --with-ui'
 alias cat='bat --theme="Monokai Extended" --style=plain --paging=never '
 alias fcat='bat --theme="Monokai Extended" '
-alias hpath="tr ':' '\n' <<< \"$PATH\""
 alias fpath="hpath | fzf"
 alias fenv="env | fzf"
 alias bfg='java -jar ~/bin/bfg-1.13.0.jar'
@@ -37,4 +37,8 @@ mkdcd(){
 
 tcat(){
   bat --list-themes | fzf --preview="bat --theme={} --color=always $1"
+}
+
+hpath(){
+  tr ':' '\n' <<< ${PATH}
 }

@@ -37,7 +37,7 @@ stage_setup_sources(){
 
 
 stage_setup_rust_utils(){
-  cargo install --git https://github.com/jwilm/alacritty --force
+  #cargo install --git https://github.com/jwilm/alacritty --force
   cargo install bat --force
   cargo install exa --force
   sudo cp /home/bigforcegun/.cargo/bin/exa /usr/local/bin

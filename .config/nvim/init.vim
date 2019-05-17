@@ -580,7 +580,8 @@ omap t <Plug>Sneak_t
 omap T <Plug>Sneak_T
 
 """" TComment
-let g:tcommentTextObjectInlineComment = ''
+""""let g:tcommentTextObjectInlineComment = ''
+let g:tcomment_textobject_inlinecomment = ''
 
 """" UltiSnips
 let g:UltiSnipsExpandTrigger="<tab>"

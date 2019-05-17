@@ -41,10 +41,9 @@ sandbox_hook() {
 
 # RVM configuration
 sandbox_init_rvm() {
-  if [ -f /usr/local/rvm/scripts/rvm ]; then
-     source /usr/local/rvm/scripts/rvm
-  fi
+ # [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
 }
-sandbox_hook rvm rvm
-sandbox_hook rvm eyaml
-sandbox_hook rvm ruby
+#sandbox_hook rvm rvm
+#sandbox_hook rvm eyaml
+#sandbox_hook rvm ruby
+#sandbox_hook rvm rvmsudo

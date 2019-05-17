@@ -42,5 +42,6 @@ export PATH="$HOME/.node_modules/bin:$PATH"
 # Rust configuration
 export PATH="$HOME/.cargo/bin:$PATH"
 
+export rvm_silence_path_mismatch_check_flag=1
 # Ruby configuration
-# [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
+#[[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm

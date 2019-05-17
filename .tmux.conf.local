@@ -325,8 +325,11 @@ bind C-a send-prefix
 set -g status-position top
 
 # Start a non-login shell
-set -g default-command "${SHELL}"
+#set -g default-command "${SHELL} -l"
+#set -g default-shell "$SHELL -l"
 
+set -g default-command "$SHELL --login"
+set -g default-shell $SHELL
 
 set -g base-index 1
 set -g pane-base-index 1
@@ -354,8 +357,8 @@ set -g word-separators " -@"
 set -g mode-style bg=brightwhite,fg=blue
 
 # Renumber sessions
-set-hook -g session-created "run ~/bin/renumber-sessions"
-set-hook -g session-closed  "run ~/bin/renumber-sessions"
+set-hook -g session-created "run ~/bin/tmux_renumber_sessions"
+set-hook -g session-closed  "run ~/bin/tmux_renumber_sessions"
 
 
 # Use incremental search (may become default, see: https://github.com/tmux/tmux/issues/895)
@@ -378,5 +381,8 @@ bind / copy-mode \; send ?
 # set -ga terminal-overrides ',*:Ss=\E[%p1%d q:Se=\E[2 q'
 
 # Configure extrakto
-set -g @extrakto_grab_area "0"
+set -g @extrakto_key "Tab"
+set -g @extrakto_grab_area "full" # "0"
 set -g @extrakto_fzf_tool "/home/bigforcegun/.fzf/bin/fzf"
+
+# bind -n C-Tab select-pane -R
