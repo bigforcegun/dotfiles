@@ -30,7 +30,7 @@ stage_setup_user_configs(){
     link ".config/systemd/user/urlwatch.timer"
     link ".config/systemd/user/tmux.service"
 
-    link ".urlwatch/urls.yaml"
+    link ".urlwatch/urls.yam  l"
   fi
 }
 
@@ -53,12 +53,27 @@ stage_setup_root_configs(){
 stage_setup_root_services(){
   sysctl --system > /dev/null
   systemctl daemon-reload
-
   if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
-   systemctl_enable_start "system" "clock_mod_fix.service"
+    systemctl_enable_start "system" "clock_mod_fix.service"
 
-  # TLP
-   systemctl_enable_start "system" "tlp.service"
-   systemctl_enable_start "system" "tlp-sleep.service"
+    systemctl_enable_start "system" "ufw.service"
+
+    # TLP
+    systemctl_enable_start "system" "tlp.service"
+    systemctl_enable_start "system" "tlp-sleep.service"
   fi
+}
+
+
+stage_setup_ufw_services(){
+
+  ufw --force reset >/dev/null
+  ufw default allow outgoing
+  ufw default deny incoming
+
+  #allow kde
+  ufw allow 1714:1764/udp
+  ufw allow 1714:1764/tcp
+
+  ufw enable
 }

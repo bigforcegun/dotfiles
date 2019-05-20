@@ -54,6 +54,10 @@ if [[ "$(whoami)" == "root" ]]; then
   stage_setup_root_services
   echo "Done"
 
+  head "Configuring firewall..."
+  stage_setup_ufw_services
+  echo "Done" 
+
   head "Setup base packgages..."
   #stage_install_base_packgages
 
