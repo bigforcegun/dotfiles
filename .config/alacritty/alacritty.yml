@@ -199,8 +199,9 @@ colors2:
   #indexed_colors:
   #  - { index: 16, color: '0x000000' }
 
+  
 # Colors (Gruvbox light)
-colors1: #theme-dark
+x-colors1: &theme-gruvbox-light
   # Default colors
   primary:
     # hard contrast: background = '0xf9f5d7'
@@ -231,7 +232,9 @@ colors1: #theme-dark
     white:   '0x3c3836'
 
 # Colors (Gruvbox dark)
-colors: #theme-dark
+
+
+x-colors2: &theme-gruvbox-dark
   # Default colors
   primary:
     # hard contrast: background = '0x1d2021'
@@ -261,6 +264,8 @@ colors: #theme-dark
     cyan:    '0x8ec07c'
     white:   '0xebdbb2'
 
+
+colors: *theme-gruvbox-dark #current-theme
 # Visual Bell
 #
 # Any time the BEL code is received, Alacritty "rings" the visual bell. Once
@@ -333,7 +338,7 @@ mouse:
     #
     # These are the modifiers that need to be held down for opening URLs when clicking
     # on them. The available modifiers are documented in the key binding section.
-    #modifiers: Control|Shift
+    modifiers: Control|Shift
 
 selection:
   semantic_escape_chars: ",│`|:\"' ()[]{}<>"

@@ -19,6 +19,7 @@ alias vi='nvim'
 alias vim='nvim'
 alias hunspell='hunspell --with-ui'
 alias cat='bat --theme="Monokai Extended" --style=plain --paging=never '
+alias pcat='/bin/cat'
 alias fcat='bat --theme="Monokai Extended" '
 alias fpath="hpath | fzf"
 alias fenv="env | fzf"

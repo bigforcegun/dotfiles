@@ -66,6 +66,7 @@ BASE_PACKAGES=(
 
 
 DESKTOP_USER_PACKAGES=(
+  "gufw"
   "alacritty"
   "mkchromecast"
   "sirikali"
