@@ -226,7 +226,7 @@ tmux_conf_theme_pairing_bg='none'
 tmux_conf_theme_pairing_attr='none'
 
 # prefix indicator
-tmux_conf_theme_prefix=' '            # U+2328
+tmux_conf_theme_prefix='⌨ '       # U+2328
 tmux_conf_theme_prefix_fg='none'
 tmux_conf_theme_prefix_bg='none'
 tmux_conf_theme_prefix_attr='none'
@@ -302,6 +302,9 @@ tmux_conf_copy_to_os_clipboard=false
 
 # -- user customizations -------------------------------------------------------
 # this is the place to override or undo settings
+
+bind C-x confirm-before -p "kill other windows? (y/n)" "kill-window -a"
+bind Q confirm-before -p "kill-session #S? (y/n)" kill-session
 
 # increase history size
 #set -g history-limit 10000
@@ -384,5 +387,11 @@ bind / copy-mode \; send ?
 set -g @extrakto_key "Tab"
 set -g @extrakto_grab_area "full" # "0"
 set -g @extrakto_fzf_tool "/home/bigforcegun/.fzf/bin/fzf"
+
+
+set -g @yank_action 'copy-pipe' # or 'copy-pipe-and-cancel' for the default
+set -g @yank_with_mouse on # or 'on'
+
+
 
 # bind -n C-Tab select-pane -R

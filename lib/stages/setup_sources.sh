@@ -22,6 +22,7 @@ ORIGINS=(
     "https://github.com/facebook/PathPicker.git"
     "https://github.com/PhrozenByte/rmtrash.git"
     "https://github.com/ikruglov/slapper"
+    "https://github.com/juanmafont/ufwIconbar"
 )
 
 SOURCES_DIR="${HOME}/sources"

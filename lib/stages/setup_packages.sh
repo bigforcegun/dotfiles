@@ -114,13 +114,14 @@ DESKTOP_USER_PACKAGES=(
   "nextcloud-client-dolphin"
   "dolphin-plugins"
   "gnome-encfs-manager"
-  "backintime-qt4"
+  #"backintime-qt4"
   "liferea"
   "borgbackup"
   "fonts-powerline"
 )
 
 DESKTOP_DEV_PACKAGES=(
+  "yad"
   "autoconf"
   "automake"
   "autopoint"
@@ -300,6 +301,13 @@ stage_disable_services(){
 	systemctl disable tor
 	systemctl disable mongodb
 	systemctl disable docker
+	systemctl disable glances
+	systemctl disable colord
+	systemctl disable ipsec
+	systemctl disable mpd
+	systemctl disable openvpn
+	systemctl disable smbd
+	systemctl disable apport
 }
 
 stage_rvm_rubies(){

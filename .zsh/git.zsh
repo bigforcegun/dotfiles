@@ -1,3 +1,4 @@
+
 alias g='git'
 
 alias ga='git add'
@@ -43,9 +44,11 @@ alias gcpc='git cherry-pick --continue'
 
 alias gd='git diff'
 alias gds='git diff --cached'
+alias gd!='git difftool -d'
+alias gds!='git difftool -d --cached'
 
 alias gf='git fetch --tags'
-alias gl='git pull --tags'
+alias gl='git pull --tags -f'
 
 alias glog="git log --graph --pretty='%Cred%h%Creset%C(yellow)%d%Creset %s %Cgreen(%cr) %C(blue)<%an>%Creset' --abbrev-commit"
 alias gloga="git log --graph --pretty='%Cred%h%Creset%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --all"
@@ -54,10 +57,9 @@ alias glogp='git log -p'
 alias gm='git merge'
 alias gma='git merge --abort'
 
-alias gp='git push'
+alias gp='git push -u'
 alias gpf='git push --force-with-lease'
 alias gpf!='git push --force'
-alias gpu='git push -u'
 
 alias gra='git remote add'
 alias grr='git remote remove'
@@ -79,3 +81,7 @@ alias gs='git show --show-signature'
 
 alias gss='git status -sb'
 alias gst='git status'
+
+alias gsa='git submodule add'
+alias gsu='git submodule update --remote'
+alias gsro='git submodule foreach git reset origin --hard'
