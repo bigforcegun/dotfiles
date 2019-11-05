@@ -1,0 +1,45 @@
+variables:
+    docker_stats: "1"
+    sshconnection: ssh $HOST -p $PORT -t
+barcharts:
+  - title: $qwe Local network activity
+    position: [[0, 0], [29, 12]]
+    rate-ms: 1000
+    scale: 0
+    items:
+      - label: Total
+        init: $sshconnection
+        sample: free -m | grep -i mem | awk '{print $2}'
+      - label: Used
+        init: $sshconnection
+        sample: free -m | grep -i mem | awk '{print $3}'
+      - label: Cache
+        init: $sshconnection
+        sample: free -m | grep -i mem | awk '{print $7}'
+gauges:
+  - title: DF
+    position: [[59, 0], [21, 4]]
+    cur:
+        init: $sshconnection
+        sample: df -h | grep sda | awk '{print $3}' | sed 's/[^0-9]*//g'
+    max:
+        init: $sshconnection
+        sample: df -h | grep sda | awk '{print $2}' | sed 's/[^0-9]*//g'
+    min:
+        sample: echo 0
+sparklines:
+  - title: CPU usage
+    position: [[29, 0], [30, 12]]
+    init: $sshconnection
+    sample: ps -A -o %cpu | awk '{s+=$1} END {print s}'
+textboxes:
+  - title: Docker containers stats
+    position: [[0, 12], [58, 23]]
+    init: $sshconnection
+    sample: docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}\t{{.PIDs}}"
+asciiboxes:
+  - title: APT
+    position: [[59, 4], [10, 6]]
+    init: $sshconnection
+    sample: apt list --upgradable | wc -l
+    transform: echo $sample

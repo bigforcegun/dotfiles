@@ -1,6 +1,6 @@
 alias ag='ag --hidden -f'
 alias cp='cp -r --reflink=auto'
-alias df='pydf'
+#alias df='pydf'
 alias diff='diff --color --unified'
 alias dragall='dragon --and-exit --all'
 alias dragon='dragon --and-exit'
@@ -42,4 +42,12 @@ tcat(){
 
 hpath(){
   tr ':' '\n' <<< ${PATH}
+}
+
+trtr(){
+  tr ':' '\n' <<< $1
+}
+
+expose(){
+  o https://lt.bigforcegun.com | ssh -vnNT -R 6688:localhost:$1 bigforcegun.com -p 322
 }

@@ -28,6 +28,9 @@ EOB
 # aperezdc/zsh-fzy
 # robbyrussell/oh-my-zsh plugins/rake
 # robbyrussell/oh-my-zsh plugins/jira
+# robbyrussell/oh-my-zsh plugins/ansible
+# robbyrussell/oh-my-zsh plugins/cargo
+# robbyrussell/oh-my-zsh plugins/bundler
 
 #antigen theme maximbaz/spaceship-prompt
 antigen theme denysdovhan/spaceship-prompt

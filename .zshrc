@@ -33,3 +33,5 @@ source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
 
 # [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
+
+source /etc/bash_completion.d/climate_completion
