@@ -1,3 +1,5 @@
+#modload zsh/zprof
+
 source ~/.zsh/autorun-tmux.zsh
 #if [[ "$HOST" =~ "desktop-" ]]; then
 #  source ~/.zsh/autorun-tmux.zsh
@@ -34,4 +36,4 @@ source ~/.zsh/ssh.zsh
 
 # [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
 
-source /etc/bash_completion.d/climate_completion
+#source /etc/bash_completion.d/climate_completion #FUCK FUCK FUCK

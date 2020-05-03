@@ -23,6 +23,7 @@ PPAS=(
 	"tista/adapta"
   "ansible/ansible"
   "mmstick76/alacritty"
+  "yubico/stable"
 )
 
 
@@ -38,7 +39,6 @@ BASE_PACKAGES=(
   "apt-transport-https"
   "ca-certificates"
   "jq"
-  "apache2-utils"
   # "wrk"
   "net-tools"
   "htop"
@@ -66,6 +66,7 @@ BASE_PACKAGES=(
 
 
 DESKTOP_USER_PACKAGES=(
+  "wireshark-qt"
   "gufw"
   "alacritty"
   "mkchromecast"
@@ -76,7 +77,7 @@ DESKTOP_USER_PACKAGES=(
   "translate-shell"
   "weechat"
   "thunderbird"
-  "thunderbird-enigmail"
+  "enigmail"
   "qownnotes"
   "smb4k"
   "papirus-icon-theme"
@@ -85,7 +86,7 @@ DESKTOP_USER_PACKAGES=(
   "filezilla-theme-papirus"
   "materia-kde"
   "materia-gtk-theme"
-  "indicator-sound-switcher"
+  #"indicator-sound-switcher"
   "krita"
   "gimp"
   "corebird"
@@ -97,14 +98,14 @@ DESKTOP_USER_PACKAGES=(
   "nixnote2"
   "kazam"
   "comix"
-  "sni-qt"
-  "sni-qt:i386"
+  #"sni-qt"
+  #"sni-qt:i386"
   "hardcode-tray"
   "peek"
   "tor"
   "selektor"
-  "green-recorder"
-  "shutter"
+  #"green-recorder"
+  #"shutter"
   "calligra"
   "keepass2"
   "corebird"
@@ -113,11 +114,15 @@ DESKTOP_USER_PACKAGES=(
   "nextcloud-client"
   "nextcloud-client-dolphin"
   "dolphin-plugins"
-  "gnome-encfs-manager"
+  #"gnome-encfs-manager"
   #"backintime-qt4"
   "liferea"
   "borgbackup"
   "fonts-powerline"
+  "mesa-utils"
+  "yubikey-manager-qt"
+  "yubioath-desktop"
+  "yubikey-personalization-gui"
 )
 
 DESKTOP_DEV_PACKAGES=(
@@ -130,6 +135,7 @@ DESKTOP_DEV_PACKAGES=(
   "mongodb"
   "pgcli"
   "mycli"
+  "glances"
   "mongodb-dev"
   "postgresql-client"
   "postgresql-client-common"
@@ -142,6 +148,7 @@ DESKTOP_DEV_PACKAGES=(
   "postgresql-contrib"
   "yarn"
   "docker-ce"
+  "docker-ce-cli"
   "insomnia"
   "gdb"
   "libmysqlclient-dev"
@@ -165,14 +172,15 @@ DESKTOP_DEV_PACKAGES=(
   "libboost-system-dev"
   "libncurses5-dev"
   "libreadline-dev"
+  "intel-gpu-tools"
 )
 
 DESKTOP_KDE_PACKAGES=(
   # "kdesudo"
-  "kdesrc-build"
+  #"kdesrc-build"
   "kipi-plugins"
   "kde-config-systemd"
-  "kcron"
+  #"kcron"
   "plasma-vault"
   "plasma-workspace-dev"
   "qml-module-org-kde-kio"
@@ -181,7 +189,7 @@ DESKTOP_KDE_PACKAGES=(
   "adapta-gtk-theme"
   "adapta-kde"
   "kio-extras"
-  "kio-dev"
+  #"kio-dev"
   "kio gettext"
   "qtdeclarative5-dev"
   "libkf5activities-dev"
@@ -191,7 +199,7 @@ DESKTOP_KDE_PACKAGES=(
   "krfb"
   "filelight"
   "kfind"
-  "kfilereplace"
+  #"kfilereplace"
   "kleopatra"
   "kcharselect"
   "kronometer"
@@ -235,10 +243,11 @@ REMOTE_PACKAGES=(
 )
 
 RVM_RUBIES=(
-	"ruby-2.3.4"
-	"ruby-2.4.3"
-	"ruby-2.5.0"
-	"ruby-2.5.3"
+	#"ruby-2.3.4"
+	#"ruby-2.4.3"
+	#"ruby-2.5.0"
+	#"ruby-2.5.3"
+  "ruby-2.6.5"
 )
 
 stage_add_ppas() {
@@ -303,9 +312,9 @@ stage_disable_services(){
 	systemctl disable docker
 	systemctl disable glances
 	systemctl disable colord
-	systemctl disable ipsec
-	systemctl disable mpd
-	systemctl disable openvpn
+	#systemctl disable ipsec
+	#systemctl disable mpd
+	#systemctl disable openvpn
 	systemctl disable smbd
 	systemctl disable apport
 }

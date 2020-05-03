@@ -1,0 +1,123 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+require 'optparse'
+
+
+MAIN_COLS = [
+    'Тип счёта', 'Номер счета', 'Валюта', 'Дата операции', 'Референс проводки', 'Описание операции', 'Приход', 'Расход'
+].freeze
+
+
+NewRow = Struct.new(:type, :number, :currency, :date, :ref, :desc, :income, :outcome) do
+  def to_row
+    [type, number, currency, date, ref, desc, income, outcome]
+  end
+end
+
+ShortRow = Struct.new(:date, :ref, :desc, :sum_str) do
+  def income
+    return 0 if amount.negative?
+
+    amount.abs
+  end
+
+  def outcome
+    return 0 if amount.positive?
+
+    amount.abs
+  end
+
+  def amount
+    #sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_f
+    sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_i
+  end
+
+  def currency
+    sum_str&.chars&.last(3)&.join
+  end
+end
+
+def new_rows_from_file(file, options)
+  table = CSV.parse(File.read(file))
+  name = options[:account_name]
+  number = options[:account_number]
+  new_table = []
+
+  table.each do |csv_row|
+    row = ShortRow.new(*csv_row)
+    if row.date.empty?
+      last_col = new_table.last
+      last_col.desc = "#{last_col.desc}. #{row.desc}"
+    else
+      new_table << NewRow.new(name, number, row.currency, row.date, row.ref, row.desc, row.income, row.outcome)
+    end
+  end
+  new_table
+end
+
+def save_to_new_file(rows, new_file_name)
+  CSV.open(new_file_name, "w") do |csv|
+    rows.each do |row|
+      csv << row.to_row
+    end
+  end
+end
+
+def parse_options
+  options = {}
+  OptionParser.new do |opts|
+    opts.banner = <<-eos
+WTF:
+    Script for simple conver csv files by tabula tables from alfa bank PDFs to default alfa bank CSV format
+
+Examples:
+
+    tabula_alfa_convert -a "Текущий зарплатный счёт" -n "40817810209950063341" -o output.csv ./tabula-certificate_18706720.csv
+
+    tabula_alfa_convert -a "Текущий зарплатный счёт" -n "40817810209950063341" tabula-certificate_18706720.csv  tabula-certificate_18706729.csv
+
+Usage: convert.rb [options];"
+
+    eos
+    opts.on("-o", "--one-file=FILE", "Write all in one file") do |v|
+      options[:filename] = v
+    end
+
+    opts.on("-a", "--account-name=NAME", "Account name") do |v|
+      options[:account_name] = v
+    end
+
+    opts.on("-n", "--account-number=NUMBER", "Account number") do |v|
+      options[:account_number] = v
+    end
+
+    opts.on("-h", "--help", "Prints this help") do
+      puts opts
+      exit
+    end
+  end.parse!
+  options[:account_name] ||= "Not Set"
+  options[:account_name] ||= "000000000000"
+  options
+end
+
+options = parse_options
+
+files = ARGV
+raise "You must specify some files to parse" if files.empty?
+all_rows = []
+
+files.each do |file|
+  rows = new_rows_from_file(file, options)
+  if options[:filename]
+    all_rows << rows
+  else
+    new_file_name = "#{File.basename(file, ".*")}-converted.csv"
+    save_to_new_file(rows, new_file_name)
+  end
+end
+
+if options[:filename]
+  save_to_new_file(all_rows.flatten(1), options[:filename])
+end

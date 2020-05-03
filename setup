@@ -18,10 +18,11 @@ if [[ -v SETUP_HOST_TYPE ]]; then
   head "Working with host type ${SETUP_HOST_TYPE}"
   else
   if [[ -f ~/.hosttype ]]; then
-    SETUP_HOST_TYPE=`cat ~/.hosttype`
+    export SETUP_HOST_TYPE=`cat ~/.hosttype`
   else
-    SETUP_HOST_TYPE="unknown"
+    export SETUP_HOST_TYPE="unknown"
   fi
+  head "Working with host type ${SETUP_HOST_TYPE}"
 fi
 
 if [[ "$(whoami)" != "root" ]]; then
@@ -32,7 +33,9 @@ if [[ "$(whoami)" != "root" ]]; then
 
   if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
     head "Setup git sources for current user..."
-    #stage_setup_sources
+   stage_setup_sources
+  exit
+  
   fi
 
   if ! gpg -k | grep "$MY_GPG_KEY_ID" > /dev/null; then
@@ -46,12 +49,9 @@ if [[ "$(whoami)" != "root" ]]; then
 fi
 
 if [[ "$(whoami)" == "root" ]]; then
+
   head "Setting up /etc configs..."
   stage_setup_root_configs
-  echo "Done"
-
-  head "Setting up root services..."
-  stage_setup_root_services
   echo "Done"
 
   head "Configuring firewall..."
@@ -59,45 +59,51 @@ if [[ "$(whoami)" == "root" ]]; then
   echo "Done" 
 
   head "Setup base packgages..."
-  #stage_install_base_packgages
+  stage_install_base_packgages
 
   head "Setting dash as /usr/bin/sh..."
   ln -sfT dash /usr/bin/sh
-  echo "Done"
+  echo "Done1"
 
-  if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
+  echo $SETUP_HOST_TYPE
 
-    #head "Adding PPAs..."
+#  if [[ "$SETUP_HOST_TYPE" =~ "desktop" ]]; then
+
+    head "Adding PPAs..."
     #stage_add_ppas
 
-    #head "Purging packages..."
-    #stage_purge_packages
+    head "Purging packages..."
+    stage_purge_packages
 
-    #head "Install user packages..."
-    #stage_install_user_packages
+    head "Install user packages..."
+    stage_install_user_packages
 
-    #head "Install utils packages..."
-    #stage_install_utils_packages
+    head "Install utils packages..."
+    stage_install_utils_packages
 
-    #head "Install dev packages..."
-    #stage_install_dev_packages
+    head "Install dev packages..."
+    stage_install_dev_packages
 
-    #head "Install KDE packages..."
-    #stage_install_kde_packages
+    head "Install KDE packages..."
+    stage_install_kde_packages
 
     #head "Install remote packages..."
     #stage_install_remote_packages
 
-    #head "Disable services..."
-    #stage_disable_services
+    head "Disable services..."
+    stage_disable_services
+    
+    head "Setting up root services..."
+    stage_setup_root_services
 
-    #head "Install RVM..."
-    #stage_rvm
 
-    #head "Install RVM rubies..."
-    #stage_rvm_rubies
+    head "Install RVM..."
+   # stage_rvm
 
-    #head "Finalising..."
+    head "Install RVM rubies..."
+   # stage_rvm_rubies
+
+    head "Finalising..."
     stage_finalize_install
-  fi
+ # fi
 fi
