@@ -10,27 +10,42 @@ alias http-serve='python3 -m http.server'
 alias locate='locate -i'
 alias mkdir='mkdir -p'
 alias o='xdg-open'
-alias rm='rmtrash -rf'
-alias rm!='\rm -rf'
+
+#alias rm='rmtrash -rf' #FIXME add rm-tools install
+#alias rm!='\rm -rf'
+
 alias rsync='rsync --verbose --archive --info=progress2 --human-readable --compress --partial'
 # alias ssudo='sudo'
 # alias sudo='sudo -E '
 alias vi='nvim'
 alias vim='nvim'
 alias hunspell='hunspell --with-ui'
-alias cat='bat --theme="Monokai Extended" --style=plain --paging=never '
-alias pcat='/bin/cat'
+alias bat='bat --theme="Monokai Extended" --style=plain --paging=never ' #FIXME: sad, by i can not use bat normally when i need bynary
 alias fcat='bat --theme="Monokai Extended" '
-alias fpath="hpath | fzf"
+alias fzpath="hpath | fzf"
 alias fenv="env | fzf"
-alias bfg='java -jar ~/bin/bfg-1.13.0.jar'
+# alias bfg='java -jar ~/bin/bfg-1.13.0.jar' #FIXME: plases for jar assets
 
-alias ls="exa --git --group-directories-first"
+alias ls="exa --git --group-directories-first --icons"
 alias ll="ls -l"
 alias la="ll -a"
 alias lk="ll -s=size"                # Sorted by size
 alias lm="ll -s=modified"            # Sorted by modified date
 alias lc="ll --created -s=created"   # Sorted by created date
+
+alias c1="awk '{print \$1}'"
+alias c2="awk '{print \$2}'"
+alias c3="awk '{print \$3}'"
+alias c4="awk '{print \$4}'"
+alias c5="awk '{print \$5}'"
+alias c6="awk '{print \$6}'"
+alias c7="awk '{print \$7}'"
+alias c8="awk '{print \$8}'"
+alias c9="awk '{print \$9}'"
+alias c10="awk '{print \$10}'"
+alias c11="awk '{print \$11}'"
+
+alias prm=". /usr/local/bin/prm.sh"
 
 mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
@@ -42,6 +57,10 @@ tcat(){
 
 hpath(){
   tr ':' '\n' <<< ${PATH}
+}
+
+hfpath(){
+  tr ' ' '\n' <<< ${fpath}
 }
 
 trtr(){

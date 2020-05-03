@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+CURRENT_DATE_PREFIX=`date +%Y-%m-%d`
+NOTE_TITLE="${CURRENT_DATE_PREFIX} - inbox"
+
+FILE_NAME="${NOTE_TITLE}.md"
+
+NOTE_TITLE_DELIMITIER="========================"
+
+INBOX_ROOT_FOLDER="."
+INBOX_ROOT_FOLDER="$1"
+NOTE_OPEN_CMD="kate"
+NOTE_FILE="${INBOX_ROOT_FOLDER}/${FILE_NAME}"
+
+
+if [ ! -f "${NOTE_FILE}" ]; then
+    echo "creating ${FILE_NAME}"
+    touch "${NOTE_FILE}"
+    echo "${NOTE_TITLE}" >> "${NOTE_FILE}"
+    echo "${NOTE_TITLE_DELIMITIER}" >> "${NOTE_FILE}"
+    echo "==TEMPLATE=="
+    cat "${NOTE_FILE}"
+fi
+
+#echo exec "${NOTE_OPEN_CMD} $NOTE_FILE"
+${NOTE_OPEN_CMD} "${NOTE_FILE}"
+
+
+
+
+
+
+
+

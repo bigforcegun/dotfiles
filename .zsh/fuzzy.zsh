@@ -12,9 +12,11 @@ FUZZY_MODE="fzf"
 if [[ ${FUZZY_MODE} = "fzf" ]]; then
 
   [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
+  [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && source /usr/share/doc/fzf/examples/key-bindings.zsh
 
   # Better FZF
-  export FZF_DEFAULT_OPTS="--history=$HOME/.fzf_history"
+  export FZF_DEFAULT_OPTS="--history=$HOME/.fzf_history --ansi"
+  # export FZF_DEFAULT_COMMAND="fd --type file --color=always"
   export FZF_DEFAULT_COMMAND='ag --hidden  -g""'
   export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
   export FZF_ALT_C_COMMAND_EXCLUSIONS=$(sed -e '/^$/,$d' ~/.agignore | while read -r line; do printf "-path '*/%s' -o " "${line:0:-1}"; done | sed 's/ -o $//')

@@ -8,7 +8,7 @@ ORIGINS=(
     # "https://github.com/KDE/plasma-browser-integration"
     "https://github.com/mwh/dragon"
     "http://github.com/bulletmark/libinput-gestures"
-    "https://github.com/ryanoasis/nerd-fonts"
+   # "https://github.com/ryanoasis/nerd-fonts"
     "https://github.com/stockrt/nginx2goaccess"
     "git://github.com/magnumripper/JohnTheRipper"
     "https://github.com/LastPass/lastpass-cli"
