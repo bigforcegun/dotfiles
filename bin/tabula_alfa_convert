@@ -22,15 +22,27 @@ ShortRow = Struct.new(:date, :ref, :desc, :sum_str) do
     amount.abs
   end
 
+  def income_formatted
+    income.to_s.gsub('.', ',')
+  end
+
   def outcome
     return 0 if amount.positive?
 
     amount.abs
   end
 
+  def outcome_formatted
+    outcome.to_s.gsub('.', ',')
+  end
+
+  def date_formatted
+    DateTime.parse(date).strftime("%d.%m.%y") #rescue date
+  end
+
   def amount
-    #sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_f
-    sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_i
+    sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_f
+    # sum_str.to_s.gsub(',', '.').gsub(currency, '').gsub(' ', '').to_i
   end
 
   def currency
@@ -46,19 +58,25 @@ def new_rows_from_file(file, options)
 
   table.each do |csv_row|
     row = ShortRow.new(*csv_row)
-    if row.date.empty?
+    if row.date.nil? || row.date.empty?
       last_col = new_table.last
       last_col.desc = "#{last_col.desc}. #{row.desc}"
     else
-      new_table << NewRow.new(name, number, row.currency, row.date, row.ref, row.desc, row.income, row.outcome)
+      new_table << NewRow.new(name, number, row.currency, row.date_formatted, row.ref, row.desc, row.income_formatted, row.outcome_formatted)
     end
   end
   new_table
 end
 
-def save_to_new_file(rows, new_file_name)
-  CSV.open(new_file_name, "w") do |csv|
-    rows.each do |row|
+def save_to_new_file(rows, new_file_name, reverse = false)
+  rows_for_file = if reverse
+    rows.reverse
+  else
+    rows
+  end
+
+  CSV.open(new_file_name, 'w', {col_sep: ';'}) do |csv|
+    rows_for_file.each do |row|
       csv << row.to_row
     end
   end
@@ -96,9 +114,15 @@ Usage: convert.rb [options];"
       puts opts
       exit
     end
+
+    opts.on("-r", "--reverse", "Reverce column order") do |v|
+      options[:reverse] = v
+    end
+
   end.parse!
   options[:account_name] ||= "Not Set"
-  options[:account_name] ||= "000000000000"
+  options[:account_number] ||= "000000000000"
+  options[:reverse] ||= false # kek
   options
 end
 
@@ -114,10 +138,10 @@ files.each do |file|
     all_rows << rows
   else
     new_file_name = "#{File.basename(file, ".*")}-converted.csv"
-    save_to_new_file(rows, new_file_name)
+    save_to_new_file(rows, new_file_name,options[:reverse])
   end
 end
 
 if options[:filename]
-  save_to_new_file(all_rows.flatten(1), options[:filename])
+  save_to_new_file(all_rows.flatten(1), options[:filename],options[:reverse])
 end
