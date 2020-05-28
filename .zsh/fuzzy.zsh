@@ -11,8 +11,9 @@ FUZZY_MODE="fzf"
 
 if [[ ${FUZZY_MODE} = "fzf" ]]; then
 
-  [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
-  [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+  # [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
+  [[ -f /usr/share/fzf/completion.zsh ]] && source /usr/share/fzf/completion.zsh
+  [[ -f /usr/share/fzf/key-bindings.zsh ]] && source /usr/share/fzf/key-bindings.zsh
 
   # Better FZF
   export FZF_DEFAULT_OPTS="--history=$HOME/.fzf_history --ansi"

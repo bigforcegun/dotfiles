@@ -7,27 +7,6 @@ head(){
     echo "======================================="
 }
 
-add_ppa() {
-  grep -h "^deb.*$1" /etc/apt/sources.list.d/* > /dev/null 2>&1
-  if [ $? -ne 0 ]
-  then
-    echo "Adding ppa:$1"
-    sudo add-apt-repository -y --no-update ppa:$1
-    return 0
-  fi
-
-  echo "ppa:$1 already exists"
-  return 1
-}
-
-install_remote_deb(){
-    PATH_TO_DEB=$1
-    TEMP_DEB="$(mktemp)" &&
-    wget -O "$TEMP_DEB" ${PATH_TO_DEB} &&
-    sudo dpkg -i "$TEMP_DEB"
-    rm -f "$TEMP_DEB"
-}
-
 assign() {
   op="$1"
   if [[ "$op" != "link" && "$op" != "copy" ]]; then
@@ -77,4 +56,8 @@ systemctl_enable_start() {
     systemctl enable "$name"
     systemctl start  "$name"
   fi
+}
+
+list_from_file() {
+  grep -v '^\s*$\|^\s*\#' $1 #removes comments
 }

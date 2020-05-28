@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+source ./lib/functions.sh
+
+script_name="$(basename "$0")"
+dotfiles_dir="$(
+    cd "$(dirname "$0")"
+    pwd
+)"
+cd "$dotfiles_dir"
+
+head "Purge packages..."
+
+# pt purge irqbalance laptop-mode-tools -y
+
+head "Setup base packages..."
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_base.txt)
+
+head "Install desktop packages..."
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_desktop.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_kde.txt)
+
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_themes.txt)
+
+
+head "Install utils packages..."
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_utils.txt)
+
+
+head "Install dev packages..."
+yay -S --noconfirm --needed - < <(list_from_file packages/packages_dev.txt)
+yay -S --noconfirm --needed --asdeps - < <(list_from_file packages/packages_libs.txt)
