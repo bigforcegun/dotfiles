@@ -1,9 +1,22 @@
-# Setup workspace
+# ~/.dotfiles
 
-Simple hardcore setup scripts
+🏠 Simple personal dotfiles repo
 
-# Sources
+![screenshot](https://repository-images.githubusercontent.com/124951338/dc0b6500-a13e-11ea-99d1-c7fa210d9448)
 
+# Usage:
+
+```bash
+git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
+~/.dotfiles/setup_system
+~/.dotfiles/setup_user
+# or
+~/.dotfiles/setup_packages
+```
+
+# Sources of inspiration
+
+- http://dotfiles.github.io/
 - https://github.com/gpakosz/.tmux
 - https://github.com/maximbaz/dotfiles
 - https://coderoncode.com/tools/2017/04/16/vim-the-perfect-ide.html
@@ -12,19 +25,3 @@ Simple hardcore setup scripts
 
 - https://github.com/Artem-Schander/dotfiles/blob/master/tmux/tmux.conf.local.symlink
 - https://github.com/nicknisi/dotfiles
-
-# Req
-
-System: Ubuntu
-
-DE: KDE plasma
-
-# Why
-
-Tired of doing the same things on every new system.
-
-# Setup
-
-Please, don't run `./setup` - it is created for my user and my pc.
-
-Better copy paste code/configs/etc/
