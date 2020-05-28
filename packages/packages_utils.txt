@@ -1,0 +1,9 @@
+#urlwatch
+hardinfo
+tlp
+tlp-rdw
+powertop
+i7z
+#mesa-utils
+#cpufreqd
+#cpufrequtils

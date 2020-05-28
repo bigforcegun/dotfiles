@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+source ./lib/functions.sh
+
+script_name="$(basename "$0")"
+dotfiles_dir="$(
+    cd "$(dirname "$0")"
+    pwd
+)"
+cd "$dotfiles_dir"
+
+if (("$EUID")); then
+    sudo -s "$dotfiles_dir/$script_name" "$@"
+    exit 0
+fi
+
+head "Setting up /etc configs..."
+
+copy "etc/environment"
+copy "etc/profile.d/zz_custom.sh"
+# copy "etc/zsh/zprofile"
+# copy "etc/systemd/system/clock_mod_fix.service"
+
+sudo -u bigforcegun -s "$dotfiles_dir/setup_packages" "$@"
+
+exit
+
+
+head "Disable services..."
+
+systemctl disable redis-server
+systemctl disable mysql.service
+systemctl disable postgresql.service
+systemctl disable tor
+systemctl disable mongodb
+systemctl disable docker
+systemctl disable glances
+systemctl disable colord
+#systemctl disable ipsec
+#systemctl disable mpd
+#systemctl disable openvpn
+systemctl disable smbd
+systemctl disable apport
+
+head "Setting up root services..."
+
+sysctl --system > /dev/null
+systemctl daemon-reload
+
+#systemctl_enable_start "system" "clock_mod_fix.service"
+systemctl_enable_start "system" "ufw.service"
+systemctl_enable_start "system" "tlp.service"
+systemctl_enable_start "system" "tlp-sleep.service"
+
+
+# head "Install RVM..."
+# stage_rvm
+
+# head "Install RVM rubies..."
+# stage_rvm_rubies
+
+head "Configuring firewall..."
+
+ufw --force reset >/dev/null
+ufw default allow outgoing
+ufw default deny incoming
+ufw allow 1714:1764/udp #allow kde
+ufw allow 1714:1764/tcp #allow kde
+
+ufw enable
+
+
+head "Setting dash as /usr/bin/sh..."
+
+ln -sfT dash /usr/bin/sh
+
+head "Finalising..."
+
+usermod -a -G rvm bigforcegun
+usermod -a -G docker bigforcegun
+usermod -a -G input bigforcegun

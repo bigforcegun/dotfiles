@@ -45,6 +45,8 @@ alias c9="awk '{print \$9}'"
 alias c10="awk '{print \$10}'"
 alias c11="awk '{print \$11}'"
 
+alias print_dpi="xdpyinfo | grep dots"
+
 alias prm=". /usr/local/bin/prm.sh"
 
 mkdcd(){

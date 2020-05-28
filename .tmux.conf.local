@@ -386,12 +386,11 @@ bind / copy-mode \; send ?
 # Configure extrakto
 set -g @extrakto_key "Tab"
 set -g @extrakto_grab_area "full" # "0"
-set -g @extrakto_fzf_tool "/home/bigforcegun/.fzf/bin/fzf"
+# set -g @extrakto_fzf_tool "/home/bigforcegun/.fzf/bin/fzf"
+set -g @extrakto_fzf_tool "/usr/bin/fzf"
 
 
 set -g @yank_action 'copy-pipe' # or 'copy-pipe-and-cancel' for the default
 set -g @yank_with_mouse on # or 'on'
-
-
 
 # bind -n C-Tab select-pane -R
