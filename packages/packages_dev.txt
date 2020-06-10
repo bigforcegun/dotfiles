@@ -19,7 +19,10 @@ redis
 mariadb-clients
 yarn
 
-bind-tools 
+
+sshpass
+#systemd-ssh-agent
+bind-tools
 
 docker
 gdb
