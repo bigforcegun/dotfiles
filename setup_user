@@ -20,11 +20,15 @@ head "Setting up dotfiles for current user..."
 link "bin"
 
 link ".bundle/config"
+
 link ".gitconfig"
 link ".gitignore"
 link ".agignore"
+
 link ".tmux.conf"
 link ".tmux.conf.local"
+
+link ".pam_environment"
 
 link ".zprofile"
 link ".zshrc"
@@ -45,6 +49,7 @@ link ".config/libinput-gestures.conf"
 link ".config/systemd/user/urlwatch.service"
 link ".config/systemd/user/urlwatch.timer"
 link ".config/systemd/user/tmux.service"
+link ".config/systemd/user/ssh-agent.service"
 
 link ".urlwatch/urls.yaml"
 
@@ -55,6 +60,7 @@ link ".gnupg/gpg.conf"
 head "Enable userspace services..."
 
 systemctl --user daemon-reload
+systemctl_enable_start "user" "ssh-agent.service"
 systemctl_enable_start "user" "tmux.service"
 systemctl_enable_start "user" "urlwatch.timer"
 

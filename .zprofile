@@ -7,3 +7,5 @@
 #if [[ "$HOST" =~ "desktop-" ]]; then
   # source ~/.zsh/autorun-startx.zsh
 #fi
+
+export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket" #FUCK
