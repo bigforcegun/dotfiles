@@ -23,18 +23,20 @@ link ".bundle/config"
 
 link ".gitconfig"
 link ".gitignore"
-link ".agignore"
+link ".ignore"
 
 link ".tmux.conf"
 link ".tmux.conf.local"
 
-link ".pam_environment"
-
 link ".zprofile"
+link ".zshenv"
 link ".zshrc"
 link ".zsh"
+
 link ".config/nvim"
 link ".config/ranger/rc.conf"
+
+link ".config/fd/ignore" #https://github.com/sharkdp/fd/issues/608
 
 link ".config/trashrc"
 link ".config/user-dirs.dirs"

@@ -25,6 +25,9 @@ tree
 #unzip
 ranger
 zsh
+the_silver_searcher
+fd
+lscolors-git
 #antigen
 antibody
 ripgrep

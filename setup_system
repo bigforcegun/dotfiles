@@ -20,7 +20,7 @@ fi
 head "Setting up /etc configs..."
 
 copy "etc/environment"
-copy "etc/profile.d/zz_custom.sh"
+# copy "etc/profile.d/zz_custom.sh"
 # copy "etc/zsh/zprofile"
 # copy "etc/systemd/system/clock_mod_fix.service"
 

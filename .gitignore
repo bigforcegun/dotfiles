@@ -1,4 +1,13 @@
 .idea
 tags
 tags*
-.zsh/antigen.zsh.zwc
+__pycache__
+*.antigen-compat
+*.zwc
+*.tar
+*.tar.*
+*.log
+.magic.mgc
+.uuid
+.ruby-version
+.ruby-gemset
