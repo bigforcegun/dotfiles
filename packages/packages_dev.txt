@@ -24,6 +24,8 @@ sshpass
 #systemd-ssh-agent
 bind-tools
 
+q
+
 docker
 gdb
 intel-gpu-tools
