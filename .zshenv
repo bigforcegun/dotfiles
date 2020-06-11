@@ -7,6 +7,8 @@ export DIFFPROG='nvim -d'
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
 export WINIT_HIDPI_FACTOR=1
 
+export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket" #FUCK
+
 if [[ -z ${HOST_TYPE+x} ]]; then
     if [[ -f ~/.hosttype ]]; then
        HOST_TYPE=`cat $HOME/.hosttype`
@@ -25,9 +27,6 @@ export PASSWORD_STORE_GENERATED_LENGTH=40
 # export JAVA_HOME="/usr/lib/jvm/java-8-jdk"
 # export PATH="$JAVA_HOME/bin:$PATH"
 
-export FZ_CMD=j
-export FZ_SUBDIR_CMD=jj
-
 export ANDROID_SDK_ROOT="$HOME/.android/sdk"
 
 export GOPATH="$HOME/.go"
@@ -43,5 +42,5 @@ export PATH="$HOME/.node_modules/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
 
 export rvm_silence_path_mismatch_check_flag=1
+
 # Ruby configuration
-#[[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm

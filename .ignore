@@ -16,10 +16,13 @@ cache/
 .thunderbird/
 .wine/
 .idea/
-node_modules/
-bower_components/
+
 .Idea*/
 .RubyMine*/
+
 *.class
+
+node_modules/
+bower_components/
 ant-build
 ant-gen

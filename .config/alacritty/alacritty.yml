@@ -259,7 +259,7 @@ x-colors2: &theme-gruvbox-dark
     white:   '0xebdbb2'
 
 
-colors: *theme-gruvbox-dark #current-theme
+colors: *theme-gruvbox-light #current-theme
 # Visual Bell
 #
 # Any time the BEL code is received, Alacritty "rings" the visual bell. Once
