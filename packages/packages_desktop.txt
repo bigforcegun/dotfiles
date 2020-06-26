@@ -11,7 +11,8 @@ thunderbird
 #enigmail
 qownnotes
 smb4k
-#indicator-sound-switcher
+indicator-sound-switcher
+unoconv
 krita
 gimp
 corebird

@@ -49,6 +49,8 @@ alias print_dpi="xdpyinfo | grep dots"
 
 alias prm=". /usr/local/bin/prm.sh"
 
+alias ods_to_csv="unoconv -f csv -e FilterOptions=\"59,34,0,1\""
+
 mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
 }

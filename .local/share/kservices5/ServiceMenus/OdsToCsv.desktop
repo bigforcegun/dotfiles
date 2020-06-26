@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Service
+Icon=text-csv
+ServiceTypes=KonqPopupMenu/Plugin
+Terminal=true
+X-KDE-Priority=TopLevel
+X-KDE-StartupNotify=false
+MimeType=application/vnd.oasis.opendocument.spreadsheet;
+Actions=ODSconvertToCSV;
+Encoding=UTF-8
+
+[Desktop Action ODSconvertToCSV]
+Name=Convert to .csv
+Icon=text-csv
+Exec="/usr/bin/unoconv -f csv -e FilterOptions='59,34,0,1' %f"
