@@ -1,4 +1,4 @@
-#modload zsh/zprof
+#tmodload zsh/zprof
 
 source ~/.zsh/autorun-tmux.zsh
 

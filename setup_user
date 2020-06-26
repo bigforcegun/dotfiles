@@ -58,6 +58,10 @@ link ".urlwatch/urls.yaml"
 link ".gnupg/gpg-agent.conf"
 link ".gnupg/gpg.conf"
 
+link ".gemrc"
+
+link ".local/share/kservices5/ServiceMenus/OdsToCsv.desktop"
+link ".local/share/kservices5/ServiceMenus/EncodeToUTF8.desktop"
 
 head "Enable userspace services..."
 
