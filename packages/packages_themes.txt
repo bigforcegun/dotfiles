@@ -7,6 +7,7 @@ hardcode-tray
 #fonts-powerline
 #powerline-fonts
 powerline-fonts-git
+noto-fonts-emoji
 ttf-joypixels
 nerd-fonts-noto-sans-mono
 

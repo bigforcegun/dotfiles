@@ -46,6 +46,7 @@ xf86-input-synaptics
 xdotool
 
 goldendict
+crow-translate
 
 yubikey-manager-qt
 yubioath-desktop
