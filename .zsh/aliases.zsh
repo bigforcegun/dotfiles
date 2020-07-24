@@ -46,6 +46,7 @@ alias c10="awk '{print \$10}'"
 alias c11="awk '{print \$11}'"
 
 alias print_dpi="xdpyinfo | grep dots"
+alias nstat='stat -c "%a %n"'
 
 alias prm=". /usr/local/bin/prm.sh"
 
