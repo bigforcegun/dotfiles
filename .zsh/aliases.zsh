@@ -73,5 +73,5 @@ trtr(){
 }
 
 expose(){
-  o https://lt.bigforcegun.com | ssh -vnNT -R 6688:localhost:$1 bigforcegun.com -p 322
+  ssh -p 2222 -R 80:localhost:$1 lt.bigforcegun.com #TODO: somehow parse server and port from sish output  -vnT
 }
