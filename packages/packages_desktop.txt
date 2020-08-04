@@ -48,6 +48,8 @@ xdotool
 goldendict
 crow-translate
 
+dragon-drag-and-drop-git
+
 yubikey-manager-qt
 yubioath-desktop
 yubikey-personalization-gui
