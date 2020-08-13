@@ -1,7 +1,5 @@
 #!/bin/sh
 
-AWS_KEY="AKIALALEMEL33243OLIAE"
-
 # This is an example of what adding gitleaks to a pre-commit hook would look like.
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
