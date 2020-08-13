@@ -19,6 +19,8 @@ redis
 mariadb-clients
 yarn
 
+nmap
+zenmap
 
 sshpass
 #systemd-ssh-agent
