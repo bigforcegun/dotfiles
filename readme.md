@@ -25,3 +25,9 @@ git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
 
 - https://github.com/Artem-Schander/dotfiles/blob/master/tmux/tmux.conf.local.symlink
 - https://github.com/nicknisi/dotfiles
+
+## Notes and snippets
+
+```bash
+git -c hooks.gitleaks=false commit -m 'Test hook2'
+```
