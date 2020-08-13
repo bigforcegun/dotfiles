@@ -30,7 +30,7 @@ plasma5-applets-window-appmenu
 plasma5-applets-window-buttons
 plasma5-applets-window-title
 plasma5-applets-docker
-plasma5-applets-mycroft 
+plasma5-applets-mycroft
 plasma5-applets-thermal-monitor
 # plasma5-applets-server-status-git
 
@@ -39,6 +39,9 @@ qt5-svg
 qt5-declarative
 qt5-quickcontrols
 
+
+krdc
+xfreerdp
 
 #nextcloud-client-dolphin
 #plasma-workspace-dev
