@@ -22,6 +22,8 @@ yarn
 nmap
 zenmap
 
+gitleaks
+
 sshpass
 #systemd-ssh-agent
 bind-tools

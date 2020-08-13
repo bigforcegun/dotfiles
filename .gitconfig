@@ -5,9 +5,12 @@
 [core]
 	autocrlf = input
 	excludesfile = ~/.gitignore
+	hooksPath = ~/.githooks
 [gc]
 	autoDetach = false
 [push]
 	followTags = true
 [commit]
 	gpgsign = true
+[hooks]
+	gitleaks = true

@@ -33,6 +33,8 @@ link ".zshenv"
 link ".zshrc"
 link ".zsh"
 
+link ".githooks"
+
 link ".config/nvim"
 link ".config/ranger/rc.conf"
 
