@@ -33,6 +33,8 @@ link ".zshenv"
 link ".zshrc"
 link ".zsh"
 
+link ".maid"
+
 link ".githooks"
 
 link ".config/nvim"
@@ -52,6 +54,8 @@ link ".config/libinput-gestures.conf"
 
 link ".config/systemd/user/urlwatch.service"
 link ".config/systemd/user/urlwatch.timer"
+link ".config/systemd/user/maid.service"
+link ".config/systemd/user/maid.timer"
 link ".config/systemd/user/tmux.service"
 link ".config/systemd/user/ssh-agent.service"
 
@@ -71,6 +75,7 @@ systemctl --user daemon-reload
 systemctl_enable_start "user" "ssh-agent.service"
 systemctl_enable_start "user" "tmux.service"
 systemctl_enable_start "user" "urlwatch.timer"
+systemctl_enable_start "user" "maid.timer"
 
 # head "Setup git sources for current user..."
 # stage_setup_sources
