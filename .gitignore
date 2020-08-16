@@ -11,3 +11,4 @@ __pycache__
 .uuid
 .ruby-version
 .ruby-gemset
+.maid/maid.log
