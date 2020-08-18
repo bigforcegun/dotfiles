@@ -14,6 +14,7 @@ env:
   WINIT_X11_SCALE_FACTOR: "1.25"
 
 window:
+  dynamic_title: true
   # Window dimensions (changes require restart)
   #
   # Specified in number of columns/lines, not pixels.
@@ -281,7 +282,7 @@ colors: *theme-gruvbox-dark #current-theme
 #   - Linear
 #
 # Specifying a `duration` of `0` will disable the visual bell.
-visual_bell:
+bell:
   animation: EaseOutExpo
   duration: 0
 
@@ -342,7 +343,7 @@ selection:
   # clipboard.
   save_to_clipboard: false
 
-dynamic_title: true
+
 
 cursor:
   # Cursor style
