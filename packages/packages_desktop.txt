@@ -46,6 +46,7 @@ xf86-input-synaptics
 xdotool
 
 goldendict
+goldendict-enruen-content
 crow-translate
 
 dragon-drag-and-drop-git
