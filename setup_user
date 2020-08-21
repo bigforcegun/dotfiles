@@ -35,6 +35,9 @@ link ".zsh"
 
 link ".maid"
 
+link ".config/kup_main_exclude"
+link ".config/kup_projects_exclude"
+
 link ".githooks"
 
 link ".config/nvim"
