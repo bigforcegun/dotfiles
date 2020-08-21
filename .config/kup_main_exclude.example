@@ -1,0 +1,4 @@
+`/foo$' - exclude any file named foo
+`/foo/$' - exclude any directory named foo
+`/foo/.' - exclude the content of any directory named foo
+`^/tmp/.' - exclude root-level /tmp’s content, but not /tmp itself

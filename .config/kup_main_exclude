@@ -1,0 +1,19 @@
+/Session Storage/.
+/Cache/.
+/cache/.
+/GPUCache/.
+/ScriptCache/.
+/CacheStorage/.
+/caches/.
+Cache
+cache
+
+^.*\.(log|logs)$
+^.*\.(log|logs)$
+/LOG$
+/LOG.old$
+/logs/.
+
+
+/chromium/.
+/jdbc-drivers/.

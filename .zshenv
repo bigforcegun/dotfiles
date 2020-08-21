@@ -45,3 +45,5 @@ export rvm_silence_path_mismatch_check_flag=1
 
 # Ruby configuration
 export PATH="$PATH:$(ruby -e 'puts Gem.user_dir')/bin"
+
+export BUP_DIR="$HOME/encfs/private/backups/bup/"
