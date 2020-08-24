@@ -1,0 +1,9 @@
+[Unit]
+Description=CIFS Station mount
+
+[Automount]
+Where=/mnt/station/backups
+TimeoutIdleSec=0
+
+[Install]
+WantedBy=graphical.target
