@@ -1,3 +1,9 @@
 logs/
 tmp/
+cache/
+node_modules/
+bower_components/
+.cache/
+.tmp/
 *.log
+_build/

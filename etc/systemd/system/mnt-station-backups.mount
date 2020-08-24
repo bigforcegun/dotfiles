@@ -1,0 +1,14 @@
+[Unit]
+  Description=CIFS Station mount
+  Requires=remote-fs.target
+  After=remote-fs.target
+
+[Mount]
+  What=//192.168.1.150/backups
+  Where=/mnt/station/backups
+  Options=username=guest,file_mode=0700,dir_mode=0700,uid=1000,_netdev,noserverino,vers=3.0,rw
+  Type=cifs
+  TimeoutSec=60
+
+[Install]
+  WantedBy=multi-user.target
