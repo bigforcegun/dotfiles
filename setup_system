@@ -40,7 +40,7 @@ systemctl disable colord
 #systemctl disable ipsec
 #systemctl disable mpd
 #systemctl disable openvpn
-#systemctl disable smbd
+systemctl disable smb
 
 head "Setting up root services..."
 
@@ -67,12 +67,11 @@ ufw default deny incoming
 ufw allow 1714:1764/udp #allow kde
 ufw allow 1714:1764/tcp #allow kde
 
-# ufw enable
-
+ufw enable
 
 #head "Setting dash as /usr/bin/sh..."
 
-# ln -sfT dash /usr/bin/sh
+ln -sfT dash /usr/bin/sh
 
 head "Finalising..."
 
