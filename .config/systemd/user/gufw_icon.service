@@ -1,0 +1,9 @@
+[Unit]
+Description=GUFW tray icon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/gufw_icon.sh
+
+[Install]
+WantedBy=default.target
