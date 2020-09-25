@@ -51,6 +51,8 @@ crow-translate
 
 dragon-drag-and-drop-git
 
+msr-tools
+
 yubikey-manager-qt
 yubioath-desktop
 yubikey-personalization-gui

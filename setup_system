@@ -67,6 +67,8 @@ ufw default deny incoming
 ufw allow 1714:1764/udp #allow kde
 ufw allow 1714:1764/tcp #allow kde
 
+ufw allow 9090/tcp #allow calibre
+
 ufw enable
 
 #head "Setting dash as /usr/bin/sh..."
