@@ -1,0 +1,5 @@
+[Unit]
+Description=Run commit notes
+
+[Service]
+ExecStart=/home/bigforcegun/bin/commit_notes

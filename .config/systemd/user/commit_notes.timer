@@ -1,0 +1,9 @@
+[Unit]
+Description=Commit notes once pre day for Graph history (no backup, just git commit)
+
+[Timer]
+OnCalendar=*-*-* 12:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
