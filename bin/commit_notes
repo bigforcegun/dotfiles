@@ -6,7 +6,6 @@ NOTES_DIRECTORY='/home/bigforcegun/documents/notes/'
 echo "git commit on notes folder"
 echo "git cd ${notes_folder}"
 cd "${NOTES_DIRECTORY}"
-git add -A && git commit * -m "${COMMIT_MESSAGE}"
+git add . && git commit -m "${COMMIT_MESSAGE}"
 cd -
 echo "Finish"
-

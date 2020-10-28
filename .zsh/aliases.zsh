@@ -48,7 +48,7 @@ alias c11="awk '{print \$11}'"
 alias print_dpi="xdpyinfo | grep dots"
 alias nstat='stat -c "%a %n"'
 alias dragon='dragon-drag-and-drop'
-  
+
 
 alias prm=". /usr/local/bin/prm.sh"
 
@@ -77,3 +77,5 @@ trtr(){
 expose(){
   ssh -p 2222 -R 80:localhost:$1 lt.bigforcegun.com #TODO: somehow parse server and port from sish output  -vnT
 }
+
+cathist() { fc -lim "*$@*" 1 }

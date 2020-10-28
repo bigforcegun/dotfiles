@@ -1,2 +1,6 @@
+[NetworkShares]
+NextID=1
+smb://192.168.1.150/backups:/mnt/station/backups=0
+
 [Status]
 Empty=false
