@@ -23,8 +23,8 @@ copy "etc/environment"
 # copy "etc/profile.d/zz_custom.sh"
 # copy "etc/zsh/zprofile"
 
-copy "etc/systemd/system/mnt-station-backups.mount"
-copy "etc/systemd/system/mnt-station-backups.automount"
+#copy "etc/systemd/system/mnt-station-backups.mount"
+#copy "etc/systemd/system/mnt-station-backups.automount"
 
 
 head "Disable services..."

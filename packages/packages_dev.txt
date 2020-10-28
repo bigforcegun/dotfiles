@@ -30,6 +30,9 @@ bind-tools
 
 q
 
+fiddler
+
+
 docker
 gdb
 intel-gpu-tools

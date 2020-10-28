@@ -39,6 +39,7 @@ borgbackup
 flameshot
 vym
 
+downgrade
 
 libinput-gestures
 wmctrl
@@ -52,6 +53,16 @@ crow-translate
 dragon-drag-and-drop-git
 
 msr-tools
+
+youtube-dl
+youtube-dl-gui-git
+
+espanso
+modulo
+
+pandoc
+
+sweeper
 
 yubikey-manager-qt
 yubioath-desktop

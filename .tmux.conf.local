@@ -393,4 +393,13 @@ set -g @extrakto_fzf_tool "/usr/bin/fzf"
 set -g @yank_action 'copy-pipe' # or 'copy-pipe-and-cancel' for the default
 set -g @yank_with_mouse on # or 'on'
 
-# bind -n C-Tab select-pane -R
+
+bind -n M-Left select-pane -L
+bind -n M-Up select-pane -U
+
+bind -n S-Left  previous-window
+bind -n S-Right next-window
+
+
+bind -n C-S-Up switch-client -n
+bind -n C-S-Down  switch-client -p

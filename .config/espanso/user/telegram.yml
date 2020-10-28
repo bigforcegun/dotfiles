@@ -1,0 +1,7 @@
+# espanso configuration file
+
+filter_title: "Telegram"
+
+matches:
+  - trigger: ":ok"
+    replace: "👍"
