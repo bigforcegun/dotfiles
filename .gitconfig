@@ -6,11 +6,19 @@
 	autocrlf = input
 	excludesfile = ~/.gitignore
 	hooksPath = ~/.githooks
+	ignorecase = false
 [gc]
 	autoDetach = false
+[color]
+  	ui = true
 [push]
 	followTags = true
 [commit]
 	gpgsign = true
 [hooks]
 	gitleaks = true
+[pull]
+	rebase = true
+
+[include]
+	path = ~/.gitconfig-private/gitconfig

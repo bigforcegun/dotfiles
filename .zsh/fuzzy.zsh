@@ -25,8 +25,10 @@ elif [[ ${FZF_MODE} = "FD" ]]; then
 fi
 
 
-. /usr/share/fzf/completion.zsh
-. /usr/share/fzf/key-bindings.zsh
+include /usr/share/fzf/completion.zsh
+include /usr/share/doc/fzf/examples/completion.zsh
+include /usr/share/fzf/key-bindings.zsh
+include /usr/share/doc/fzf/examples/key-bindings.zsh
 
 #bindkey '^T' fzf-completion
 #bindkey '^I' $fzf_default_completion
