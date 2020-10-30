@@ -14,3 +14,15 @@
 	gpgsign = true
 [hooks]
 	gitleaks = true
+[diff]
+  tool = meld
+[mege]
+  tool = meld
+[difftool]
+  prompt = false
+[difftool "meld"]
+  cmd = meld "$LOCAL" "$REMOTE"
+[difftool "vscode"]
+  cmd = code --wait --diff $LOCAL $REMOTE
+[mergetool "meld"]
+  cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
