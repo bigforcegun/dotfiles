@@ -29,17 +29,30 @@
 
 [diff]
   tool = meld
-[mege]
+  prompt = false
+
+[merge]
   tool = meld
+  conflictStyle = diff3
+
 [difftool]
   prompt = false
+
 [difftool "meld"]
   cmd = meld "$LOCAL" "$REMOTE"
+
 [difftool "vscode"]
   cmd = code --wait --diff $LOCAL $REMOTE
+
 [mergetool "meld"]
   cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+
+[mergetool "vscode"]
+    cmd = code --wait $MERGED
 
 [include]
 	path = ~/.gitconfig-private/gitconfig
 
+[alias]
+  y = diff "@{yesterday}"
+  w = whatchanged

@@ -24,6 +24,9 @@ zenmap
 
 gitleaks
 
+lazygit
+lazydocker
+
 sshpass
 #systemd-ssh-agent
 bind-tools
