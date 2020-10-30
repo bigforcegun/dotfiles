@@ -12,3 +12,6 @@ __pycache__
 .ruby-version
 .ruby-gemset
 .maid/maid.log
+vendor/bundle
+.gitconfig-private/*
+!.gitconfig-private/.keep

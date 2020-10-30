@@ -22,6 +22,7 @@ link "bin"
 link ".bundle/config"
 
 link ".gitconfig"
+link ".gitconfig-private"
 link ".gitignore"
 link ".ignore"
 
@@ -60,7 +61,6 @@ link ".config/systemd/user/urlwatch.timer"
 link ".config/systemd/user/maid.service"
 link ".config/systemd/user/maid.timer"
 link ".config/systemd/user/tmux.service"
-link ".config/systemd/user/ssh-agent.service"
 link ".config/systemd/user/gufw_icon.service"
 
 link ".urlwatch/urls.yaml"
@@ -76,11 +76,18 @@ link ".local/share/kservices5/ServiceMenus/EncodeToUTF8.desktop"
 head "Enable userspace services..."
 
 systemctl --user daemon-reload
-systemctl_enable_start "user" "ssh-agent.service"
-systemctl_enable_start "user" "tmux.service"
-systemctl_enable_start "user" "urlwatch.timer"
+
+
+# systemctl_enable_start "user" "tmux.service"
 systemctl_enable_start "user" "maid.timer"
 systemctl_enable_start "user" "gufw_icon.service"
+
+head "Setup SSH-AGENT"
+
+if ! type "gnome-keyring" > /dev/null; then
+  link ".config/systemd/user/ssh-agent.service"
+  systemctl_enable_start "user" "ssh-agent.service"
+fi
 
 # head "Setup git sources for current user..."
 # stage_setup_sources
@@ -88,7 +95,7 @@ systemctl_enable_start "user" "gufw_icon.service"
 if ! gpg -k | grep "$MY_GPG_KEY_ID" > /dev/null; then
   head "Importing my public PGP key"
   curl -s https://keybase.io/bigforcegun/pgp_keys.asc | gpg --import
-  # gpg --trusted-key "$MY_GPG_KEY_ID" > /dev/null
+  gpg --trusted-key "$MY_GPG_KEY_ID" > /dev/null
 fi
 
 find "$HOME/.gnupg" -type f -not -path "*#*" -exec chmod 600 {} \;

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#git diff HEAD --diff-filter=ACM --name-only| BUNDLE_GEMFILE=./server/Gemfile xargs bundle exec rubocop $1 
+
+git diff origin/master --diff-filter=ACM --name-only| xargs bundle exec rubocop $1 

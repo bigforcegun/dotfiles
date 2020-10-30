@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+source ./lib/functions.sh
+
+script_name="$(basename "$0")"
+dotfiles_dir="$(
+    cd "$(dirname "$0")"
+    pwd
+)"
+cd "$dotfiles_dir"
+
+head "Purge packages..."
+
+# pt purge irqbalance laptop-mode-tools -y
+
+head "Install desktop packages..."
+
+sudo apt install -y $(list_from_file packages/packages_ubuntu_all.txt)
