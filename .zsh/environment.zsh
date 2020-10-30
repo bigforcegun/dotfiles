@@ -1,6 +1,8 @@
 unsetopt EXTENDED_GLOB
 
-. /usr/share/LS_COLORS/dircolors.sh
+include "/usr/share/LS_COLORS/dircolors.sh"
+include "/home/bigforcegun/.local/share/lscolors.sh"
+
 
 export HISTSIZE=1000000000
 export SAVEHIST=1000000000
