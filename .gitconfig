@@ -2,18 +2,31 @@
 	name = BigForceGun
 	email = BigForceGun@gmail.com
 	signingkey = BE9C8BCF2398599C
+
 [core]
 	autocrlf = input
 	excludesfile = ~/.gitignore
 	hooksPath = ~/.githooks
+	ignorecase = false
+
 [gc]
 	autoDetach = false
+
+[color]
+  	ui = true
+
 [push]
 	followTags = true
+
 [commit]
 	gpgsign = true
+
 [hooks]
 	gitleaks = true
+
+[pull]
+	rebase = true
+
 [diff]
   tool = meld
 [mege]
@@ -26,3 +39,7 @@
   cmd = code --wait --diff $LOCAL $REMOTE
 [mergetool "meld"]
   cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+
+[include]
+	path = ~/.gitconfig-private/gitconfig
+

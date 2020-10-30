@@ -7,7 +7,7 @@ export DIFFPROG='nvim -d'
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
 export WINIT_HIDPI_FACTOR=1
 
-export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket" #FUCK
+[ -z "$SSH_AUTH_SOCK" ] && export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket" 
 
 if [[ -z ${HOST_TYPE+x} ]]; then
     if [[ -f ~/.hosttype ]]; then

@@ -4,7 +4,7 @@
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
 cmd="gitleaks --verbose --redact --pretty"
-if [ $gitleaksEnabled == "true" ]; then
+if [ ${gitleaksEnabled} = "true" ]; then
     $cmd
     if [ $? -eq 1 ]; then
 cat <<\EOF
