@@ -12,4 +12,4 @@ Encoding=UTF-8
 [Desktop Action EncodeFileToUTF8]
 Name=Encode file to UTF8
 Icon=text-csv
-Exec="iconv -f windows-1251 -t UTF-8//TRANSLIT %f -o converted.%f"
+Exec="/usr/bin/iconv -f windows-1251 -t UTF-8//TRANSLIT %f -o converted.%f"

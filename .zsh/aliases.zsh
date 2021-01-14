@@ -79,3 +79,12 @@ expose(){
 }
 
 cathist() { fc -lim "*$@*" 1 }
+
+split_csv() {
+    if [ -n "$2" ]; then
+        CHUNK=$2
+    else
+        CHUNK=1000
+    fi
+    tail -n +2 $1 | split -l $CHUNK - $1_ --additional-suffix=".csv"
+}
