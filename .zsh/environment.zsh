@@ -4,7 +4,7 @@ include "/usr/share/LS_COLORS/dircolors.sh"
 include "/home/bigforcegun/.local/share/lscolors.sh"
 
 
-export HISTSIZE=1000000000
+export SIZE=1000000000
 export SAVEHIST=1000000000
 export HISTFILE=~/.zhistory
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
