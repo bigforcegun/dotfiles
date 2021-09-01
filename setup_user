@@ -60,6 +60,11 @@ link ".config/libinput-gestures.conf"
 link ".config/espanso"
 
 
+link ".config/i3"
+link ".config/dunst"
+link ".config/i3status"
+
+
 link ".config/rofi/config.rasi"
 link ".config/systemd/user/urlwatch.service"
 link ".config/systemd/user/urlwatch.timer"
@@ -79,10 +84,18 @@ link ".urlwatch/urls.yaml"
 link ".gnupg/gpg-agent.conf"
 link ".gnupg/gpg.conf"
 
-link ".gemrc"
-
 link ".local/share/kservices5/ServiceMenus/OdsToCsv.desktop"
 link ".local/share/kservices5/ServiceMenus/EncodeToUTF8.desktop"
+
+link ".fonts/icomoon"
+
+
+
+link ".gemrc"
+link ".Xresources"
+link ".xsettingsd"
+link ".xinitrc"
+link ".Xmodmap"
 
 head "Enable userspace services..."
 
