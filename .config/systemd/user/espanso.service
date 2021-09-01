@@ -6,6 +6,7 @@ ExecStart=/usr/bin/espanso daemon
 Restart=on-failure
 RestartSec=3
 
+
 [Install]
 WantedBy=default.target
 

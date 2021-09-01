@@ -41,12 +41,19 @@ copy() {
 
 
 service_exists() {
-    local n=$1
-    if [[ $(systemctl list-units --all -t service --full --no-legend "$n.service" | cut -f1 -d' ') == $n.service ]]; then
-        return 0
-    else
-        return 1
-    fi
+  local target=$1
+  local name=$2
+
+  if [[ "$target" == "user" ]]; then
+    systemctl_command='systemctl --user'
+  else
+    $systemctl_command="systemctl"
+  fi
+  if [[ $(systemctl --user --all -t service --full --no-legend | grep "$name.service" | cut -f1 -d' ') == "${name}.service" ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 
@@ -69,20 +76,19 @@ systemctl_enable_start() {
     target="$1"
     name="$2"
   fi
-
-  if service_exists $name; then
-    if [[ "$target" == "user" ]]; then
-      echo "systemctl --user enable & start "$name""
-      systemctl --user enable "$name"
-      systemctl --user start  "$name"
-    else
-      echo "systemctl enable & start "$name""
-      systemctl enable "$name"
-      systemctl start  "$name"
-    fi
+ 
+  if [[ "$target" == "user" ]]; then
+    systemctl_command='systemctl --user'
+    systemctl --user enable "$name"
+    systemctl --user start  "$name"
   else
-    echo "#${name} not exists; skipping systemctl"
+    $systemctl_command="systemctl"
   fi
+  
+      echo "$systemctl_command enable & start "$name""
+      $systemctl_command enable "$name"
+      $systemctl_command start  "$name"
+  
  
 }
 
