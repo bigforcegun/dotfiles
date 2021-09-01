@@ -1,0 +1,9 @@
+[Unit]
+Description=Systembus-Notify service
+
+[Service]
+Type=simple
+ExecStart=/home/bigforcegun/bin/systembus-notify
+
+[Install]
+WantedBy=default.target

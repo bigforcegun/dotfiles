@@ -59,6 +59,8 @@ link ".config/libinput-gestures.conf"
 
 link ".config/espanso"
 
+
+link ".config/rofi/config.rasi"
 link ".config/systemd/user/urlwatch.service"
 link ".config/systemd/user/urlwatch.timer"
 link ".config/systemd/user/maid.service"
@@ -67,7 +69,10 @@ link ".config/systemd/user/commit_notes.service"
 link ".config/systemd/user/commit_notes.timer"
 link ".config/systemd/user/tmux.service"
 link ".config/systemd/user/gufw_icon.service"
+link ".config/systemd/user/systembus-notify.service"
 link ".config/systemd/user/espanso.service"
+link ".config/systemd/user/maid.service"
+link ".config/systemd/user/maid.timer"
 
 link ".urlwatch/urls.yaml"
 
@@ -88,13 +93,16 @@ systemctl --user daemon-reload
 systemctl_enable_start "user" "maid.timer"
 systemctl_enable_start "user" "commit_notes.timer"
 systemctl_enable_start "user" "gufw_icon.service"
+systemctl_enable_start "user" "systembus-notify.service"
+systemctl_enable_start "user" "espanso.service"
+systemctl_enable_start "user" "maid.service"
 
 head "Setup SSH-AGENT"
 
-if ! type "gnome-keyring" > /dev/null; then
-  link ".config/systemd/user/ssh-agent.service"
-  systemctl_enable_start "user" "ssh-agent.service"
-fi
+#if ! type "gnome-keyring" > /dev/null; then
+link ".config/systemd/user/ssh-agent.service"
+systemctl_enable_start "user" "ssh-agent.service"
+#fi
 
 # head "Setup git sources for current user..."
 # stage_setup_sources

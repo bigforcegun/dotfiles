@@ -2,4 +2,8 @@
 Description=Run maid
 
 [Service]
-ExecStart=/home/bigforcegun/.gem/ruby/2.7.0/bin/maid clean --force
+#ExecStart=/home/bigforcegun/.gem/ruby/2.7.0/bin/maid clean --force
+ExecStart=/home/bigforcegun/.rvm/gems/ruby-2.7.2/bin/maid clean --force
+
+[Install]
+WantedBy=default.target

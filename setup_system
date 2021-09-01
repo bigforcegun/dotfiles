@@ -20,6 +20,10 @@ fi
 head "Setting up /etc configs..."
 
 copy "etc/environment"
+copy "etc/default/earlyoom"
+
+
+
 # copy "etc/profile.d/zz_custom.sh"
 # copy "etc/zsh/zprofile"
 
@@ -77,6 +81,6 @@ ln -sfT dash /usr/bin/sh
 
 head "Finalising..."
 
-usermod -a -G rvm bigforcegun
+#usermod -a -G rvm bigforcegun
 usermod -a -G docker bigforcegun
 usermod -a -G input bigforcegun

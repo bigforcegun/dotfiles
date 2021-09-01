@@ -85,3 +85,11 @@ alias gst='git status'
 alias gsa='git submodule add'
 alias gsu='git submodule update --remote'
 alias gsro='git submodule foreach git reset origin --hard'
+
+gmfm(){
+   git checkout master
+   git pull
+   git checkout $1
+   git merge master --no-edit
+   git push
+}
