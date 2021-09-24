@@ -226,15 +226,6 @@ bindsym $super+r mode "resize"
 #        status_command i3status
 #}
 
-
-# colour of border, background, text, indicator, and child_border
-client.focused              #bf616a #2f343f #d8dee8 #bf616a #d8dee8
-client.focused_inactive     #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.unfocused            #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.urgent               #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.placeholder          #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.background           #2f343f
-
 # window rules, you can find the window class using xprop
 for_window [class=".*"] border pixel 1
 assign [class=URxvt] 1
@@ -290,4 +281,39 @@ for_window [class="jetbrains-rubymine"] move container to workspace $ws7 , layou
 for_window [class="Code"] move container to workspace $ws7 , layout tabbed, focus
 
 
-# for_window [class="Alacritty"] move container to workspace $ws8 , layout tabbed, focus
+# for_window [class="Alacritty"] move container to workspace $ws8 , layout tabbed, 
+
+# Themes
+
+# set primary gruvbox colorscheme colors
+set $bg #282828
+set $red #cc241d
+set $green #98971a
+set $yellow #d79921
+set $blue #458588
+set $purple #b16286
+set $aqua #689d68
+set $gray #a89984
+set $darkgray #1d2021
+
+# colour of border, background, text, indicator, and child_border
+#client.focused              #bf616a #2f343f #d8dee8 #bf616a #d8dee8
+#client.focused_inactive     #2f343f #2f343f #d8dee8 #2f343f #2f343f
+#client.unfocused            #2f343f #2f343f #d8dee8 #2f343f #2f343f
+#client.urgent               #2f343f #2f343f #d8dee8 #2f343f #2f343f
+#client.placeholder          #2f343f #2f343f #d8dee8 #2f343f #2f343f
+#client.background           #2f343f
+
+# green gruvbox
+# class                 border|backgr|text|indicator|child_border
+# client.focused          $green $green $darkgray $purple $darkgray
+# client.focused_inactive $darkgray $darkgray $yellow $purple $darkgray
+# client.unfocused        $darkgray $darkgray $yellow $purple $darkgray
+# client.urgent           $red $red $white $red $red
+
+# blue gruvbox
+# class                 border|backgr|text|indicator|child_border
+client.focused          $blue $blue $darkgray $purple $darkgray
+client.focused_inactive $darkgray $darkgray $yellow $purple $darkgray
+client.unfocused        $darkgray $darkgray $yellow $purple $darkgray
+client.urgent           $red $red $white $red $red
