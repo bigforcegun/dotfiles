@@ -20,6 +20,8 @@ git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
 - https://github.com/gpakosz/.tmux
 - https://github.com/maximbaz/dotfiles
 - https://coderoncode.com/tools/2017/04/16/vim-the-perfect-ide.html
+- https://github.com/weilbith/dotfiles
+- https://github.com/WillPower3309/dotfiles
 
 ## Sources to research
 

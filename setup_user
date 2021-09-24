@@ -63,6 +63,8 @@ link ".config/espanso"
 link ".config/i3"
 link ".config/dunst"
 link ".config/i3status"
+link ".config/compton.conf"
+link ".config/polybar/main"
 
 
 link ".config/rofi/config.rasi"
