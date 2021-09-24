@@ -9,32 +9,42 @@ font pango: Noto Sans 12
 floating_modifier $super
 
 #autostart
-exec --no-startup-id hsetroot -center ~/.wallpaper.png
+exec --no-startup-id hsetroot -center /home/bigforcegun/nextcloud/media/wallpapers/desktop/Adapta/3840x2160.png #fixme
 exec --no-startup-id xsettingsd &
 exec --no-startup-id compton -b
 exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 exec --no-startup-id nm-applet
-exec --no-startup-id /usr/lib/pam_kwallet_init #fixme
-exec --no-startup-id libinput-gestures-setup restart
-exec --no-startup-id йbash ~/.config/polybar/forest/launch.sh
+exec --no-startup-id dex -a -s .config/autostart
 
+exec --no-startup-id kwalletd
+exec --no-startup-id kwalletmanager
+exec --no-startup-id /usr/share/libpam-kwallet-common/pam_kwallet_init #fixme
+# exec --no-startup-id /usr/lib/x86_64-linux-gnu/libexec/org_kde_powerdevil
+exec --no-startup-id xfce4-power-manager
+
+exec --no-startup-id libinput-gestures-setup restart
+exec_always --no-startup-id bash ~/.config/polybar/main/launch.sh
+
+exec --no-startup-id setxkbmap -layout us,ru -option caps:super  -option grp:win_space_toggle
+# exec_always --no-startup-id xmodmap ~/.Xmodmap
 
 
 # start a terminalйй
 bindsym $super+Return exec i3-sensible-terminal
 
 # start dmenu (a program launcher)
-bindsym $super+Shift+d exec i3-dmenu-desktop --dmenu="dmenu -i -fn 'Noto Sans:size=8'"
+# bindsym $super+Shift+d exec i3-dmenu-desktop --dmenu="dmenu -i -fn 'Noto Sans:size=8'"
 # bindsym $super+d exec rofi -lines 12 -padding 18 -width 60 -location 0 -show drun -sidebar-mode -columns 3 -font 'Noto Sans 8'
 bindsym $super+d exec rofi -lines 12 -padding 18 -width 60 -location 0 -show combi -sidebar-mode -columns 2 -font 'Noto Sans 15'
-bindsym $alt+Space exec rofi -lines 12 -padding 18 -width 60 -location 0 -show combi -sidebar-mode -columns 2 -font 'Noto Sans 15'
+bindsym $super+n exec rofi -show window -font 'Noto Sans 15'
+bindsym $alt+space exec rofi -lines 12 -padding 18 -width 60 -location 0 -show combi -sidebar-mode -columns 2 -font 'Noto Sans 15'
 
 # common apps keybinds
 bindsym Print exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
-bindsym $super+l exec i3lock -i ~/.wallpaper.png
+bindsym $super+l exec i3lock -i /home/bigforcegun/nextcloud/media/wallpapers/desktop/Adapta/3840x2160.png #fixme
 #bindsym $super+Shift+w exec firefox
-bindsym $super+Shift+f exec thunar;workspace 3;focus
-bindsym $super+Shift+g exec geany
+#bindsym $super+Shift+f exec thunar;workspace 3;focus
+#bindsym $super+Shift+g exec geany
 
 #change volume
 bindsym XF86AudioRaiseVolume exec amixer -q set Master 5%+
@@ -47,8 +57,12 @@ bindsym XF86AudioPrev exec mpc prev
 bindsym XF86AudioPlay exec mpc toggle
 bindsym XF86AudioStop exec mpc stop
 
+bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute 1 toggle
+bindsym $super+m exec --no-startup-id pactl set-source-mute 1 toggle
+
 # kill focused window
-bindsym $super+c kill
+bindsym $super+Shift+c kill
+bindsym $super+w kill
 bindsym $alt+F4 kill
 
 # change focus
@@ -66,49 +80,61 @@ bindsym $super+Shift+Down move down
 bindsym $super+Shift+Up move up
 bindsym $super+Shift+Right move right
 
-#qwe
 
 # bindsym $super+t layout tabbed
 # bindsym $super+s layout stacking
 # bindsym $super+Shift+h layout splith
-# bindsym $super+Shift+v layout splitvTTtT
-
+# bindsym $super+Shift+v layout splitv
 
 
 # split in horizontal orientation
-bindsym $super+h split h
+bindsym $super+backslash split h
 
 # split in vertical orientation
-bindsym $super+v split v
+bindsym $super+minus split v
 
 # enter fullscreen mode for the focused container
-bindsym $super+f fullscreen toggle
+bindsym $super+F11 fullscreen toggle
 
 # change container layout splitw
 
 # bindsym $super+s layout toggle split
-bindsym $super+s layout stacking
+bindsym $super+g layout stacking
 bindsym $super+t layout tabbed
-bindsym $super+e layout toggle split
+bindsym $super+h layout toggle split
 
 # toggle tiling / floating
 
-bindsym $super+Shift+space floating toggle
+bindsym $super+f floating toggle
 
 # change focus between tiling / floating windows
 
-#bindsym TAB+space focus mode_toggle
+bindsym $super+Shift+Return focus mode_toggle
          
 
 # focus the parent container
-bindsym $super+a focus parentds
+bindsym $super+Control+Up focus parent
+bindsym $super+Control+Down focus child
 
 # switch to workspace
 bindsym $super+Control+Right workspace next
 bindsym $super+Control+Left workspace prev
 
-bindsym $alt+Control+Right workspace next
-bindsym $alt+Control+Left workspace prev
+#bindsym $alt+Control+Right workspace next
+#bindsym $alt+Control+Left workspace prev
+
+
+#set $ws1 "main inbox"
+#set $ws2 "main web"
+#set $ws3 "workbench 1"
+#set $ws4 "workbench 2"
+#set $ws5 "work inbox"
+#set $ws6 "work web"
+#set $ws7 "ide"
+#set $ws8 "term"
+#set $ws9 "9"
+#set $ws10 "10"
+
 
 set $ws1 "1"
 set $ws2 "2"
@@ -123,32 +149,51 @@ set $ws10 "10"
 
 
 # switch to workspace
-bindsym $super+1 workspace number $ws1
-bindsym $super+2 workspace number $ws2
-bindsym $super+3 workspace number $ws3
-bindsym $super+4 workspace number $ws4
-bindsym $super+5 workspace number $ws5
-bindsym $super+6 workspace number $ws6
-bindsym $super+7 workspace number $ws7
-bindsym $super+8 workspace number $ws8
-bindsym $super+9 workspace number $ws9
-bindsym $super+0 workspace number $ws10
+bindsym $super+1 workspace $ws1
+bindsym $super+2 workspace $ws2
+bindsym $super+3 workspace $ws3
+bindsym $super+4 workspace $ws4
+bindsym $super+5 workspace $ws5
+bindsym $super+6 workspace $ws6
+bindsym $super+7 workspace $ws7
+bindsym $super+8 workspace $ws8
+bindsym $super+9 workspace $ws9
+bindsym $super+0 workspace $ws10
+
+bindsym $super+Control+q workspace $ws1
+bindsym $super+Control+w workspace $ws2
+bindsym $super+Control+e workspace $ws3
+bindsym $super+Control+r workspace $ws4
+bindsym $super+Control+a workspace $ws5
+bindsym $super+Control+s workspace $ws6
+bindsym $super+Control+d workspace $ws7
+bindsym $super+Control+f workspace $ws8
+
 
 # move focused container to workspace
-bindsym $super+Shift+1 move container to workspace number $ws1
-bindsym $super+Shift+2 move container to workspace number $ws2
-bindsym $super+Shift+3 move container to workspace number $ws3
-bindsym $super+Shift+4 move container to workspace number $ws4
-bindsym $super+Shift+5 move container to workspace number $ws5
-bindsym $super+Shift+6 move container to workspace number $ws6
-bindsym $super+Shift+7 move container to workspace number $ws7
-bindsym $super+Shift+8 move container to workspace number $ws8
-bindsym $super+Shift+9 move container to workspace number $ws9
-bindsym $super+Shift+0 move container to workspace number $ws10
+bindsym $super+Shift+1 move container to workspace $ws1
+bindsym $super+Shift+2 move container to workspace $ws2
+bindsym $super+Shift+3 move container to workspace $ws3
+bindsym $super+Shift+4 move container to workspace $ws4
+bindsym $super+Shift+5 move container to workspace $ws5
+bindsym $super+Shift+6 move container to workspace $ws6
+bindsym $super+Shift+7 move container to workspace $ws7
+bindsym $super+Shift+8 move container to workspace $ws8
+bindsym $super+Shift+9 move container to workspace $ws9
+bindsym $super+Shift+0 move container to workspace $ws10
+
+bindsym $super+Shift+q move container to workspace $ws1
+bindsym $super+Shift+w move container to workspace $ws2
+bindsym $super+Shift+e move container to workspace $ws3
+bindsym $super+Shift+r move container to workspace $ws4
+bindsym $super+Shift+a move container to workspace $ws5
+bindsym $super+Shift+s move container to workspace $ws6
+bindsym $super+Shift+d move container to workspace $ws7
+bindsym $super+Shift+f move container to workspace $ws8
 
 
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
-bindsym $super+Shift+r restart
+bindsym $super+Control+Shift+r restart
 #bindsym $super+Shift+r restart
 
 # exit i3
@@ -161,6 +206,7 @@ mode "resize" {
         bindsym Up resize shrink height 5 px or 5 ppt
         bindsym Right resize grow width 5 px or 5 ppt
         bindsym Return mode "default"
+        bindsym Esc mode "default"
 }
 bindsym $super+r mode "resize"
         
@@ -180,8 +226,17 @@ bindsym $super+r mode "resize"
 #        status_command i3status
 #}
 
+
+# colour of border, background, text, indicator, and child_border
+client.focused              #bf616a #2f343f #d8dee8 #bf616a #d8dee8
+client.focused_inactive     #2f343f #2f343f #d8dee8 #2f343f #2f343f
+client.unfocused            #2f343f #2f343f #d8dee8 #2f343f #2f343f
+client.urgent               #2f343f #2f343f #d8dee8 #2f343f #2f343f
+client.placeholder          #2f343f #2f343f #d8dee8 #2f343f #2f343f
+client.background           #2f343f
+
 # window rules, you can find the window class using xprop
-for_window [class=".*"] border pixel 4
+for_window [class=".*"] border pixel 1
 assign [class=URxvt] 1
 assign [class=Firefox|Transmission-gtk] 2
 assign [class=Thunar|File-roller] 3
@@ -192,10 +247,47 @@ for_window [class=Viewnior|feh|Audacious|File-roller|Lxappearance|Lxtask|Pavucon
 for_window [class=URxvt|Firefox|Geany|Evince|Soffice|libreoffice*|mpv|Ghb|Xfburn|Gimp*|Inkscape|Vlc|Lxappearance|Audacity] focus
 for_window [class=Xfburn|GParted|System-config-printer.py|Lxtask|Pavucontrol|Exo-helper*|Lxrandr|Arandr] focus
 
-# colour of border, background, text, indicator, and child_border
-client.focused              #bf616a #2f343f #d8dee8 #bf616a #d8dee8
-client.focused_inactive     #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.unfocused            #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.urgent               #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.placeholder          #2f343f #2f343f #d8dee8 #2f343f #2f343f
-client.background           #2f343f
+
+# Avoid tiling latte panel components
+for_window [title="Latte Dock"] floating enable;
+
+# Avoid tiling popups, dropdown windows from plasma
+for_window [class="plasmashell"] floating enable
+for_window [class="Plasma"] floating enable
+for_window [class="krunner"] floating enable
+for_window [class="Kmix"] floating enable
+for_window [class="Klipper"] floating enable
+for_window [class="Plasmoidviewer"] floating enable
+
+
+for_window [instance="^copyq$" class="^copyq$"] border pixel 1, floating enable
+
+# >>> Window Rules <<<
+
+# >>> Avoid tiling for non-Plasma stuff <<i<
+for_window [window_role="pop-up"] floating enable
+for_window [window_role="bubble"] floating enable
+for_window [window_role="task_dialog"] floating enable
+for_window [window_role="Preferences$"] floating enable
+for_window [window_role="About"] floating enable 
+for_window [window_type="dialog"] floating enable
+for_window [window_type="menu"] floating enable
+for_window [title="Android Emulator"] floating enable #android emulator
+
+
+# ======
+
+for_window [class="Spotify"] move container to workspace $ws3
+for_window [class="Telegram"] move container to workspace $ws3
+
+for_window [class="Slack"] move container to workspace $ws5 , layout tabbed, focus
+for_window [class="Mattermost"] move container to workspace $ws5 , layout tabbed, focus
+
+for_window [class="Todoist"] move container to workspace $ws1 , layout tabbed, focus
+for_window [class="obsidian"] move container to workspace $ws1 , layout tabbed, focus
+
+for_window [class="jetbrains-rubymine"] move container to workspace $ws7 , layout tabbed, focus
+for_window [class="Code"] move container to workspace $ws7 , layout tabbed, focus
+
+
+# for_window [class="Alacritty"] move container to workspace $ws8 , layout tabbed, focus

@@ -1,53 +1,114 @@
 [global]
 monitor = 0
 follow = mouse
-geometry = "250x50-24+24"
+
 indicate_hidden = yes
 shrink = no
-separator_height = 0
-padding = 16
-horizontal_padding = 25
-frame_width = 2
-sort = no
+
+sort = yes
+
 idle_threshold = 120
+
 font = Noto Sans 12
+
 line_height = 4
+
 markup = full
+
 format = "<b>%s</b>\n%b"
-alignment = left
+
+alignment = alignment
+
 show_age_threshold = 60
+
 word_wrap = yes
 ignore_newline = no
-stack_duplicates = false
-hide_duplicate_count = yes
+stack_duplicates = true
+hide_duplicate_count = false
 show_indicators = yes
-icon_position = off
+icon_position = left
 sticky_history = yes
-history_length = 20
-browser = /usr/bin/firefox -new-tab
+history_length = 200
+
+browser = xdg-open
 always_run_script = true
+
 title = Dunst
 class = Dunst
-icon_path = /usr/share/icons/Adwaita/16x16/status/:/usr/share/icons/Adwaita/16x16/devices/:/usr/share/icons/Adwaita/16x16/legacy/
+icon_path = /usr/share/icons/Papirus-Dark/16x16/status/:/usr/share/icons/Papirus-Dark/16x16/devices/:/usr/share/icons/Papirus-Dark/16x16/places/:/usr/share/icons/Papirus-Dark/16x16/apps/
+max_icon_size = 32
+
+# transparency = 15
+
+# geometry = "250x50-24+24"
+# geometry = "300x50-15+49"
+geometry = "300x50-25+25"
+
+frame_width = 1
+frame_color = "#788388"
+
+separator_color = "#263238"
+separator_height = 1
+
+padding = 8
+horizontal_padding = 10
+
+mouse_left_click   = do_action
+mouse_right_click  = close_current
+mouse_middle_click = close_current
+
+#dmenu = /usr/bin/rofi -dmenu -p dunst:
 
 [shortcuts]
-close = ctrl+space
-close_all = ctrl+shift+space
-history = ctrl+grave
-context = ctrl+shift+period
+
+# Shortcuts are specified as [modifier+][modifier+]...key
+# Available modifiers are "ctrl", "mod1" (the alt-key), "mod2",
+# "mod3" and "mod4" (windows-key).
+# Xev might be helpful to find names for keys.
+
+
+close = ctrl+mod4+space
+close_all = ctrl+mod4+shift+space
+history = ctrl+mod4+grave
+#context = ctrl+shift+period
+context = ctrl+mod4+shift+period
+
+
+# [urgency_low]
+# frame_color = "#3B7C87"
+# foreground = "#3B7C87"
+# background = "#191311"
+# background = "#2B313C"
+# timeout = 4
+
+# [urgency_normal]
+# frame_color = "#5B8234"
+# foreground = "#5B8234"
+# background = "#191311"
+# background = "#2B313C"
+# timeout = 6
+
+# [urgency_critical]
+# frame_color = "#B7472A"
+# foreground = "#B7472A"
+# background = "#191311"
+# background = "#2B313C"
+# timeout = 0
+
 
 [urgency_low]
-background = "#2f343f"
-foreground = "#d8dee8"
-timeout = 2
+   
+    background = "#263238"
+    foreground = "#556064"
+    timeout = 10
 
 [urgency_normal]
-background = "#2f343f"
-foreground = "#d8dee8"
-timeout = 4
+    background = "#263238"
+    foreground = "#F9FAF9"
+    timeout = 10
 
 [urgency_critical]
-background = "#2f343f"
-foreground = "#d8dee8"
-frame_color = "#bf616a"
-timeout = 0
+    background = "#D62929"
+    foreground = "#F9FAF9"
+    timeout = 0
+
