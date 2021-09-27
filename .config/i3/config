@@ -45,7 +45,8 @@ bindsym $super+d exec $launcher_exec
 bindsym $super+n exec $windows_exec
 bindsym $alt+space exec $launcher_exec
 
-set $pritscreen_exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
+# set $pritscreen_exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
+set $pritscreen_exec flameshot gui --path /home/bigforcegun/nextcloud/media/screen/linux/
 set $lock_exec i3lock -i /home/bigforcegun/nextcloud/media/wallpapers/desktop/Adapta/3840x2160.png #fixme
 # common apps keybinds
 bindsym Print exec $pritscreen_exec
