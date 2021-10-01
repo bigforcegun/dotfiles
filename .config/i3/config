@@ -217,7 +217,7 @@ mode "resize" {
         bindsym Up resize shrink height 5 px or 5 ppt
         bindsym Right resize grow width 5 px or 5 ppt
         bindsym Return mode "default"
-        bindsym Esc mode "default"
+        bindsym Escape mode "default"
 }
 bindsym $super+r mode "resize"
         
@@ -274,8 +274,9 @@ for_window [window_role="Preferences$"] floating enable
 for_window [window_role="About"] floating enable 
 for_window [window_type="dialog"] floating enable
 for_window [window_type="menu"] floating enable
-for_window [title="Android Emulator"] floating enable #android emulator
-for_window [title="Crow Translate"] floating enable #android emulator
+for_window [title="Android Emulator"] floating enable
+for_window [title="Crow Translate"] floating enable 
+for_window [class="Blueman-manager"] floating enable 
 
 
 # ======
