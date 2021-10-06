@@ -3,10 +3,11 @@
 function fancy(){
     BLANK='#00000000'
     CLEAR='#ffffff22'
-    DEFAULT='#ff00ffcc'
-    TEXT='#ee00eeee'
-    WRONG='#880000bb'
-    VERIFYING='#bb00bbbb'
+    DEFAULT='#282828FF'
+    TEXT='#EBDBB2FF'
+    WRONG='#FB4934FF'
+    VERIFYING='#EBDBB2FF'
+    KEY_PRESS='#8EC07CFF'
 
     i3lock \
     --insidever-color=$CLEAR     \
@@ -25,8 +26,8 @@ function fancy(){
     --time-color=$TEXT           \
     --date-color=$TEXT           \
     --layout-color=$TEXT         \
-    --keyhl-color=$WRONG         \
-    --bshl-color=$WRONG          \
+    --keyhl-color=$KEY_PRESS         \
+    --bshl-color=$KEY_PRESS         \
     \
     --screen 1                   \
     --blur 5                     \
