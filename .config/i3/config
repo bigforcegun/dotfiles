@@ -61,10 +61,14 @@ bindsym $super+l exec $lock_session_exec
 #bindsym $super+Shift+f exec thunar;workspace 3;focus
 #bindsym $super+Shift+g exec geany
 
+set $speacker_mute_toggle_exec pactl set-sink-mute 0 toggle
+set $mic_mute_toggle_exec pactl set-source-mute 1 toggle
+
+
 #change volume
 bindsym XF86AudioRaiseVolume exec amixer -q set Master 5%+
 bindsym XF86AudioLowerVolume exec amixer -q set Master 5%-
-bindsym XF86AudioMute exec amixer set Master toggle
+bindsym XF86AudioMute exec $speacker_mute_toggle_exec
 
 # music control
 bindsym XF86AudioNext exec mpc next
@@ -72,8 +76,8 @@ bindsym XF86AudioPrev exec mpc prev
 bindsym XF86AudioPlay exec mpc toggle
 bindsym XF86AudioStop exec mpc stop
 
-bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute 1 toggle
-bindsym $super+m exec --no-startup-id pactl set-source-mute 1 toggle
+bindsym XF86AudioMicMute exec --no-startup-id $mic_mute_toggle_exec
+bindsym $super+m exec --no-startup-id $mic_mute_toggle_exec
 
 # kill focused window
 bindsym $super+Shift+c kill
