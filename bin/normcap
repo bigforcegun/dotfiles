@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-/home/bigforcegun/appimages/NormCap-Linux_ab2742eeab72a6183840557c313534db.AppImage -l rus+eng -n 1
+/home/bigforcegun/appimages/NormCap-Linux_ab2742eeab72a6183840557c313534db.AppImage -l rus+eng -n 1 -m parse
