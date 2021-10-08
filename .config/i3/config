@@ -50,11 +50,12 @@ bindsym $super+n exec $windows_exec
 bindsym $alt+space exec $launcher_exec
 
 # set $pritscreen_exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
-set $pritscreen_exec flameshot gui --path /home/bigforcegun/nextcloud/media/screen/linux/
+set $screenshoot_exec flameshot gui --path /home/bigforcegun/nextcloud/media/screen/linux/
+set $screenshoot_parse_exec /home/bigforcegun/bin/normcap
 
 # common apps keybinds
-bindsym Print exec $pritscreen_exec
-bindsym $super+p exec $pritscreen_exec
+bindsym Print exec $screenshoot_exec
+bindsym $super+p exec $screenshoot_parse_exec
 bindsym $super+l exec $lock_session_exec
 
 #bindsym $super+Shift+w exec firefox
