@@ -32,11 +32,13 @@ git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
 
 ## Notes and snippets
 
+### Skip git hooks
+
 ```bash
 git -c hooks.gitleaks=false commit -m 'Test hook2'
 ```
 
-Systemd mount unit name
+### Systemd mount unit name
 
 ```bash
 systemd-escape -p --suffix=mount "/home/bigforcegun/mounts/station"
