@@ -88,3 +88,12 @@ split_csv() {
     fi
     tail -n +2 $1 | split -l $CHUNK - $1_ --additional-suffix=".csv"
 }
+
+
+list_from_file() {
+  grep -v '^\s*$\|^\s*\#' $1 #removes comments
+}
+
+gourse_big_project(){
+  gource --hide dirnames,filenames --seconds-per-day 0.1 --auto-skip-seconds 1 -1280x720 -o - | ffmpeg -y -r 30 -f image2pipe -vcodec ppm -i - -vcodec libx264 -preset ultrafast -pix_fmt yuv420p -crf 1 -threads 0 -bf 0 gource.mp4
+}

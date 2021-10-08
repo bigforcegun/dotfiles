@@ -1,0 +1,10 @@
+
+materia-gtk-theme
+papirus-icon-theme
+arc-theme
+materia-gtk-theme
+
+materia-kde
+arc-kde
+adapta-kde
+adapta-gtk-theme

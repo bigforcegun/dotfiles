@@ -1,0 +1,7 @@
+synaptic
+hardinfo
+tlp
+powertop
+i7z
+mesa-utils
+intel-gpu-tools

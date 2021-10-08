@@ -1,0 +1,9 @@
+ppa:nathan-renniewaldock/flux
+ppa:papirus/papirus
+ppa:tista/adapta
+ppa:kubuntu-ppa/backports
+ppa:tista/adapta
+ppa:phoerious/keepassxc
+ppa:linuxgndu/sqlitebrowser
+ppa:kubuntu-ppa/beta
+ppa:eosrei/fonts
