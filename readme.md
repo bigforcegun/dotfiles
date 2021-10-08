@@ -10,8 +10,8 @@
 git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
 ~/.dotfiles/setup_system
 ~/.dotfiles/setup_user
-# or
-~/.dotfiles/setup_packages
+# pkgs
+~/.dotfiles/setup_packages_ubuntu
 ```
 
 ## Sources of inspiration
@@ -22,6 +22,8 @@ git clone https://github.com/bigforcegun/dotfiles.git ~/.dotfiles
 - https://coderoncode.com/tools/2017/04/16/vim-the-perfect-ide.html
 - https://github.com/weilbith/dotfiles
 - https://github.com/WillPower3309/dotfiles
+- https://github.com/addy-dclxvi/i3-starterpack
+- https://github.com/Mofiqul/i3-gaps-gruvbox-material
 
 ## Sources to research
 
