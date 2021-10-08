@@ -12,10 +12,29 @@ dotfiles_dir="$(
 )"
 cd "$dotfiles_dir"
 
+
+PKG_CATEGORIES=(
+    "developer"
+    "hardware"
+    # "plasma"
+    "i3"
+    "libs"
+    "system"
+    "themes"
+    "utils_cli"
+    "utils_user"
+)
+
 head "Purge packages..."
 
 # pt purge irqbalance laptop-mode-tools -y
 
 head "Install desktop packages..."
 
-sudo apt install -y $(list_from_file packages/packages_ubuntu_all.txt)
+
+export DEBIAN_FRONTEND=noninteractive
+for category in "${PKG_CATEGORIES[@]}"
+do
+    head " Installing packages from category ${category}"
+    sudo apt install -y $(list_from_file packages/ubuntu/${category}.txt)
+done

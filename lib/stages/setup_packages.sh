@@ -21,7 +21,7 @@ stage_install_utils_packages() {
 }
 
 stage_install_dev_packages() {
-	export DEBIAN_FRONTEND=noninteractive
+	
 	apt install ${DESKTOP_DEV_PACKAGES[@]} -y
 }
 
