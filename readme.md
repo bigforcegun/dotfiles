@@ -2,7 +2,7 @@
 
 🏠 Simple personal dotfiles repo
 
-![screenshot](https://repository-images.githubusercontent.com/124951338/dc0b6500-a13e-11ea-99d1-c7fa210d9448)
+![screenshot](docs/images/i3_v1.png)
 
 ## Usage
 
