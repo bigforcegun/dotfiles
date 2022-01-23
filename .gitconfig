@@ -28,31 +28,32 @@
 	rebase = true
 
 [diff]
-  tool = meld
-  prompt = false
+	tool = meld
+	prompt = false
 
 [merge]
-  tool = meld
-  conflictStyle = diff3
+	tool = meld
+	conflictStyle = diff3
 
 [difftool]
-  prompt = false
+	prompt = false
 
 [difftool "meld"]
-  cmd = meld "$LOCAL" "$REMOTE"
+	cmd = meld "$LOCAL" "$REMOTE"
 
 [difftool "vscode"]
-  cmd = code --wait --diff $LOCAL $REMOTE
+	cmd = code --wait --diff $LOCAL $REMOTE
 
 [mergetool "meld"]
-  cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
+	cmd = meld "$LOCAL" "$BASE" "$REMOTE" --output "$MERGED"
 
 [mergetool "vscode"]
     cmd = code --wait $MERGED
 
 [include]
 	path = ~/.gitconfig-private/gitconfig
+	#path = ~/.gitconfig-private/gitconfig-umbrellio
 
 [alias]
-  y = diff "@{yesterday}"
-  w = whatchanged
+	y = diff "@{yesterday}"
+	w = whatchanged
