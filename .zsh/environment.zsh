@@ -6,7 +6,7 @@ include "/home/bigforcegun/.local/share/lscolors.sh"
 
 export SIZE=1000000000
 export SAVEHIST=1000000000
-export HISTFILE=~/.zhistory
+export HISTFILE=~/.zsh_history
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
 unsetopt SHARE_HISTORY
 

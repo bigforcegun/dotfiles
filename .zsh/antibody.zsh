@@ -1,7 +1,8 @@
 antibody bundle <<EOB
   sorin-ionescu/prezto
-
+  robbyrussell/oh-my-zsh
   robbyrussell/oh-my-zsh path:plugins/fancy-ctrl-z
+  robbyrussell/oh-my-zsh path:plugins/kubectl
 
 
   hlissner/zsh-autopair

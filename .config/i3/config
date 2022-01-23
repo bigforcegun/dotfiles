@@ -5,6 +5,9 @@ set $alt Mod1
 # set font
 font pango: Noto Sans 12
 
+
+focus_wrapping workspace
+
 # Use Mouse+$super to drag floating windows to their wanted position
 floating_modifier $super
 
@@ -23,6 +26,7 @@ exec --no-startup-id dex -a -s .config/autostart
 exec --no-startup-id kwalletd
 exec --no-startup-id kwalletmanager
 exec --no-startup-id /usr/share/libpam-kwallet-common/pam_kwallet_init #fixme
+exec --no-startup-id /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 #fixme
 # exec --no-startup-id /usr/lib/x86_64-linux-gnu/libexec/org_kde_powerdevil
 exec --no-startup-id xfce4-power-manager
 
@@ -58,9 +62,18 @@ bindsym Print exec $screenshoot_exec
 bindsym $super+p exec $screenshoot_parse_exec
 bindsym $super+l exec $lock_session_exec
 
-#bindsym $super+Shift+w exec firefox
+
+bindsym $super+Shift+minus move scratchpad
+bindsym $super+Shift+Return scratchpad show
+
+###
+
+# bindsym $super+Shift+k [instance="keepassxc"] scratchpad show, move position center, 
+#for_window [instance="keepassxc"] floating enable, resize set 800 800, move scratchpad, border pixel 5
 #bindsym $super+Shift+f exec thunar;workspace 3;focus
 #bindsym $super+Shift+g exec geany
+
+###
 
 set $speacker_mute_toggle_exec pactl set-sink-mute 0 toggle
 set $mic_mute_toggle_exec pactl set-source-mute 1 toggle
@@ -86,7 +99,7 @@ bindsym $super+w kill
 bindsym $alt+F4 kill
 
 # change focus
-bindsym $super+Left focus left
+bindsym $super+Left focus left 
 bindsym $super+Down focus down
 bindsym $super+Up focus up
 bindsym $super+Right focus right
@@ -129,7 +142,7 @@ bindsym $super+f floating toggle
 
 # change focus between tiling / floating windows
 
-bindsym $super+Shift+Return focus mode_toggle
+# bindsym $super+Shift+Return focus mode_toggle
          
 
 # focus the parent container
@@ -137,8 +150,8 @@ bindsym $super+Control+Up focus parent
 bindsym $super+Control+Down focus child
 
 # switch to workspace
-bindsym $super+Control+Right workspace next
-bindsym $super+Control+Left workspace prev
+bindsym $super+Control+Right workspace next_on_output
+bindsym $super+Control+Left workspace prev_on_output
 
 #bindsym $alt+Control+Right workspace next
 #bindsym $alt+Control+Left workspace prev
@@ -301,6 +314,7 @@ for_window [class="Todoist"] move container to workspace $ws1 , layout tabbed, f
 for_window [class="obsidian"] move container to workspace $ws1 , layout tabbed, focus
 
 for_window [class="jetbrains-rubymine"] move container to workspace $ws7 , layout tabbed, focus
+for_window [class="jetbrains-goland"] move container to workspace $ws7 , layout tabbed, focus
 for_window [class="Code"] move container to workspace $ws7 , layout tabbed, focus
 
 
