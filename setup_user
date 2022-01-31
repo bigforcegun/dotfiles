@@ -106,7 +106,7 @@ systemctl --user daemon-reload
 
 # systemctl_enable_start "user" "tmux.service"
 systemctl_enable_start "user" "maid.timer"
-systemctl_enable_start "user" "commit_notes.timer"
+# systemctl_enable_start "user" "commit_notes.timer"
 systemctl_enable_start "user" "gufw_icon.service"
 systemctl_enable_start "user" "systembus-notify.service"
 systemctl_enable_start "user" "espanso.service"
@@ -133,4 +133,4 @@ find "$HOME/.gnupg" -type d -exec chmod 700 {} \;
 
 
 # head "Setting ZSH as main shell..."
-# chsh -s /usr/bin/zsh
+chsh -s /usr/bin/zsh

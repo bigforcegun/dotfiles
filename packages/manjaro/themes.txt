@@ -11,6 +11,8 @@ noto-fonts-emoji
 ttf-joypixels
 nerd-fonts-noto-sans-mono
 
+
+
 papirus-icon-theme
 #claws-mail-themes-papirus
 #filezilla-theme-papirus

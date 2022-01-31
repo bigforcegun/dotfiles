@@ -8,7 +8,8 @@ crystal
 pgcli
 mycli
 yad
-glances
+#glances
+zeal
 mongodb-tools-bin
 postgresql-client
 nodejs
@@ -18,8 +19,9 @@ redis
 #mysql-clients
 mariadb-clients
 yarn
-
+adb
 nmap
+kubectl
 zenmap
 
 gitleaks
@@ -40,7 +42,9 @@ docker
 gdb
 intel-gpu-tools
 
-insomnia
+#insomnia
 #jetbrains-toolbox
 redis-desktop-manager
 robo3t-bin
+
+gource

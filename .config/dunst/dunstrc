@@ -36,6 +36,8 @@ always_run_script = true
 title = Dunst
 class = Dunst
 icon_path = /usr/share/icons/Papirus-Dark/16x16/status/:/usr/share/icons/Papirus-Dark/16x16/devices/:/usr/share/icons/Papirus-Dark/16x16/places/:/usr/share/icons/Papirus-Dark/16x16/apps/
+# icon_path = /usr/share/icons/Adwaita/16x16/status/:/usr/share/icons/Adwaita/16x16/devices/
+
 max_icon_size = 32
 
 # transparency = 15
@@ -57,21 +59,7 @@ mouse_left_click   = do_action
 mouse_right_click  = close_current
 mouse_middle_click = close_current
 
-#dmenu = /usr/bin/rofi -dmenu -p dunst:
-
-[shortcuts]
-
-# Shortcuts are specified as [modifier+][modifier+]...key
-# Available modifiers are "ctrl", "mod1" (the alt-key), "mod2",
-# "mod3" and "mod4" (windows-key).
-# Xev might be helpful to find names for keys.
-
-
-close = ctrl+mod4+space
-close_all = ctrl+mod4+shift+space
-history = ctrl+mod4+grave
-#context = ctrl+shift+period
-context = ctrl+mod4+shift+period
+dmenu = /usr/bin/rofi -dmenu -p dunst:
 
 
 # [urgency_low]

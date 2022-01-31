@@ -2,8 +2,7 @@ alias ag='ag --hidden -f'
 alias cp='cp -r --reflink=auto'
 #alias df='pydf'
 alias diff='diff --color --unified'
-alias dragall='dragon --and-exit --all'
-alias dragon='dragon --and-exit'
+
 alias e='nvim'
 alias grep='grep --color'
 alias http-serve='python3 -m http.server'
@@ -47,8 +46,10 @@ alias c11="awk '{print \$11}'"
 
 alias print_dpi="xdpyinfo | grep dots"
 alias nstat='stat -c "%a %n"'
-alias dragon='dragon-drag-and-drop'
 
+alias dragon='dragon-drag-and-drop'
+alias dragall='dragon --and-exit --all'
+alias dragin='dragon -t -k'
 
 alias prm=". /usr/local/bin/prm.sh"
 

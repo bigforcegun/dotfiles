@@ -7,47 +7,40 @@ urlview
 #googler
 nnn
 #translate-shell
-thunderbird
+#thunderbird
 #enigmail
-qownnotes
-smb4k
-indicator-sound-switcher
+#qownnotes
+#smb4k
+#indicator-sound-switcher
 unoconv
 krita
 gimp
-corebird
 vlc
 calibre
 qbittorrent
 cheese
-unetbootin
 kazam
-comix
 peek
 tor
 selektor
 calligra
-keepass
-corebird
+keepassxc
 inkscape
 nextcloud-client
-gnome-encfs-manager-bin
 #backintime-qt4
-liferea
-borgbackup
+
+discord
 
 flameshot
 vym
 
-downgrade
+spotify
+
 
 libinput-gestures
 wmctrl
-xf86-input-synaptics
 xdotool
 
-goldendict
-goldendict-enruen-content
 crow-translate
 
 dragon-drag-and-drop-git
@@ -57,13 +50,15 @@ msr-tools
 youtube-dl
 youtube-dl-gui-git
 
-espanso
+espanso-bin
 modulo
 
 pandoc
 
 sweeper
 
-yubikey-manager-qt
-yubioath-desktop
-yubikey-personalization-gui
+earlyoom
+
+#yubikey-manager-qt
+#yubioath-desktop
+#yubikey-personalization-gui

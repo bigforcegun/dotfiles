@@ -85,9 +85,9 @@ systemctl_enable_start() {
     $systemctl_command="systemctl"
   fi
   
-      echo "$systemctl_command enable & start "$name""
-      $systemctl_command enable "$name"
-      $systemctl_command start  "$name"
+  echo "$systemctl_command enable & start "$name""
+  $systemctl_command enable "$name"
+  $systemctl_command start  "$name"
   
  
 }
