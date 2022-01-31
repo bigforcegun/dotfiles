@@ -17,19 +17,20 @@ head "Purge packages..."
 # pt purge irqbalance laptop-mode-tools -y
 
 head "Setup base packages..."
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_base.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/base.txt)
 
 head "Install desktop packages..."
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_desktop.txt)
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_kde.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/desktop.txt)
+#yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/kde.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/i3.txt)
 
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_themes.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/themes.txt)
 
 
 head "Install utils packages..."
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_utils.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/utils.txt)
 
 
 head "Install dev packages..."
-yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/packages_dev.txt)
-yay -S --noconfirm --needed --asdeps - < <(list_from_file packages/manjaro/packages_libs.txt)
+yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/dev.txt)
+yay -S --noconfirm --needed --asdeps - < <(list_from_file packages/manjaro/libs.txt)

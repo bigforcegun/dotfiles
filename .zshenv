@@ -3,6 +3,8 @@
 export EDITOR='nvim'
 export VISUAL='nvim'
 export DIFFPROG='nvim -d'
+export TERMINAL='alacritty'
+
 # export MANPAGER='kak-man-pager'
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
 export WINIT_HIDPI_FACTOR=1
@@ -45,7 +47,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 export rvm_silence_path_mismatch_check_flag=1
 
 # Ruby configuration
-export PATH="$PATH:$(ruby -e 'puts Gem.user_dir')/bin"
+# export PATH="$PATH:$(ruby -e 'puts Gem.user_dir')/bin"
 
 
 #HELLO KUBE

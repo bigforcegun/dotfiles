@@ -1,5 +1,9 @@
 #tmodload zsh/zprof
 
+include () {
+    [[ -f "$1" ]] && source "$1"
+}
+
 source ~/.zsh/autorun-tmux.zsh
 
 source ~/.zsh/prompt.zsh
