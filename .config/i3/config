@@ -406,6 +406,10 @@ for_window [title="Crow Translate"] floating enable
 for_window [class="Blueman-manager"] floating enable 
 for_window [class="Gpick"] floating enable 
 for_window [class="Gnome-pomodoro"] floating enable 
+for_window [class="(?i)pinentry"] floating enable
+for_window [class="(?i)nm-connection-editor"] floating enable
+
+
 
 for_window [class="Dragon-drag-and-drop"] sticky enable
 
