@@ -1,6 +1,5 @@
 # ~/.dotfiles
 
-
 🏠 Simple personal dotfiles repo
 
 ![screenshot](docs/images/i3_v1.png)
