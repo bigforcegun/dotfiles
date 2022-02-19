@@ -34,6 +34,7 @@ set $terminal i3-sensible-terminal
 set $launcher_exec ~/.config/polybar/main/scripts/launcher.sh
 set $powermenu_exec ~/.config/polybar/main/scripts/powermenu.sh
 set $windows_exec ~/.config/polybar/main/scripts/windows_switcher.sh
+set $polybar_exec ~/.config/polybar/main/launch.sh
 
 # set $pritscreen_exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
 set $screenshoot_exec flameshot gui --path /home/bigforcegun/nextcloud/media/screen/linux/
@@ -50,10 +51,9 @@ set $mic_mute_toggle_exec /home/bigforcegun/sources/polybar-mic-volume/mic-volum
 exec --no-startup-id nitrogen --restore; sleep 1; picom -b
 # exec --no-startup-id compton -b
 
-exec --no-startup-id manjaro-hello
 exec --no-startup-id pamac-tray
 exec --no-startup-id xsettingsd &
-exec --no-startup-id clipit
+# exec --no-startup-id clipit
 exec --no-startup-id emote
 exec --no-startup-id sirikali -e &
 
@@ -69,12 +69,12 @@ exec --no-startup-id dex -a -s .config/autostart
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 
-# exec --no-startup-id /usr/lib/x86_64-linux-gnu/libexec/org_kde_powerdevil
 exec --no-startup-id xfce4-power-manager
 exec --no-startup-id blueman-applet
+exec --no-startup-id flameshot
+exec --no-startup-id kdeconnect-indicator
 
 exec --no-startup-id libinput-gestures-setup restart
-exec --no-startup-id setxkbmap -layout us,ru -option caps:super  -option grp:win_space_toggle
 # exec_always --no-startup-id xmodmap ~/.Xmodmap
 
 # exec --no-startup-id volumeicon
@@ -85,7 +85,7 @@ exec --no-startup-id start_conky_maia
 
 exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
-exec_always --no-startup-id bash ~/.config/polybar/main/launch.sh
+exec_always --no-startup-id $polybar_exec
 
 ## Apps
 
@@ -210,6 +210,8 @@ bindsym $mod+Shift+b move container to workspace back_and_forth; workspace back_
 bindsym $mod+t layout tabbed
 bindsym $mod+g layout stacking
 bindsym $mod+a layout toggle split
+bindsym $mod+Shift+x exec --no-startup-id skippy-xd-toggle
+
 
 bindsym $mod+backslash split h;exec notify-send 'tile horizontally'
 bindsym $mod+minus split v;exec notify-send 'tile vertically'
@@ -345,6 +347,7 @@ bindsym $mod+Shift+f move container to workspace $ws8
 
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Control+Shift+r restart 
+bindsym $mod+Control+Shift+t exec $polybar_exec 
 # bindsym $mod+q exec "i3-nagbar -t warning -m 'Really, exit?' -b 'Yes' 'i3-msg exit'" # exit i3
 
 ## Resize window (you can also use the mouse for that)
@@ -381,7 +384,9 @@ bindsym $mod+r mode "resize"
 for_window [urgent="latest"] focus
 
 
-for_window [title="Latte Dock"] floating enable;
+set $floating_enable floating enable
+
+for_window [title="Latte Dock"] floating enable
 
 for_window [class="plasmashell"] floating enable
 for_window [class="Plasma"] floating enable
@@ -412,6 +417,7 @@ for_window [class="(?i)nm-connection-editor"] floating enable
 
 
 for_window [class="Dragon-drag-and-drop"] sticky enable
+for_window [class="Gcolor3"] sticky enable floating enable
 
 
 for_window [title="alsamixer"] floating enable border pixel 1
