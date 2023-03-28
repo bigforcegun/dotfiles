@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+source ./lib/functions.sh
+
+script_name="$(basename "$0")"
+dotfiles_dir="$(
+    cd "$(dirname "$0")"
+    pwd
+)"
+cd "$dotfiles_dir"
+
+
+MY_GPG_KEY_ID="BE9C8BCF2398599C"
+
+head "Setting up dotfiles for current user..."
+
+link "bin"
+
+link ".bundle/config"
+
+link ".gitconfig"
+link ".gitconfig-private"
+link ".gitignore"
+link ".ignore"
+
+link ".tmux.conf"
+link ".tmux.conf.local"
+
+link ".zprofile"
+link ".zshenv"
+link ".zshrc"
+link ".zsh"
+
+link ".maid"
+
+#link ".config/kup_main_exclude"
+#link ".config/kup_projects_exclude"
+
+link ".githooks"
+
+link ".config/nvim"
+link ".config/ranger/rc.conf"
+
+link ".config/fd/ignore" #https://github.com/sharkdp/fd/issues/608
+
+#link ".config/trashrc"
+#link ".config/user-dirs.dirs"
+#link ".config/user-dirs.locale"
+
+#link ".config/autostart/libinput-gestures.desktop"
+
+link ".config/alacritty/alacritty.yml"
+link ".config/qalculate/qalc.cfg"
+#link ".config/libinput-gestures.conf"
+
+
+link ".config/espanso"
+
+
+#link ".config/i3"
+#link ".config/dunst"
+#link ".config/i3status"
+#link ".config/compton.conf"
+#link ".config/polybar/main"
+
+
+#link ".config/rofi/config.rasi"
+#link ".config/systemd/user/urlwatch.service"
+#link ".config/systemd/user/urlwatch.timer"
+#link ".config/systemd/user/maid.service"
+#link ".config/systemd/user/maid.timer"
+#link ".config/systemd/user/commit_notes.service"
+#link ".config/systemd/user/commit_notes.timer"
+#link ".config/systemd/user/tmux.service"
+#link ".config/systemd/user/gufw_icon.service"
+#link ".config/systemd/user/systembus-notify.service"
+#link ".config/systemd/user/espanso.service"
+#link ".config/systemd/user/maid.service"
+#link ".config/systemd/user/maid.timer"
+
+#link ".urlwatch/urls.yaml"
+
+link ".gnupg/gpg-agent.conf"
+link ".gnupg/gpg.conf"
+
+#link ".local/share/kservices5/ServiceMenus/OdsToCsv.desktop"
+#link ".local/share/kservices5/ServiceMenus/EncodeToUTF8.desktop"
+
+link ".fonts/icomoon"
+
+
+link ".gemrc"
+#link ".Xresources"
+#link ".xsettingsd"
+#link ".xinitrc"
+#link ".Xmodmap"
+
+head "Enable userspace services..."
+
+#systemctl --user daemon-reload
+
+
+# systemctl_enable_start "user" "tmux.service"
+#systemctl_enable_start "user" "maid.timer"
+# systemctl_enable_start "user" "commit_notes.timer"
+#systemctl_enable_start "user" "gufw_icon.service"
+#systemctl_enable_start "user" "systembus-notify.service"
+#systemctl_enable_start "user" "espanso.service"
+#systemctl_enable_start "user" "maid.service"
+
+#head "Setup SSH-AGENT"
+
+#if ! type "gnome-keyring" > /dev/null; then
+#link ".config/systemd/user/ssh-agent.service"
+#systemctl_enable_start "user" "ssh-agent.service"
+#fi
+
+# head "Setup git sources for current user..."
+# stage_setup_sources
+
+if ! gpg -k | grep "$MY_GPG_KEY_ID" > /dev/null; then
+  head "Importing my public PGP key"
+  curl -s https://keybase.io/bigforcegun/pgp_keys.asc | gpg --import
+  gpg --trusted-key "$MY_GPG_KEY_ID" > /dev/null
+fi
+
+find "$HOME/.gnupg" -type f -not -path "*#*" -exec chmod 600 {} \;
+find "$HOME/.gnupg" -type d -exec chmod 700 {} \;
+
+
+# head "Setting ZSH as main shell..."
+# chsh -s /usr/bin/zsh
