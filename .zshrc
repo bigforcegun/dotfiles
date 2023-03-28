@@ -22,8 +22,8 @@ source ~/.zsh/antibody.zsh
 source ~/.zsh/environment.zsh
 
 #source ~/.zsh/keybindings.zsh
-source ~/.zsh/aliases.zsh
-source ~/.zsh/git.zsh
+source ~/.zsh/aliases/aliases.zsh
+source ~/.zsh/aliases/git.zsh
+source ~/.zsh/aliases/kube.zsh
 source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
-

@@ -22,7 +22,7 @@
 	gpgsign = true
 
 [hooks]
-	gitleaks = true
+	gitleaks = false
 
 [pull]
 	rebase = true
