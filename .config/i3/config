@@ -21,13 +21,13 @@ default_floating_border normal
 # Hide borders
 hide_edge_borders none
 
-
 ## All sets
 
 set $wallpaper /home/bigforcegun/.wallpaper.png
 set $lock_exec /home/bigforcegun/bin/lock_screen fancy 
 set $lock_session_exec loginctl lock-session
-
+set $keyboard_exec "setxkbmap -layout us,ru -option caps:super -option grp:win_space_toggle"
+set $compositor_exec picom --experimental-backends -b
 set $terminal i3-sensible-terminal
 
 # set $launcher_exec exec rofi -lines 12 -padding 18 -width 60 -location 0 -show combi -sidebar-mode -columns 2 -font 'Noto Sans 15'
@@ -48,10 +48,11 @@ set $mic_mute_toggle_exec /home/bigforcegun/sources/polybar-mic-volume/mic-volum
 ## Autostart
 
 # exec --no-startup-id hsetroot -center $wallpaper
-exec --no-startup-id nitrogen --restore; sleep 1; picom -b
+exec --no-startup-id nitrogen --restore; sleep 1; $compositor_exec
 # exec --no-startup-id compton -b
 
 exec --no-startup-id pamac-tray
+exec --no-startup-id diodon
 exec --no-startup-id xsettingsd &
 # exec --no-startup-id clipit
 exec --no-startup-id emote
@@ -72,9 +73,12 @@ exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec --no-startup-id xfce4-power-manager
 exec --no-startup-id blueman-applet
 exec --no-startup-id flameshot
-exec --no-startup-id kdeconnect-indicator
+exec --no-startup-id /usr/lib/kdeconnectd & kdeconnect-indicator
 
 exec --no-startup-id libinput-gestures-setup restart
+exec --no-startup-id $keyboard_exec
+exec --no-startup-id xmousepasteblock &
+
 # exec_always --no-startup-id xmodmap ~/.Xmodmap
 
 # exec --no-startup-id volumeicon
@@ -95,9 +99,11 @@ bindsym $mod+Return exec $terminal # start a terminal
 
 bindsym $mod+d exec --no-startup-id $launcher_exec # start a launcher
 bindsym $mod+n exec --no-startup-id $windows_exec # find open window
+bindsym $mod+b exec --no-startup-id blueman-manager
 # bindsym $alt+space exec --no-startup-id $launcher_exec # start a terminal
-bindsym $mod+z exec --no-startup-id morc_menu
-bindsym $mod+b exec terminal -e 'bmenu'
+
+bindsym $mod+8 exec terminal -e 'bmenu'
+bindsym $mod+9 exec --no-startup-id morc_menu
 bindsym $mod+0 exec --no-startup-id $powermenu_exec
 
 ### Screen
@@ -115,7 +121,9 @@ bindsym $mod+e exec pcmanfm
 # bindsym $mod+Control+t exec --no-startup-id picom -b #FIXME
 # bindsym $mod+Control+d dragon -t -k
 bindsym $mod+x --release exec --no-startup-id xkill
-bindsym $mod+m exec pavucontrol
+bindsym $mod+m exec pavucontrol -t 4
+bindsym $mod+k exec pavucontrol -t 3
+bindsym $mod+j exec noisetorch
 bindsym $mod+v exec --no-startup-id diodon
 bindsym $mod+h --release exec dragon-drag-and-drop -t -k
 bindsym $mod+bracketleft exec --no-startup-id notify-send 'light theme'
@@ -144,6 +152,7 @@ bindsym $mod+Shift+Return scratchpad show # show scratchpad
 
 bindsym XF86AudioMicMute exec --no-startup-id $mic_mute_toggle_exec
 bindsym $mod+Control+m exec --no-startup-id $mic_mute_toggle_exec
+bindsym $mod+Control+k exec --no-startup-id $keyboard_exec
 
 ## Music control
 
@@ -189,10 +198,10 @@ bindsym $alt+grave focus
 
 ## Move focused window
 
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+Left move left 50
+bindsym $mod+Shift+Down move down 50
+bindsym $mod+Shift+Up move up 50
+bindsym $mod+Shift+Right move right 50
 
 
 # bindsym $mod+t layout tabbed
@@ -210,12 +219,12 @@ bindsym $mod+Shift+b move container to workspace back_and_forth; workspace back_
 bindsym $mod+t layout tabbed
 bindsym $mod+g layout stacking
 bindsym $mod+a layout toggle split
-bindsym $mod+Shift+x exec --no-startup-id skippy-xd-toggle
-
 
 bindsym $mod+backslash split h;exec notify-send 'tile horizontally'
 bindsym $mod+minus split v;exec notify-send 'tile vertically'
 bindsym $mod+q split toggle
+
+bindsym $mod+Shift+x exec --no-startup-id skippy-xd-toggle
 
 ## Fullscreen
 
@@ -231,13 +240,13 @@ bindsym $mod+s sticky toggle
 
 ## focus the parent container
 
-bindsym $mod+Control+Up focus parent
-bindsym $mod+Control+Down focus child
+#bindsym $mod+Control+Up focus parent
+#bindsym $mod+Control+Down focus child
 
 ## Switch to workspace
 
-bindsym $mod+Control+Right workspace next_on_output
-bindsym $mod+Control+Left workspace prev_on_output
+bindsym $mod+Control+Up workspace next_on_output
+bindsym $mod+Control+Down workspace prev_on_output
 
 bindsym $mod+Shift+Control+Right move workspace to output right
 bindsym $mod+Shift+Control+Left move workspace to output left
@@ -257,6 +266,12 @@ bindsym $mod+Control+z exec --no-startup-id dunstctl close
 bindsym $mod+Control+grave exec --no-startup-id dunstctl history-pop
 # bindsym $mod+Control+Shift+space exec --no-startup-id dunstctl close-all
 bindsym $mod+Control+Shift+z exec --no-startup-id dunstctl context
+
+## Multi display config
+
+bindsym $mod+Control+minus exec --no-startup-id /home/bigforcegun/.screenlayout/laptop_on.sh;exec notify-send 'Diplay: Laptop' 
+bindsym $mod+Control+equal exec --no-startup-id /home/bigforcegun/.screenlayout/laptop_on_1d.sh;exec notify-send 'Diplay: Extermal'
+
 
 ## Workspaces config
 
@@ -298,14 +313,14 @@ workspace $ws9 output DP-1-2
 
 ## Switch to workspace
 
-bindsym $mod+1 workspace $ws1
-bindsym $mod+2 workspace $ws2
-bindsym $mod+3 workspace $ws3
-bindsym $mod+4 workspace $ws4
-bindsym $mod+5 workspace $ws5
-bindsym $mod+6 workspace $ws6
-bindsym $mod+7 workspace $ws7
-bindsym $mod+8 workspace $ws8
+# bindsym $mod+1 workspace $ws1
+# bindsym $mod+2 workspace $ws2
+# bindsym $mod+3 workspace $ws3
+# bindsym $mod+4 workspace $ws4
+# bindsym $mod+5 workspace $ws5
+# bindsym $mod+6 workspace $ws6
+# bindsym $mod+7 workspace $ws7
+# bindsym $mod+8 workspace $ws8
 # bindsym $mod+9 workspace $ws9
 # bindsym $mod+0 workspace $ws10
 
@@ -340,10 +355,7 @@ bindsym $mod+Shift+s move container to workspace $ws6
 bindsym $mod+Shift+d move container to workspace $ws7
 bindsym $mod+Shift+f move container to workspace $ws8
 
-
-
 ## I3 Managment
-
 
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Control+Shift+r restart 
@@ -354,12 +366,20 @@ bindsym $mod+Control+Shift+t exec $polybar_exec
 
 mode "resize" {
         bindsym Left resize shrink width 10 px or 10 ppt
+        bindsym Control+Left resize shrink width 5 px or 5 ppt
+        
         bindsym Down resize grow height 10 px or 10 ppt
+        bindsym Control+Down resize grow height 5 px or 5 ppt
+        
         bindsym Up resize shrink height 10 px or 10 ppt
+        bindsym Control+Up resize shrink height 5 px or 5 ppt
+        
         bindsym Right resize grow width 10 px or 10 ppt
+        bindsym Control+Right resize grow width 5 px or 5 ppt
         bindsym Return mode "default"
         bindsym Escape mode "default"
 }
+
 bindsym $mod+r mode "resize"
         
 # bindsym $mod+0 mode "$mode_system"
@@ -382,7 +402,8 @@ bindsym $mod+r mode "resize"
 ## Window rules
 
 for_window [urgent="latest"] focus
-
+for_window [class=".*"] title_window_icon on
+for_window [class=".*"] title_window_icon padding 3px
 
 set $floating_enable floating enable
 
@@ -438,7 +459,7 @@ for_window [class="Oblogout"] fullscreen enable
 for_window [class="octopi"] floating enable
 for_window [title="About Pale Moon"] floating enable
 for_window [class="Pamac-manager"] floating enable
-for_window [class="Pavucontrol"] floating enable
+for_window [class="Pavucontrol"] floating enable sticky enable
 for_window [class="qt5ct"] floating enable sticky enable border normal
 for_window [class="Qtconfig-qt4"] floating enable sticky enable border normal
 for_window [class="Simple-scan"] floating enable border normal
@@ -447,6 +468,24 @@ for_window [class="Skype"] floating enable border normal
 for_window [class="Timeset-gui"] floating enable border normal
 for_window [class="(?i)virtualbox"] floating enable border normal
 for_window [class="Xfburn"] floating enable
+for_window [class="pritunl"] floating enable
+for_window [class="jetbrains-toolbox"] floating enable
+for_window [class="Arandr"] floating enable
+for_window [class="zoom" title="Meeting Chat"] floating enable
+
+
+## Sticky guys
+
+for_window [class="Bitwarden"] floating enable sticky enable
+for_window [class="kdeconnect.app"] floating enable sticky enable
+for_window [class="Protonvpn"] floating enable sticky enable
+for_window [class="Onedriver-launcher"] floating enable sticky enable
+for_window [class="OneDriveGUI"] floating enable sticky enable
+for_window [class="NoiseTorch"] floating enable sticky enable
+for_window [class="KeePassXC"] floating enable sticky enable
+for_window [class="SiriKali"] floating enable sticky enable
+for_window [class="Zeal"] floating enable sticky enable
+for_window [class="org.gnome.clocks"] floating enable sticky enable
 
 
 ## Bind windows
@@ -546,7 +585,7 @@ set_from_resource $term_color15    color15
   client.background       #2B2C2B
 
 
-  #############################
+#############################
 ### settings for i3-gaps: ###
 #############################
 

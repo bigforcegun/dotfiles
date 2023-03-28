@@ -43,3 +43,11 @@ git -c hooks.gitleaks=false commit -m 'Test hook2'
 ```bash
 systemd-escape -p --suffix=mount "/home/bigforcegun/mounts/station"
 ```
+
+
+### Fix manjaro python update fail
+
+
+```sh
+sudo pacman -S python-jeepney --overwrite '*'
+```

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+unset TERM_SESSION_ID
+
 export EDITOR='nvim'
 export VISUAL='nvim'
 export DIFFPROG='nvim -d'
@@ -54,3 +56,12 @@ export rvm_silence_path_mismatch_check_flag=1
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 
 export BUP_DIR="$HOME/encfs/private/backups/bup/"
+
+
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
+
+export NVM_DIR="$HOME/.nvm"
+#[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+#[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
