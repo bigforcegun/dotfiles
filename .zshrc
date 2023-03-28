@@ -1,5 +1,7 @@
 #tmodload zsh/zprof
 
+# echo "i am rc"
+
 include () {
     [[ -f "$1" ]] && source "$1"
 }
@@ -26,4 +28,3 @@ source ~/.zsh/aliases.zsh
 source ~/.zsh/git.zsh
 source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
-

@@ -1,9 +1,11 @@
 unsetopt EXTENDED_GLOB
 
+if [[ $HOST_OS == 'linux' ]]; then
 include "/usr/share/LS_COLORS/dircolors.sh"
 include "/home/bigforcegun/.local/share/lscolors.sh"
+fi
 
-
+# а вот тут залупа коня - если неудачно прибить ZSH то он не успеет прочитать эти переменные и потрет историю при выходе :clown:
 export SIZE=1000000000
 export SAVEHIST=1000000000
 export HISTFILE=~/.zsh_history

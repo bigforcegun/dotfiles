@@ -22,7 +22,7 @@
 	gpgsign = true
 
 [hooks]
-	gitleaks = true
+	gitleaks = false
 
 [pull]
 	rebase = true
@@ -57,3 +57,5 @@
 [alias]
 	y = diff "@{yesterday}"
 	w = whatchanged
+[gpg]
+	program = /opt/homebrew/bin/gpg
