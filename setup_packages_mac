@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+exec 2> >(while read line; do echo -e "\e[01;31m$line\e[0m"; done)
+
+source ./lib/functions.sh
+
+script_name="$(basename "$0")"
+dotfiles_dir="$(
+    cd "$(dirname "$0")"
+    pwd
+)"
+cd "$dotfiles_dir"
+
+
+head "Setup base packages..."
+yay -S --noconfirm --needed - < <(list_from_file packages/mac/init.txt)
