@@ -13,6 +13,7 @@ antibody bundle <<EOB
 
   zsh-users/zsh-autosuggestions
   zsh-users/zaw
+  wulfgarpro/history-sync
   denysdovhan/spaceship-prompt
 EOB
 
