@@ -4,6 +4,15 @@ FZF_MODE="FD"
 
 export FZF_DEFAULT_OPTS="--history=$HOME/.fzf_history --ansi"
 
+export FZF_CTRL_R_OPTS="  
+  --preview 'bat -n --color=always {}'
+  --preview-window up:3:hidden:wrap
+  --bind 'ctrl-p:toggle-preview'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+
+
 if [[ ${FZF_MODE} = "AG" ]]; then
   export FZF_DEFAULT_COMMAND='ag --hidden  -g""'
   export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -24,11 +33,17 @@ elif [[ ${FZF_MODE} = "FD" ]]; then
   _fzf_compgen_dir() { fd --hidden --follow --type=d . "$1" }
 fi
 
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+
+if [[ $HOST_OS == 'linux' ]]; then
 include /usr/share/fzf/completion.zsh
 include /usr/share/doc/fzf/examples/completion.zsh
 include /usr/share/fzf/key-bindings.zsh
 include /usr/share/doc/fzf/examples/key-bindings.zsh
+fi
+
+
 
 #bindkey '^T' fzf-completion
 #bindkey '^I' $fzf_default_completion

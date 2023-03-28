@@ -57,3 +57,5 @@
 [alias]
 	y = diff "@{yesterday}"
 	w = whatchanged
+[gpg]
+	program = /opt/homebrew/bin/gpg

@@ -1,0 +1,12 @@
+nodejs
+npm
+yarn
+android-platform-tools
+kubectl
+
+gitleaks
+lazygit 
+lazydocker
+q
+docker
+gource
