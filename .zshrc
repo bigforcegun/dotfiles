@@ -1,5 +1,7 @@
 #tmodload zsh/zprof
 
+# echo "i am rc"
+
 include () {
     [[ -f "$1" ]] && source "$1"
 }

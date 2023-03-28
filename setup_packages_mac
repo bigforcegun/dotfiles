@@ -14,4 +14,9 @@ cd "$dotfiles_dir"
 
 
 head "Setup base packages..."
-yay -S --noconfirm --needed - < <(list_from_file packages/mac/init.txt)
+list_from_file packages/mac/init.txt | xargs brew install
+
+
+
+head "Setup base packages..."
+list_from_file packages/mac/dev.txt | xargs brew install

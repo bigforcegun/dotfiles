@@ -1,3 +1,11 @@
+if [[ $HOST_OS == 'linux' ]]; then
+alias o='xdg-open'
+fi
+
+if [[ $HOST_OS == 'mac' ]]; then
+alias o='open'
+fi
+
 alias ag='ag --hidden -f'
 alias cp='cp -r --reflink=auto'
 #alias df='pydf'
@@ -8,7 +16,6 @@ alias grep='grep --color'
 alias http-serve='python3 -m http.server'
 alias locate='locate -i'
 alias mkdir='mkdir -p'
-alias o='xdg-open'
 
 #alias rm='rmtrash -rf' #FIXME add rm-tools install
 #alias rm!='\rm -rf'
@@ -54,6 +61,8 @@ alias dragin='dragon -t -k'
 alias prm=". /usr/local/bin/prm.sh"
 
 alias ods_to_csv="unoconv -f csv -e FilterOptions=\"59,34,0,1\""
+
+alias bf="butterfish"
 
 mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
