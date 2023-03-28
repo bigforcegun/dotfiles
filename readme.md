@@ -51,3 +51,14 @@ systemd-escape -p --suffix=mount "/home/bigforcegun/mounts/station"
 ```sh
 sudo pacman -S python-jeepney --overwrite '*'
 ```
+
+### Sync history
+
+```sh
+git clone git@github.com:bigforcegun/zsh_history_backup.git .zsh_history_backup 
+git clone git@github.com:bigforcegun/zsh_history_backup.git .zsh_history_proj 
+
+
+zhps -r BE9C8BCF2398599C -y
+zhsync -r BE9C8BCF2398599C -y
+```
