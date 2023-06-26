@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+## Context :shirug:
+
+RELEASES_FILE=$TMPDIR/kekw1
+JIRA_SPACE_PREFIX="DLVR"
+BASE_DIR="$TMPDIR"
+
+_fetch_github_release_tasks() {
+    gh release view $1 | grep ${JIRA_SPACE_PREFIX} | grep -i 'open' | awk '{print $1}'
+}
+
+_fetch_github_actual_releases() {
+    gh release list | grep "as_"
+}
+
+_release_file_name() {
+    echo "${BASE_DIR}kekw_release_$1.txt"
+}
+
+_extract_version() {
+    echo $1 | awk '{print $3}'
+}
+
+main() {
+    # echo "kekw"
+     _fetch_github_actual_releases >| $RELEASES_FILE
+
+    #cat $RELEASES_FILE | awk '{print $1" "$2}'
+    
+    while IFS="" read -r release_string || [ -n "$release_string" ]
+    do  
+        release_version=$(_extract_version "${release_string}")
+        release_tasks_store="$(_release_file_name "${release_version}")"
+
+        echo "🏁 Start processing release ${release_version}"
+
+
+        echo "🚀 Fetching ${release_version} tasks..."
+        release_tasks="$(_fetch_github_release_tasks $release_version)"
+        
+
+        echo "🗄 Saving tasks to ${release_tasks_store}..."
+        #echo "$(_fetch_github_release_tasks $release_verions)" >| $release_tasks_store
+        echo "${release_tasks}" >| $release_tasks_store
+        
+
+
+        echo_tasks_count=`cat ${release_tasks_store} | wc -l`
+        echo "✅ Fetching ${echo_tasks_count} tasks saved..."
+
+        github
+
+    done < $RELEASES_FILE
+
+    #while read $release_string; do
+       
+        #$release_version="$(_extract_version $release_string)"
+    #    echo "${release_string}"
+        #echo "${release_version}"
+        # echo "$(_fetch_github_release_tasks $release_verions)" >| $release_tasks_store
+    #done <$RELEASES_FILE
+
+    #cat $RELEASES_FILE  
+
+    # $1 - REVEASE_ID
+    # $2 = $JIRA_SPACE_PREFIX
+
+    #while IFS="" read -r p || [ -n "$p" ]
+    #do
+    #  printf '%s\n' "$p"
+    #done < $RELEASES_FILE
+
+    # jira issue edit ISSUE-1 --label -p2 --label p1 --component -FE --component BE --fix-version -v1.0 --fix-version v2.0
+    # jira issue edit DLVR-4773 --fix-version android-5.22
+
+}
+
+main

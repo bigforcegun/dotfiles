@@ -391,8 +391,10 @@ bind C-x confirm-before -p "kill other windows? (y/n)" "kill-window -a"
 # bind Q confirm-before -p "kill-session #S? (y/n)" kill-session
 bind q confirm-before -p "kill-session #S (y/n)?" "run-shell 'tmux switch-client -n \\\; kill-session -t \"#S\"'"
 
-bind -n M-Left select-pane -L
-bind -n M-Up select-pane -U
+# bind -n M-Left select-pane -L
+unbind M-Left 
+unbind 
+# bind -n M-Up select-pane -U
 
 bind -n C-M-Left  previous-window
 bind -n C-M-Right next-window
@@ -418,6 +420,7 @@ set -g mode-keys vi
 # replace C-b by C-a instead of using both prefixes
 set -gu prefix2
 unbind C-a
+unbind C-b
 unbind C-b
 set -g prefix C-a
 bind C-a send-prefix

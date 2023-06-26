@@ -13,7 +13,6 @@ antibody bundle <<EOB
 
   zsh-users/zsh-autosuggestions
   zsh-users/zaw
-  wulfgarpro/history-sync
   denysdovhan/spaceship-prompt
 EOB
 
@@ -34,6 +33,6 @@ EOB
 # robbyrussell/oh-my-zsh path:plugins/ansible
 # robbyrussell/oh-my-zsh path:plugins/cargo
 # robbyrussell/oh-my-zsh path:plugins/bundler
-
+# wulfgarpro/history-sync - не работает =(((
 #antibody bundle romkatv/powerlevel10k
 

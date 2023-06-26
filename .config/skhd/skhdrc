@@ -1,0 +1,116 @@
+# Yabai config
+
+# workspaces
+
+# bindsym $mod+Control+q workspace $ws1
+# bindsym $mod+Shift+q move container to workspace $ws1
+# bindsym $mod+Control+Up workspace next_on_output
+# bindsym $mod+Control+Down workspace prev_on_output
+
+cmd + ctrl - right  : yabai -m space --focus prev
+cmd + ctrl - left  : yabai -m space --focus next
+
+cmd + ctrl - q :  yabai -m space --focus 1
+cmd + ctrl - w :  yabai -m space --focus 2
+cmd + ctrl - e :  yabai -m space --focus 3
+cmd + ctrl - r :  yabai -m space --focus 4
+cmd + ctrl - a :  yabai -m space --focus 5
+cmd + ctrl - s :  yabai -m space --focus 6
+cmd + ctrl - d :  yabai -m space --focus 7
+cmd + ctrl - f :  yabai -m space --focus 8
+cmd + ctrl - f :  yabai -m space --focus 8
+
+
+ctrl + shift - q :  yabai -m window --space 1
+ctrl + shift - w :  yabai -m window --space 2
+ctrl + shift - e :  yabai -m window --space 3
+ctrl + shift - r :  yabai -m window --space 4
+ctrl + shift - a :  yabai -m window --space 5
+ctrl + shift - s :  yabai -m window --space 6
+ctrl + shift - d :  yabai -m window --space 7
+ctrl + shift - f :  yabai -m window --space 8
+
+## Change focus
+
+# bindsym $mod+Left focus left 
+# bindsym $mod+Down focus down
+# bindsym $mod+Up focus up
+# bindsym $mod+Right focus right
+
+ctrl - up : yabai -m window --focus north
+ctrl - right : yabai -m window --focus east
+ctrl - left : yabai -m window --focus west
+ctrl - down : yabai -m window --focus south
+
+# bindsym $alt+Tab focus right
+# bindsym $alt+grave focus         
+
+# ## Move focused window
+
+# bindsym $mod+Shift+Left move left 50
+# bindsym $mod+Shift+Down move down 50
+# bindsym $mod+Shift+Up move up 50
+# bindsym $mod+Shift+Right move right 50
+# bindsym $mod+Tab focus output left
+# bindsym $mod+Shift+Tab move window to output left
+# # bindsym $mod+Control+Left focus output left
+# # bindsym $mod+Control+Right focus output right
+
+
+# TODO: сделать переключение и стак одним хоткеем - как на i3 работало
+
+ctrl + shift - up : yabai -m window --swap north
+ctrl + shift - right : yabai -m window --swap east
+ctrl + shift - left : yabai -m window --swap west
+ctrl + shift - down : yabai -m window --swap south
+
+
+cmd + ctrl + shift - up : yabai -m window --stack north
+cmd + ctrl + shift - right : yabai -m window --stack east
+cmd + ctrl + shift - left : yabai -m window --stack west
+cmd + ctrl + shift - down : yabai -m window --stack south
+
+# ## Tiling &  toggle window split type
+
+# TODO: сплитинг, или варп в окно
+
+# bindsym $mod+t layout tabbed
+# bindsym $mod+g layout stacking
+# bindsym $mod+a layout toggle split
+# bindsym $mod+backslash split h;exec notify-send 'tile horizontally'
+# bindsym $mod+minus split v;exec notify-send 'tile vertically'
+# bindsym $mod+q split toggle
+
+# FIXME: выбрать другие хоткеи
+
+ctrl - g : yabai -m window --insert south
+ctrl - h : yabai -m window --insert east
+ctrl - s : yabai -m window --warp north
+ctrl - a : yabai -m window --toggle split
+
+# # toggle window modes - tiling / floating / sticky
+
+# bindsym $mod+s sticky toggle 
+# bindsym $mod+f floating toggle
+# bindsym $mod+F11 fullscreen toggle 
+
+ctrl - z : yabai -m window --toggle sticky 
+# toggle sticky(+float), topmost, picture-in-picture
+
+ctrl - x : yabai -m window --toggle sticky --toggle topmost --toggle pip
+ctrl - c :  yabai -m window --toggle float --grid 4:4:1:1:2:2
+ctrl - v :  yabai -m window --toggle zoom-fullscreen
+
+# ctrl - f : yabai -m window --toggle float
+# ctrl - f : yabai -m window --toggle zoom-fullscreen
+
+
+# bindsym $mod+Shift+Control+Right move workspace to output right
+# bindsym $mod+Shift+Control+Left move workspace to output left
+
+
+
+
+# # Helpers
+
+cmd + ctrl - return : alacritty 
