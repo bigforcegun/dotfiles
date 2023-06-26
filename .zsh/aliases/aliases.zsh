@@ -7,8 +7,8 @@ alias o='open'
 fi
 
 alias ag='ag --hidden -f'
-alias cp='cp -r --reflink=auto'
-#alias df='pydf'
+# alias cp='cp -r --reflink=auto'
+# alias df='pydf'
 alias diff='diff --color --unified'
 
 alias e='nvim'
@@ -40,6 +40,7 @@ alias lm="ll -s=modified"            # Sorted by modified date
 alias lc="ll --created -s=created"   # Sorted by created date
 
 alias c1="awk '{print \$1}'"
+alias c1_2="awk '{print \$1 \$2}'"
 alias c2="awk '{print \$2}'"
 alias c3="awk '{print \$3}'"
 alias c4="awk '{print \$4}'"

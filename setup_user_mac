@@ -60,6 +60,9 @@ link ".config/qalculate/qalc.cfg"
 link ".config/espanso"
 
 
+link ".config/yabai/yabairc"
+link ".config/skhd/skhdrc"
+
 #link ".config/i3"
 #link ".config/dunst"
 #link ".config/i3status"

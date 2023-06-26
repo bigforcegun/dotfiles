@@ -542,7 +542,7 @@ for_window [class="org.gnome.clocks"] floating enable sticky enable
 
 ## Theme Manjaro
 
-# Color palette used for the terminal ( ~/.Xresources file )
+# Color palette used for the terminal ( ~/.Xre  ources file )
 # Colors are gathered based on the documentation:
 # https://i3wm.org/docs/userguide.html#xresources
 # Change the variable name at the place you want to match the color
