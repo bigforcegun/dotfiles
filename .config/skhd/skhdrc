@@ -114,3 +114,5 @@ ctrl - v :  yabai -m window --toggle zoom-fullscreen
 # # Helpers
 
 cmd + ctrl - return : alacritty 
+cmd + ctrl - 0 : yabai --stop-service 
+cmd + ctrl - 9 : yabai --start-service 
