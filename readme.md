@@ -59,6 +59,6 @@ git clone git@github.com:bigforcegun/zsh_history_backup.git .zsh_history_backup
 git clone git@github.com:bigforcegun/zsh_history_backup.git .zsh_history_proj 
 
 zhpl
-zhps -r 629D68AD -y
-zhsync -r 629D68AD -y
+zhps -r BBF6E4B1629D68AD -y
+zhsync -r BBF6E4B1629D68AD -y
 ```

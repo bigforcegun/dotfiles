@@ -2,7 +2,7 @@
 	name = BigForceGun
 	email = BigForceGun@gmail.com
 	# signingkey = BE9C8BCF2398599C
-	signingkey = 629D68AD
+	signingkey = BBF6E4B1BBF6E4B1629D68AD
 
 [core]
 	autocrlf = input

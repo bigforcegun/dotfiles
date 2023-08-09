@@ -13,7 +13,7 @@ dotfiles_dir="$(
 cd "$dotfiles_dir"
 
 
-MY_GPG_KEY_ID="629D68AD"
+MY_GPG_KEY_ID="BBF6E4B1629D68AD"
 
 head "Setting up dotfiles for current user..."
 
