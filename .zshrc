@@ -2,6 +2,12 @@
 
 # echo "i am rc"
 
+
+# FIXME: fuck fuck fuck 
+# https://stackoverflow.com/questions/25614613/how-to-disable-zsh-substitution-autocomplete-with-url-and-backslashes
+# https://github.com/ohmyzsh/ohmyzsh/issues/5499
+DISABLE_MAGIC_FUNCTIONS=true
+
 include () {
     [[ -f "$1" ]] && source "$1"
 }

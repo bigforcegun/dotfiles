@@ -392,9 +392,9 @@ bind C-x confirm-before -p "kill other windows? (y/n)" "kill-window -a"
 bind q confirm-before -p "kill-session #S (y/n)?" "run-shell 'tmux switch-client -n \\\; kill-session -t \"#S\"'"
 
 # bind -n M-Left select-pane -L
-unbind M-Left 
-unbind 
 # bind -n M-Up select-pane -U
+unbind M-Left
+unbind M-Up
 
 bind -n C-M-Left  previous-window
 bind -n C-M-Right next-window

@@ -13,12 +13,12 @@ sudo yabai --load-sa
 
 # global settings
 yabai -m config                                 \
-    mouse_follows_focus          on            \
+    mouse_follows_focus          off            \
     focus_follows_mouse          autoraise            \
     window_origin_display        default        \
     window_placement             second_child   \
     window_zoom_persist          on             \
-    window_topmost               on            \
+    window_topmost               off            \
     window_shadow                float             \
     window_animation_duration    0.0            \
     window_animation_frame_rate  120            \
@@ -36,13 +36,13 @@ yabai -m config                                 \
     window_border                on            \
     split_ratio                  0.50           \
     split_type                   auto           \
-    auto_balance                                \
+    auto_balance                 off              \
     top_padding                  0            \
     bottom_padding               0             \
     left_padding                 0             \
     right_padding                0             \
     window_gap                   06             \
-    layout                       bsp            \
+    layout                       stack            \
     mouse_modifier               ctrl             \
     mouse_action1                move           \
     mouse_action2                resize         \
@@ -50,6 +50,15 @@ yabai -m config                                 \
     rule --add app="^Bartender$" manage=off \
     rule --add app="^System Settings$" manage=off \
     rule --add app="^Calculator$" manage=off \
-    rule --add app="^Karabiner-Elements$" manage=off
+    rule --add app="^Karabiner-Elements$" manage=off \
+    rule --add app="^Calendar$" title="(General|^$)" manage=off
+    rule --add app="^Maccy$" manage=off
+    rule --add app="^Telegram$" manage=off
+    rule --add app="^Alfred$" manage=off
+    rule --add app="^Zoom$" manage=off float=on
+    rule --add app="^AltTab$" manage=off
+    rule --add app="^Session$" manage=off
+
+
 
 echo "yabai configuration loaded.."
