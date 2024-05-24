@@ -7,27 +7,27 @@
 # bindsym $mod+Control+Up workspace next_on_output
 # bindsym $mod+Control+Down workspace prev_on_output
 
-cmd + ctrl - right  : yabai -m space --focus next || yabai -m space --focus first
-cmd + ctrl - left  : yabai -m space --focus prev || yabai -m space --focus last
+#cmd + ctrl - right  : yabai -m space --focus next || yabai -m space --focus first
+#cmd + ctrl - left  : yabai -m space --focus prev || yabai -m space --focus last
 
-cmd + ctrl - q :  yabai -m space --focus 1
-cmd + ctrl - w :  yabai -m space --focus 2
-cmd + ctrl - e :  yabai -m space --focus 3
-cmd + ctrl - r :  yabai -m space --focus 4
-cmd + ctrl - a :  yabai -m space --focus 5
-cmd + ctrl - s :  yabai -m space --focus 6
-cmd + ctrl - d :  yabai -m space --focus 7
-cmd + ctrl - f :  yabai -m space --focus 8
+#cmd + ctrl - q :  yabai -m space --focus 1
+#cmd + ctrl - w :  yabai -m space --focus 2
+#cmd + ctrl - e :  yabai -m space --focus 3
+#cmd + ctrl - r :  yabai -m space --focus 4
+#cmd + ctrl - a :  yabai -m space --focus 5
+#cmd + ctrl - s :  yabai -m space --focus 6
+#cmd + ctrl - d :  yabai -m space --focus 7
+#cmd + ctrl - f :  yabai -m space --focus 8
 
 
-ctrl + shift - q :  yabai -m window --space 1
-ctrl + shift - w :  yabai -m window --space 2
-ctrl + shift - e :  yabai -m window --space 3
-ctrl + shift - r :  yabai -m window --space 4
-ctrl + shift - a :  yabai -m window --space 5
-ctrl + shift - s :  yabai -m window --space 6
-ctrl + shift - d :  yabai -m window --space 7
-ctrl + shift - f :  yabai -m window --space 8
+#ctrl + shift - q :  yabai -m window --space 1
+#ctrl + shift - w :  yabai -m window --space 2
+#ctrl + shift - e :  yabai -m window --space 3
+#ctrl + shift - r :  yabai -m window --space 4
+#ctrl + shift - a :  yabai -m window --space 5
+#ctrl + shift - s :  yabai -m window --space 6
+#ctrl + shift - d :  yabai -m window --space 7
+#ctrl + shift - f :  yabai -m window --space 8
 
 ## Change focus
 
@@ -36,10 +36,10 @@ ctrl + shift - f :  yabai -m window --space 8
 # bindsym $mod+Up focus up
 # bindsym $mod+Right focus right
 
-ctrl - up : yabai -m window --focus north || yabai -m window --focus stack.next || yabai -m window --focus stack.first
-ctrl - right : yabai -m window --focus east
-ctrl - left : yabai -m window --focus west
-ctrl - down : yabai -m window --focus south || yabai -m window --focus stack.prev || yabai -m window --focus stack.last
+#ctrl - up : yabai -m window --focus north || yabai -m window --focus stack.next || yabai -m window --focus stack.first
+#ctrl - right : yabai -m window --focus east
+#ctrl - left : yabai -m window --focus west
+#ctrl - down : yabai -m window --focus south || yabai -m window --focus stack.prev || yabai -m window --focus stack.last
 
 # bindsym $alt+Tab focus right
 # bindsym $alt+grave focus         
@@ -58,16 +58,16 @@ ctrl - down : yabai -m window --focus south || yabai -m window --focus stack.pre
 
 # TODO: сделать переключение и стак одним хоткеем - как на i3 работало
 
-ctrl + shift - up : yabai -m window --swap north
-ctrl + shift - right : yabai -m window --swap east
-ctrl + shift - left : yabai -m window --swap west
-ctrl + shift - down : yabai -m window --swap south
+#ctrl + shift - up : yabai -m window --swap north
+#ctrl + shift - right : yabai -m window --swap east
+#ctrl + shift - left : yabai -m window --swap west
+#ctrl + shift - down : yabai -m window --swap south
 
 
-cmd + ctrl + shift - up : yabai -m window --stack north | yabai -m window --warp south
-cmd + ctrl + shift - right : yabai -m window --stack east
-cmd + ctrl + shift - left : yabai -m window --stack west
-cmd + ctrl + shift - down : yabai -m window --stack south
+#cmd + ctrl + shift - up : yabai -m window --stack north | yabai -m window --warp south
+#cmd + ctrl + shift - right : yabai -m window --stack east
+#cmd + ctrl + shift - left : yabai -m window --stack west
+#cmd + ctrl + shift - down : yabai -m window --stack south
 
 # ## Tiling &  toggle window split type
 
@@ -82,15 +82,15 @@ cmd + ctrl + shift - down : yabai -m window --stack south
 
 # FIXME: выбрать другие хоткеи
 
-ctrl - g : yabai -m window --insert south
-ctrl - h : yabai -m window --insert east
-ctrl - s : yabai -m window --warp north
+#ctrl - g : yabai -m window --insert south
+#ctrl - h : yabai -m window --insert east
+#ctrl - s : yabai -m window --warp north
 
-ctrl - a : yabai -m window --toggle split
+#ctrl - a : yabai -m window --toggle split
 
-ctrl - t : yabai -m space --layout stack
-ctrl - r : yabai -m space --layout bsp
-ctrl - e : yabai -m space --layout float
+#ctrl - t : yabai -m space --layout stack
+#ctrl - r : yabai -m space --layout bsp
+#ctrl - e : yabai -m space --layout float
 
 
 # # toggle window modes - tiling / floating / sticky
@@ -103,9 +103,8 @@ ctrl - e : yabai -m space --layout float
 # toggle sticky(+float), topmost, picture-in-picture
 
 # ctrl - x : yabai -m window --toggle sticky --toggle topmost --toggle pip
-ctrl - f :  yabai -m window --toggle float # --grid 4:4:1:1:2:2
-ctrl - x : yabai -m window --toggle sticky 
-ctrl - z : yabai -m window --toggle topmost 
+#ctrl - f :  yabai -m window --toggle float # --grid 4:4:1:1:2:2
+#ctrl - x : yabai -m window --toggle sticky
 #ctrl - v :  yabai -m window --toggle zoom-fullscreen
 
 # ctrl - f : yabai -m window --toggle float
@@ -119,6 +118,6 @@ ctrl - z : yabai -m window --toggle topmost
 # # Helpers
 
 cmd + ctrl - return : alacritty 
-cmd + ctrl - 0 : yabai --stop-service 
-cmd + ctrl - 9 : yabai --start-service 
+#cmd + ctrl - 0 : yabai --stop-service 
+#cmd + ctrl - 9 : yabai --start-service 
 cmd + ctrl - l : pmset displaysleepnow

@@ -3,7 +3,7 @@
 # echo "i am rc"
 
 
-# FIXME: fuck fuck fuck 
+# FIXME: fuck fuck fuck
 # https://stackoverflow.com/questions/25614613/how-to-disable-zsh-substitution-autocomplete-with-url-and-backslashes
 # https://github.com/ohmyzsh/ohmyzsh/issues/5499
 DISABLE_MAGIC_FUNCTIONS=true
@@ -12,19 +12,18 @@ include () {
     [[ -f "$1" ]] && source "$1"
 }
 
-source ~/.zsh/autorun-tmux.zsh
 
 source ~/.zsh/prompt.zsh
 
-source <(antibody init)
+zstyle ':antidote:compatibility-mode' 'antibody'
+
+source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
 
 # TODO: разобраться с комбинацией prezto+antibody - что настраиваешь сам, что через презто, когда надобно инклудить файлы
-
 source ~/.zsh/prezto.zsh
 
 source ~/.zsh/completions.zsh
 source ~/.zsh/zsh-notify.zsh
-
 
 source ~/.zsh/antibody.zsh
 source ~/.zsh/environment.zsh

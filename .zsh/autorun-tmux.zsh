@@ -1,3 +1,3 @@
 if [[ -z "$TMUX" ]]; then
- exec tmux new
+  exec tmux new
 fi
