@@ -4,7 +4,7 @@ FZF_MODE="FD"
 
 export FZF_DEFAULT_OPTS="--history=$HOME/.fzf_history --ansi"
 
-export FZF_CTRL_R_OPTS="  
+export FZF_CTRL_R_OPTS="
   --preview 'bat -n --color=always {}'
   --preview-window up:3:hidden:wrap
   --bind 'ctrl-p:toggle-preview'
@@ -55,9 +55,9 @@ bindkey '\t' expand-or-complete
 #export FZ_CMD=j
 #export FZ_SUBDIR_CMD=jj
 
-antibody bundle <<EOB
-  rupa/z
-  changyuheng/fz
-EOB
+#antibody bundle <<EOB
+#  rupa/z
+#  changyuheng/fz
+#EOB
 
 

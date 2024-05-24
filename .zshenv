@@ -1,7 +1,9 @@
 #!/bin/sh
 
-unset TERM_SESSION_ID
-
+# unset TERM_SESSION_ID
+if [[ -z ${TERM_SESSION_ID+x} ]]; then
+    TERM_SESSION_ID="$(uuidgen)"
+fi
 # echo "I am env"
 
 export EDITOR='nvim'
@@ -70,9 +72,19 @@ if [[ $HOST_OS == 'linux' ]]; then
     export PATH="$PATH:/usr/local/go/bin"
 
     export BUP_DIR="$HOME/encfs/private/backups/bup/"
-
 fi
 
+if [[ $HOST_OS == 'mac' ]]; then
+    export GOPATH="$HOME/go"
+    export PATH="$GOPATH/bin:$PATH"
+fi 
+
+export GOPROXY=direct
+export GOPRIVATE=github.com/KosyanMedia
+
 export PATH="$PATH:$HOME/.rvm/bin"
+
+# ring lang
+export PATH="$PATH:$HOME/Opt/ring/bin"
 
 export NVM_DIR="$HOME/.nvm"

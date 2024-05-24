@@ -1,20 +1,24 @@
-antibody bundle <<EOB
-  sorin-ionescu/prezto
-  robbyrussell/oh-my-zsh
-  robbyrussell/oh-my-zsh path:plugins/fancy-ctrl-z
-  robbyrussell/oh-my-zsh path:plugins/kubectl
-  robbyrussell/oh-my-zsh path:plugins/docker-compose
+
+# https://github.com/mattmc3/antidote
+antidote load ${ZDOTDIR:-$HOME}/.zsh_plugins
+
+#antibody bundle <<EOB
+#  sorin-ionescu/prezto
+#  robbyrussell/oh-my-zsh
+#  robbyrussell/oh-my-zsh path:plugins/fancy-ctrl-z
+#  robbyrussell/oh-my-zsh path:plugins/kubectl
+#  robbyrussell/oh-my-zsh path:plugins/docker-compose
 
 
-  hlissner/zsh-autopair
-  marzocchi/zsh-notify
-  Tarrasch/zsh-bd
-  zsh-users/zsh-syntax-highlighting
+ # hlissner/zsh-autopair
+ # marzocchi/zsh-notify
+ # Tarrasch/zsh-bd
+ # zsh-users/zsh-syntax-highlighting kind:defer
 
-  zsh-users/zsh-autosuggestions
-  zsh-users/zaw
-  denysdovhan/spaceship-prompt
-EOB
+  #zsh-users/zsh-autosuggestions kind:defer
+  #zsh-users/zaw
+  #denysdovhan/spaceship-prompt
+#EOB
 
 # robbyrussell/oh-my-zsh path:plugins/encode64
 # robbyrussell/oh-my-zsh path:plugins/rust

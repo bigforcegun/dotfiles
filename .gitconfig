@@ -38,7 +38,7 @@
 	conflictStyle = diff3
 
 [difftool]
-	prompt = false
+	prompt = true
 
 [difftool "meld"]
 	cmd = meld "$LOCAL" "$REMOTE"
@@ -61,3 +61,6 @@
 	w = whatchanged
 [gpg]
 	program = /opt/homebrew/bin/gpg
+
+[url "git@github.com:KosyanMedia"]
+    insteadOf = https://github.com/KosyanMedia

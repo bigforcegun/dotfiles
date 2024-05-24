@@ -1,0 +1,18 @@
+rupa/z
+changyuheng/fz
+
+sorin-ionescu/prezto
+ohmyzsh/ohmyzsh
+ohmyzsh/ohmyzsh path:plugins/fancy-ctrl-z
+ohmyzsh/ohmyzsh path:plugins/kubectl
+ohmyzsh/ohmyzsh path:plugins/docker-compose
+
+
+hlissner/zsh-autopair
+marzocchi/zsh-notify
+Tarrasch/zsh-bd
+zsh-users/zsh-syntax-highlighting
+
+zsh-users/zsh-autosuggestions
+zsh-users/zaw
+denysdovhan/spaceship-prompt
