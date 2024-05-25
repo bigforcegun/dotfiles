@@ -1,0 +1,17 @@
+#source: https://gist.github.com/xqm32/17777d035930d622d0ff7530bfab61fd
+
+#CONFIG_PATH="/Users/bigforcegun/.config/alacritty/alacritty.yml"
+#CONFIG_PATH="/Users/bigforcegun/.dotfiles/.config/alacritty/alacritty.yml"
+#CONFIG_FILE=`"/Users/bigforcegun/.config/alacritty/alacritty.yml"
+#THEMES=`grep "&theme-" ${CONFIG_PATH}`
+#THEMES_LIST=`echo "${THEMES}" | awk -F'&' '{print $2}'`
+#CURRENT_THEME=`grep "current-theme" $CONFIG_PATH`
+
+
+#SELECTED_THEME='theme-gruvbox-light'
+#SELECTED_THEME='theme-gruvbox-dark'
+#SELECTED_THEME=`echo "${THEMES_LIST}" | fzf-tmux -l 20% --multi --reverse`
+#SELECTED_THEME= echo $THEMES | fzf
+#SELECTED_THEME=`echo "${THEMES_LIST}" | grep "${SELECTED_THEME}"`
+
+SELECTED_THEME=`echo "${THEMES_LIST}" | fzf-tmux -l 20% --multi --reverse`

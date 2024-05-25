@@ -53,7 +53,7 @@ link ".config/fd/ignore" #https://github.com/sharkdp/fd/issues/608
 
 #link ".config/autostart/libinput-gestures.desktop"
 
-link ".config/alacritty/alacritty.yml"
+link ".config/alacritty"
 link ".config/qalculate/qalc.cfg"
 #link ".config/libinput-gestures.conf"
 

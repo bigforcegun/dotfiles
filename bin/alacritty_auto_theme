@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+# бля ну гавно же чото нет готового решения нормального
+# мне надо
+# взять свифт и написать скрипнт - https://gist.github.com/sj26/66871cc0c7d856402015f8810771d068
+# потом его надо как то в автозагрузку добавить
+# тогда я смогу вешать шелл хуки на изменения дарк мода
+# а нет есть - это надо сварить - https://github.com/bouk/dark-mode-notify)
+
+ALACRITTY_THEME=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo "Light")
+if [ "$ALACRITTY_THEME" = "Dark" ]
+then
+  alacritty_theme "gruvbox_dark"
+else
+  alacritty_theme "gruvbox_light"
+fi
