@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -e
+
+# toggle mac os dark mode
+case "$1" in
+  "on"|"dark")
+    next_dark_mode_value="true"
+    ;;
+  "off"|"light")
+    next_dark_mode_value="false"
+    ;;
+  *)
+    next_dark_mode_value="not dark mode"
+    ;;
+esac
+
+osascript <<APPLESCRIPT
+  tell application "System Events"
+    tell appearance preferences
+      set dark mode to $next_dark_mode_value
+    end tell
+  end tell
+APPLESCRIPT
+
+hyper_config=$HOME/.hyper.js
+hyper_dark_plugin=hyper-one-dark-vivid
+hyper_light_plugin=hyper-one-light
+
+if [[ $(is-dark-mode) == "true" ]]; then
+  touch $HOME/.dark-mode
+else
+  rm -f $HOME/.dark-mode
+fi
+
+# toggle hyper term dark mode
+if [[ -f $HOME/.dark-mode ]]; then
+  sed -i -e "s/$hyper_light_plugin/$hyper_dark_plugin/" "$hyper_config"
+else
+  sed -i -e "s/$hyper_dark_plugin/$hyper_light_plugin/" "$hyper_config"
+fi
+
+if [[ $? -eq 0 ]]; then
+  if [[ -f $HOME/.dark-mode ]]; then
+    tmux set-option -g status-left-bg black
+    tmux set-option -g status-bg black
+    tmux set-option -g status-fg white
+    tmux set-option -g window-status-current-bg white
+    tmux set-option -g window-status-current-fg black
+  else
+    tmux set-option -g status-left-bg colour15
+    tmux set-option -g status-bg colour15
+    tmux set-option -g status-fg black
+    tmux set-option -g window-status-current-bg colour12
+    tmux set-option -g window-status-current-fg black
+  fi
+fi
+
+# toggle vim dark mode
+vim_instances=($(nvr --serverlist))
+
+if [[ $? -eq 0 ]]; then
+  for name in ${vim_instances[@]}; do
+    if [[ -f $HOME/.dark-mode ]]; then
+      nvr --servername "$name" -cc ":colorscheme onehalfdark"
+    else
+      nvr --servername "$name" -cc ":colorscheme onehalflight"
+    fi
+  done
+fi

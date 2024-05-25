@@ -1,0 +1,12 @@
+#!/usr/bin/env zsh
+
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied"
+    exit(1)
+fi
+
+#ln -sf $HOME/.config/alacritty/themes/$1.toml $HOME/.config/alacritty/active_theme.toml
+cat $HOME/.config/alacritty/themes/$1.toml >! $HOME/.config/alacritty/active_theme.toml
+echo $1
+
