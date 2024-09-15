@@ -21,4 +21,6 @@ export MANPATH="/opt/local/share/man:$MANPATH"
 # Finished adapting your MANPATH environment variable for use with MacPorts.
 
 
+export THEME_OS_MODE="$(/opt/homebrew/bin/dark-notify -e)"
+
 source ~/.zsh/autorun-tmux.zsh

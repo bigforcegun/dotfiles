@@ -8,5 +8,6 @@ fi
 
 #ln -sf $HOME/.config/alacritty/themes/$1.toml $HOME/.config/alacritty/active_theme.toml
 cat $HOME/.config/alacritty/themes/$1.toml >! $HOME/.config/alacritty/active_theme.toml
-echo $1
+echo "Set alacritty theme to $1"
 
+exit 0

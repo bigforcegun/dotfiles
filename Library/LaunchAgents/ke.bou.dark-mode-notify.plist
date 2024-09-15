@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ke.bou.dark-mode-notify</string>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/ke.bou.dark-mode-notify.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/ke.bou.dark-mode-notify.out.log</string>
+    <key>ProgramArguments</key>
+    <array>
+       <string>/opt/homebrew/bin/dark-notify</string>
+       <string>-c</string>
+       <string>/Users/bigforcegun/bin/dark_mode_notify_hook</string>
+    </array>
+</dict>
+</plist>

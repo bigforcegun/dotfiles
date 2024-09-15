@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+# set -g @tmux-gruvbox 'light'
+# set -g status on
+
+echo "Tmux reloading theme..."
+
+/opt/homebrew/bin/tmux set-environment -g THEME_OS_MODE "$(/opt/homebrew/bin/dark-notify -e)"
+
+# run oh-my-tmux theme reload code
+/opt/homebrew/bin/tmux run '"$TMUX_PROGRAM" source "$TMUX_CONF_LOCAL"' && /opt/homebrew/bin/tmux run 'cut -c3- "$TMUX_CONF" | sh -s _apply_theme'
