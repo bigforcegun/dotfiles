@@ -85,6 +85,9 @@ link ".config/skhd/skhdrc"
 #link ".config/systemd/user/maid.service"
 #link ".config/systemd/user/maid.timer"
 
+link "Library/LaunchAgents/ke.bou.dark-mode-notify.plist"
+
+
 #link ".urlwatch/urls.yaml"
 
 link ".gnupg/gpg-agent.conf"
@@ -103,6 +106,10 @@ link ".gemrc"
 #link ".Xmodmap"
 
 head "Enable userspace services..."
+
+
+# FIXME check service before loading
+launchctl load -w ~/Library/LaunchAgents/ke.bou.dark-mode-notify.plist
 
 #systemctl --user daemon-reload
 

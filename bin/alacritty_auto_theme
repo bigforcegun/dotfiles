@@ -7,10 +7,10 @@
 # тогда я смогу вешать шелл хуки на изменения дарк мода
 # а нет есть - это надо сварить - https://github.com/bouk/dark-mode-notify)
 
-ALACRITTY_THEME=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo "Light")
-if [ "$ALACRITTY_THEME" = "Dark" ]
+SYSTEM_THEME=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo "Light")
+if [ "$SYSTEM_THEME" = "Dark" ]
 then
-  alacritty_theme "gruvbox_dark"
+  /Users/bigforcegun/bin/alacritty_theme "gruvbox_dark"
 else
-  alacritty_theme "gruvbox_light"
+  /Users/bigforcegun/bin/alacritty_theme "gruvbox_light"
 fi

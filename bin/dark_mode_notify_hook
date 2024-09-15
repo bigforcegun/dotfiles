@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+echo "DARKMODE=${DARKMODE}"
+/Users/bigforcegun/bin/alacritty_auto_theme
+/Users/bigforcegun/bin/tmux_auto_theme
+
+
