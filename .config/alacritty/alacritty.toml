@@ -1,6 +1,3 @@
-live_config_reload = true
-
-import = ["~/.config/alacritty/active_theme.toml"]
 
 [bell]
 animation = "EaseOutExpo"
@@ -715,7 +712,7 @@ multiplier = 3
 save_to_clipboard = false
 semantic_escape_chars = ",│`|:\"' ()[]{}<>\t"
 
-[shell]
+[terminal.shell]
 args = ["--login"]
 program = "/bin/zsh"
 
@@ -780,4 +777,11 @@ yellow = "0xd79921"
 [x-colors2.primary]
 background = "0x282828"
 foreground = "0xebdbb2"
+
+[general]
+live_config_reload = true
+
+import = ["~/.config/alacritty/active_theme.toml"]
+
+[terminal]
 

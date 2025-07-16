@@ -9,8 +9,10 @@ export SIZE=1000000000
 export SAVEHIST=1000000000
 export HISTFILE=~/.zsh_history
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
+#setopt    sharehistory
 unsetopt SHARE_HISTORY
-
+setopt    incappendhistory
+setopt    appendhistory
 ZSH_HIGHLIGHT_MAXLENGTH=1024                 # don't colorize long command lines (slow)
 ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets)   # main syntax highlighting plus matching brackets
 ZSH_AUTOSUGGEST_MANUAL_REBIND=1              # disable a very slow obscure feature
@@ -24,3 +26,5 @@ ZSH_HISTORY_FILE_ENC="${ZSH_HISTORY_PROJ}/${ZSH_HISTORY_FILE_ENC_NAME}"
 ZSH_HISTORY_COMMIT_MSG="latest $(date)"
 
 DISABLE_MAGIC_FUNCTIONS=true
+
+# HISTCONTROL=ignoredups:erasedups
