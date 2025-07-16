@@ -20,7 +20,7 @@ alias mkdir='mkdir -p'
 #alias rm='rmtrash -rf' #FIXME add rm-tools install
 #alias rm!='\rm -rf'
 
-alias rsync='rsync --verbose --archive --info=progress2 --human-readable --compress --partial'
+alias rsync='rsync --verbose --archive --progress --human-readable --compress --partial'
 # alias ssudo='sudo'
 # alias sudo='sudo -E '
 alias vi='nvim'
@@ -32,7 +32,7 @@ alias fzpath="hpath | fzf"
 alias fenv="env | fzf"
 # alias bfg='java -jar ~/bin/bfg-1.13.0.jar' #FIXME: plases for jar assets
 
-alias ls="exa --git --group-directories-first --icons"
+alias ls="eza --git --group-directories-first --icons"
 alias ll="ls -l"
 alias la="ll -a"
 alias lk="ll -s=size"                # Sorted by size
