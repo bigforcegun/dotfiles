@@ -60,6 +60,7 @@ git clone git@github.com:bigforcegun/zsh_history_backup.git .zsh_history_proj
 zhpl
 zhps -r BEA596E7B5F0A834 -y
 zhsync -r BEA596E7B5F0A834 -y
+
 ```
 
 ### Tmux auto theme
