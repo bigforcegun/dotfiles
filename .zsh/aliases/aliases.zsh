@@ -65,6 +65,8 @@ alias ods_to_csv="unoconv -f csv -e FilterOptions=\"59,34,0,1\""
 
 alias bf="butterfish"
 
+alias godot='/Applications/Godot.app/Contents/MacOS/Godot'
+
 mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
 }
