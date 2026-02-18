@@ -24,3 +24,7 @@ export MANPATH="/opt/local/share/man:$MANPATH"
 export THEME_OS_MODE="$(/opt/homebrew/bin/dark-notify -e)"
 
 source ~/.zsh/autorun-tmux.zsh
+
+# Added by OrbStack: command-line tools and integration
+# This won't be added again if you remove it.
+source ~/.orbstack/shell/init.zsh 2>/dev/null || :

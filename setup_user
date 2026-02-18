@@ -67,6 +67,15 @@ link ".config/compton.conf"
 link ".config/polybar/main"
 
 
+link ".config/opencode/opencode.json"
+link ".config/opencode/agents"
+link ".config/opencode/instructions"
+link ".config/opencode/commands"
+link ".config/opencode/rules"
+link ".config/opencode/skills"
+link ".config/opencode/tools"
+
+
 link ".config/rofi/config.rasi"
 link ".config/systemd/user/urlwatch.service"
 link ".config/systemd/user/urlwatch.timer"

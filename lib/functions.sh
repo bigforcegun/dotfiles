@@ -76,7 +76,7 @@ systemctl_enable_start() {
     target="$1"
     name="$2"
   fi
- 
+
   if [[ "$target" == "user" ]]; then
     systemctl_command='systemctl --user'
     systemctl --user enable "$name"
@@ -84,12 +84,12 @@ systemctl_enable_start() {
   else
     $systemctl_command="systemctl"
   fi
-  
+
   echo "$systemctl_command enable & start "$name""
   $systemctl_command enable "$name"
   $systemctl_command start  "$name"
-  
- 
+
+
 }
 
 

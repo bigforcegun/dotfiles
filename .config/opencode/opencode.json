@@ -1,0 +1,55 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "gruvbox",
+  "default_agent": "plan",
+  "autoupdate": "notify",
+  "share": "manual",
+  "logLevel": "INFO",
+  "tui": {
+    "diff_style": "auto"
+  },
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**"
+    ]
+  },
+  "server": {
+    "port": 4096,
+    "hostname": "127.0.0.1",
+    "mdns": false
+  },
+  "instructions": [
+    "~/.config/opencode/instructions/agent-identity.md",
+    "~/.config/opencode/instructions/common.md",
+    "~/.config/opencode/instructions/communication.md",
+    "~/.config/opencode/instructions/opencode.md",
+    "~/.config/opencode/instructions/git.md"
+  ],
+  "command": {
+    "agent-install-hooks2": {
+      "description": "Install repository Git hooks",
+      "template": "Run `./scripts/install-hooks.sh` from the project root and report the resulting local Git config values."
+    }
+  },
+  "permission": {
+    "*": "allow",
+    "external_directory": "ask",
+    "doom_loop": "ask",
+    "edit": {
+      "*": "allow",
+      "opencode.json": "deny",
+      "opencode.json.bak": "deny",
+      ".git/**": "deny",
+      ".gitconfig": "deny",
+      ".gitmessage": "deny",
+      ".githooks/**": "deny",
+      ".gitignore": "deny",
+      ".gitattributes": "deny",
+      ".gitmodules": "deny",
+      ".opencode/**": "deny",
+      "~/.config/opencode/**": "deny"
+    }
+  }
+}
