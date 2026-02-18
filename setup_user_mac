@@ -60,6 +60,17 @@ link ".config/qalculate/qalc.cfg"
 
 link ".config/espanso"
 
+## Opencode Section 🤡 (привет NPM модули в .config)
+
+link ".config/opencode/opencode.json"
+link ".config/opencode/agents"
+link ".config/opencode/instructions"
+link ".config/opencode/commands"
+link ".config/opencode/rules"
+link ".config/opencode/skills"
+link ".config/opencode/tools"
+
+## Yabay
 
 link ".config/yabai/yabairc"
 link ".config/skhd/skhdrc"

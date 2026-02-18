@@ -75,9 +75,10 @@ if [[ $HOST_OS == 'linux' ]]; then
 fi
 
 if [[ $HOST_OS == 'mac' ]]; then
+    export PATH="/opt/homebrew/opt/go@1.24/bin:$PATH"
     export GOPATH="$HOME/go"
     export PATH="$GOPATH/bin:$PATH"
-fi 
+fi
 
 export GOPROXY=direct
 export GOPRIVATE=github.com/KosyanMedia
