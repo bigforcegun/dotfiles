@@ -3,7 +3,7 @@ description: Who am I
 agent: plan
 ---
 
-Show table with current agent identity data
+Show vertical table with current agent identity data
 
 - NAME
 - AGENT ID

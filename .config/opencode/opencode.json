@@ -20,6 +20,32 @@
     "hostname": "127.0.0.1",
     "mdns": false
   },
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama MAC AIR M2",
+      "options": {
+        "baseURL": "http://192.168.8.235:11434/v1"
+      },
+      "models": {
+        "gemma3n:e4b": {
+          "name": "gemma3n"
+        },
+        "lfm2.5-thinking:latest": {
+          "name": "lfm2.5-thinking"
+        },
+        "codegemma:7b": {
+          "name": "codegemma-7b"
+        },
+        "codegemma:2b": {
+          "name": "codegemma-2b"
+        },
+        "hf.co/unsloth/Phi-4-mini-instruct-GGUF:latest": {
+          "name": "phi-4-mini-instruct"
+        }
+      }
+    }
+  },
   "instructions": [
     "~/.config/opencode/instructions/agent-identity.md",
     "~/.config/opencode/instructions/common.md",
