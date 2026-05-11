@@ -34,6 +34,10 @@ Darwin*) HOST_OS=mac ;;
 *) HOST_OS="UNKNOWN:${unameOut}" ;;
 esac
 
+export HISTSIZE=1000000000
+export SAVEHIST=1000000000
+export HISTFILE=~/.zsh_history
+
 # My own binaries
 export PATH="$HOME/bin:$PATH"
 
@@ -78,6 +82,8 @@ if [[ $HOST_OS == 'mac' ]]; then
     export PATH="/opt/homebrew/opt/go@1.24/bin:$PATH"
     export GOPATH="$HOME/go"
     export PATH="$GOPATH/bin:$PATH"
+    export PATH="$HOME/.local/bin:$PATH"
+    export UV_PYTHON=3.13
 fi
 
 export GOPROXY=direct

@@ -4,10 +4,9 @@ if [[ $HOST_OS == 'linux' ]]; then
 include "/usr/share/LS_COLORS/dircolors.sh"
 include "/home/bigforcegun/.local/share/lscolors.sh"
 fi
-# а вот тут залупа коня - если неудачно прибить ZSH то он не успеет прочитать эти переменные и потрет историю при выходе :clown:
-export SIZE=1000000000
-export SAVEHIST=1000000000
-export HISTFILE=~/.zsh_history
+
+export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
+
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
 #setopt    sharehistory
 unsetopt SHARE_HISTORY

@@ -42,6 +42,9 @@
         },
         "hf.co/unsloth/Phi-4-mini-instruct-GGUF:latest": {
           "name": "phi-4-mini-instruct"
+        },
+        "qwen2.5-coder:7b-instruct": {
+          "name": "qwen2.5-coder-7b-instruct"
         }
       }
     }

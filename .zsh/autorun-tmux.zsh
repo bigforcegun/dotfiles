@@ -3,6 +3,10 @@ if [[ -n "$VSCODE_RESOLVING_ENVIRONMENT" ]]; then
   return
 fi
 
+if [[ ! -o interactive || ! -t 0 || ! -t 1 ]]; then
+  return
+fi
+
 if [[ -z "$TMUX" ]]; then
 
   if [[ -n "$VSCODE_SHELL_INTEGRATION" || "$TERM_PROGRAM" == "vscode" || "$TERM_PROGRAM" == "cursor" ]]; then
