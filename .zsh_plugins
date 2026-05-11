@@ -2,7 +2,7 @@ rupa/z
 changyuheng/fz
 
 sorin-ionescu/prezto
-ohmyzsh/ohmyzsh
+
 ohmyzsh/ohmyzsh path:plugins/fancy-ctrl-z
 ohmyzsh/ohmyzsh path:plugins/kubectl
 ohmyzsh/ohmyzsh path:plugins/docker-compose
