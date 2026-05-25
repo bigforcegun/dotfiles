@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# keep PATH entries unique (nested shells re-prepend below, this dedups)
+typeset -U path PATH
+
 # unset TERM_SESSION_ID
 if [[ -z ${TERM_SESSION_ID+x} ]]; then
     TERM_SESSION_ID="$(uuidgen)"
@@ -33,6 +36,8 @@ Linux*) HOST_OS=linux ;;
 Darwin*) HOST_OS=mac ;;
 *) HOST_OS="UNKNOWN:${unameOut}" ;;
 esac
+
+export HOST_OS HOST_TYPE
 
 export HISTFILE=~/.zsh_history
 
