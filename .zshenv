@@ -30,12 +30,13 @@ fi
 
 ## set host os
 
-unameOut="$(uname -s)"
-case "${unameOut}" in
-Linux*) HOST_OS=linux ;;
-Darwin*) HOST_OS=mac ;;
-*) HOST_OS="UNKNOWN:${unameOut}" ;;
-esac
+if [[ -z ${HOST_OS+x} ]]; then
+    case "$(uname -s)" in
+    Linux*) HOST_OS=linux ;;
+    Darwin*) HOST_OS=mac ;;
+    *) HOST_OS="UNKNOWN" ;;
+    esac
+fi
 
 export HOST_OS HOST_TYPE
 
