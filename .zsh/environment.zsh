@@ -10,6 +10,8 @@ export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
 #setopt    sharehistory
 unsetopt SHARE_HISTORY
+unsetopt HIST_SAVE_NO_DUPS
+unsetopt HIST_IGNORE_ALL_DUPS
 setopt    incappendhistory
 setopt    appendhistory
 ZSH_HIGHLIGHT_MAXLENGTH=1024                 # don't colorize long command lines (slow)
@@ -24,6 +26,5 @@ ZSH_HISTORY_FILE_ENC_NAME="zsh_history"
 ZSH_HISTORY_FILE_ENC="${ZSH_HISTORY_PROJ}/${ZSH_HISTORY_FILE_ENC_NAME}"
 ZSH_HISTORY_COMMIT_MSG="latest $(date)"
 
-DISABLE_MAGIC_FUNCTIONS=true
 
 # HISTCONTROL=ignoredups:erasedups

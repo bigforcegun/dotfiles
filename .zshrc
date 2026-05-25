@@ -8,6 +8,10 @@
 # https://github.com/ohmyzsh/ohmyzsh/issues/5499
 DISABLE_MAGIC_FUNCTIONS=true
 
+HISTSIZE=1000000000
+SAVEHIST=1000000000
+setopt EXTENDED_HISTORY
+
 include () {
     [[ -f "$1" ]] && source "$1"
 }
