@@ -34,8 +34,6 @@ Darwin*) HOST_OS=mac ;;
 *) HOST_OS="UNKNOWN:${unameOut}" ;;
 esac
 
-export HISTSIZE=1000000000
-export SAVEHIST=1000000000
 export HISTFILE=~/.zsh_history
 
 # My own binaries
