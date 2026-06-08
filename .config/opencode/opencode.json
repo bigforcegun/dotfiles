@@ -1,13 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "gruvbox",
   "default_agent": "plan",
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",
-  "tui": {
-    "diff_style": "auto"
-  },
   "watcher": {
     "ignore": [
       "node_modules/**",
@@ -80,5 +76,8 @@
       ".opencode/**": "deny",
       "~/.config/opencode/**": "deny"
     }
-  }
+  },
+  "plugin": [
+    "oh-my-openagent@latest"
+  ]
 }
