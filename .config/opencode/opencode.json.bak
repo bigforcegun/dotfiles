@@ -45,17 +45,6 @@
       }
     }
   },
-  "mcp": {
-    "tmux": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@fr1sk/tmux-mcp"
-      ],
-      "enabled": true
-    }
-  },
   "instructions": [
     "~/.config/opencode/instructions/agent-identity.md",
     "~/.config/opencode/instructions/common.md",

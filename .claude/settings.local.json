@@ -4,7 +4,9 @@
       "Bash(rtk ls *)",
       "Bash(rtk read *)",
       "WebFetch(domain:github.com)",
-      "Bash(rtk grep *)"
+      "Bash(rtk grep *)",
+      "WebSearch",
+      "mcp__semble__search"
     ]
   }
 }
