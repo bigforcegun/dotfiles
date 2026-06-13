@@ -1,0 +1,15 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "http://localhost:9090/context7/mcp",
+      "env": {}
+    },
+    "semble": {
+      "type": "http",
+      "url": "http://localhost:9090/semble/mcp",
+      "env": {}
+    }
+  }
+}

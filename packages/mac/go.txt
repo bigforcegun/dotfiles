@@ -1,0 +1,1 @@
+github.com/TBXark/mcp-proxy@latest

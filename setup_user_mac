@@ -70,6 +70,14 @@ link ".config/opencode/rules"
 link ".config/opencode/skills"
 link ".config/opencode/tools"
 
+## MCP Stack (см. docs/mcp-stack/PLAN.md)
+
+# config.json линкуем ОТДЕЛЬНЫМ файлом (не всю .config/mcp-proxy/),
+# чтобы реальный ~/.config/mcp-proxy/env остался ВНЕ git.
+link ".config/mcp-proxy/config.json"
+link ".config/rulesync/contexts"
+link "Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist"
+
 ## Yabay
 
 link ".config/yabai/yabairc"
@@ -121,6 +129,7 @@ head "Enable userspace services..."
 
 # FIXME check service before loading
 launchctl load -w ~/Library/LaunchAgents/ke.bou.dark-mode-notify.plist
+launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
 
 #systemctl --user daemon-reload
 

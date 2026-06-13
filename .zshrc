@@ -38,6 +38,7 @@ source ~/.zsh/aliases/git.zsh
 source ~/.zsh/aliases/kube.zsh
 source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
+source ~/.zsh/mcp.zsh
 
 # Added by LM Studio CLI (lms)
 # export PATH="$PATH:/Users/bigforcegun/.lmstudio/bin"

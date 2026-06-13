@@ -1,0 +1,19 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "godot": {
+      "type": "http",
+      "url": "http://localhost:9090/godot/mcp",
+      "env": {}
+    },
+    "semble": {
+      "type": "http",
+      "url": "http://localhost:9090/semble/mcp",
+      "env": {}
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp",
+      "transportType": "streamable-http"
+    }
+  }
+}

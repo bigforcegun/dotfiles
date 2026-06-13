@@ -142,6 +142,7 @@ IaC ✓ (config в git), секреты не в репе ✓.
 - **Новый общий сервер:** добавил в `~/.config/mcp-proxy/config.json` → перезапуск демона → сослался URL'ом из контекстов.
 - **Repo-local сервер:** один раз руками в `.mcp.json` репы (preserved при регенерации).
 - **Сменить набор тулов контекста:** правишь `contexts/<ctx>/.rulesync/` в dotfiles → `mcpctx` в нужных репах.
+- **Выбор proxy-слоя:** см. матрицу `docs/mcp-stack/OMO.md`. В OMO-проектах built-in MCP (`websearch`, `context7`, `grep_app`, `lsp`, `ast_grep`) остаются OMO-native; для non-OMO клиентов `context7` идёт как canonical proxy endpoint, а `websearch`/`grep_app` заведены отдельно как `shared-*`.
 
 Алиас (`~/.dotfiles/.zsh/mcp.zsh`):
 ```bash
@@ -154,9 +155,10 @@ mcpctx() { rulesync generate --input-root ~/.config/rulesync/contexts/"$1" --out
 
 Стартовые контексты:
 - **research** — web/fetch + code-search + readonly-fs (общий ресёрч).
-- **dev** — git/github/lsp/filesystem.
+- **dev** — git/github/lsp/filesystem + `context7`.
 - **gamedev** — dev + godot.
 - **corpdev** — урезанный безопасный набор, курируется напрямую.
+- **non-omo-research** — shared research MCP через `mcp-proxy` для клиентов без OMO-плагина; в OMO-проекты не применять, чтобы не плодить функциональные дубли.
 
 Корневые папки общих агентов (засеваются раз):
 ```
