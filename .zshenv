@@ -40,7 +40,7 @@ fi
 
 export HOST_OS HOST_TYPE
 
-export HISTFILE=~/.zsh_history
+export HISTFILE=~/.zsh_history_bfpc
 
 # My own binaries
 export PATH="$HOME/bin:$PATH"

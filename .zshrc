@@ -8,6 +8,10 @@
 # https://github.com/ohmyzsh/ohmyzsh/issues/5499
 DISABLE_MAGIC_FUNCTIONS=true
 
+# Own history file: /etc/zshrc hardcodes HISTFILE=~/.zsh_history & SAVEHIST=1000,
+# so any shell that skips this .zshrc trims ~/.zsh_history (decoy). Our real
+# history lives here and is re-pinned AFTER /etc/zshrc ran, so it stays safe.
+export HISTFILE=~/.zsh_history_bfpc
 HISTSIZE=1000000000
 SAVEHIST=1000000000
 setopt EXTENDED_HISTORY
