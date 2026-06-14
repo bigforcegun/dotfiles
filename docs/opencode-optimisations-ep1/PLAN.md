@@ -16,45 +16,103 @@ OpenCode грузит **все** определения MCP-тулов в кон
 агент ищет тул по запросу → подгружает только нужное → вызывает on-demand.
 Паттерн search/execute (как Cloudflare Code Mode, Anthropic Tool Search, Claude Code ToolSearch).
 
-## Два пути реализации (выбрать после проверки версии)
+## OMO-конфликт: разрешение (главная находка)
 
-Установлено: **OpenCode 1.17.6**. Сначала проверить, какой механизм поддержан.
+**OMO Ultimate уже реализует динамическую подгрузку MCP сам.** Проверено по
+кэшу пакета `oh-my-openagent@4.9.2`:
 
-### Путь A — нативный экспериментальный флаг (предпочтительно, если есть)
-Из PR `anomalyco/opencode#12520`. **Статус: проверить, влит ли в 1.17.6.**
-- В `~/.config/opencode/opencode.json` (в репе: `.config/opencode/opencode.json`):
-  ```json
-  "experimental": { "mcp_lazy": true }
-  ```
-- Эффект: MCP-тулы исключаются из tool-list, имена серверов идут компактно в system prompt,
-  появляется meta-tool `mcp_search`, в `/mcp` серверы помечаются `Lazy`.
+- Есть meta-tool **`skill_mcp`** (`createSkillMcpTool`):
+  *"Invoke MCP server operations from skill-embedded MCPs. Requires mcp_name plus
+  exactly one of: tool_name, resource_name, or prompt_name."* — это ровно
+  search/execute-паттерн, только через скиллы.
+- Per-skill `formatMcpCapabilities(skill, manager, sessionID)` — компактно отдаёт
+  модели capability скилла, а не сырые N×M схемы тулов (progressive disclosure).
+- `BUILTIN_MCP_TOOL_HINTS` для встроенных (websearch/context7/grep_app).
+- README OMO прямо: *«Навыки несут собственные MCP-серверы. Запускаются по
+  необходимости, ограничены задачей, исчезают по завершении. Контекст чистый.»*
 
-### Путь B — плагин (fallback, если флага в 1.17.6 нет)
-У нас уже есть механизм плагинов — массив `plugin` в `opencode.json`
-(сейчас там `oh-my-openagent@latest`). Добавить tool-search-плагин туда же:
+**Следствие:** `opencode mcp list` показывает 6 серверов `connected`, но это коннект
+на уровне OMO-менеджера, **не** обязательно сырые схемы в окне модели — экспозиция
+идёт через `skill_mcp` (лениво).
+
+**Вывод по конфликту:**
+- В **OMO-проектах** ставить `francisco`-плагин — **избыточно и конфликтно**: два
+  конкурирующих ленивых слоя + двойной коннект к одним серверам. ❌ Не стекать.
+- Рычаги в самом OMO (из `oh-my-opencode.schema.json`): `disabled_mcps`,
+  `disabled_tools`, `skills` (`sources`/`enable`/`disable`), `mcp_env_allowlist`.
+  Стороннего плагина не нужно.
+
+**Перепостановка задачи EP1.** Вопрос не «добавить tool-search плагин», а:
+когда mcp-stack добавляет общий флот (URL'ы mcp-proxy) в OpenCode — он попадает
+**eager** в native `mcp` (раздувание) или его можно прогнать через ленивый
+`skill_mcp`? Рычаг — упаковать общий флот как **skill-embedded MCP** (через
+`skills.sources`), а не native `mcp`-записи, чтобы унаследовать OMO-ленивость.
+
+**Остаточная эмпирика (одна проверка):** реально ли native `mcp`-добавка грузится
+eager, пока OMO-builtins ленивы — замерить tool-set, который уходит модели.
+
+**Где плагин всё-таки уместен:** не-OMO таргеты (Cursor / Codex / Kilo / «голый»
+OpenCode без OMO). Это отдельный трек, не смешивать с OMO-проектами.
+
+---
+
+## Два пути реализации — ТОЛЬКО для не-OMO (для OMO см. выше)
+
+Установлено: **OpenCode 1.17.6**. Путь A проверен — **нативного `mcp_lazy`/`mcp_search`
+в бинаре 1.17.6 НЕТ** (0 вхождений). Остаётся путь B (плагин), и только для не-OMO.
+
+### Путь A — нативный флаг `experimental.mcp_lazy` — ❌ ОТПАДАЕТ
+Из PR `anomalyco/opencode#12520`. **Проверено: в бинаре 1.17.6 строк `mcp_lazy`/`mcp_search`
+нет (0 вхождений).** Не влито. Вернуться к нему при апгрейде OpenCode, когда фича доедет.
+
+### Путь B — сторонний плагин (для не-OMO)
+Механизм: массив `plugin` в `opencode.json` (ключ — `plugin`, **не** `plugins`).
 ```json
-"plugin": ["oh-my-openagent@latest", "<mcp-tool-search-plugin>@latest"]
+"plugin": ["<mcp-tool-search-plugin>"]
 ```
-**TODO:** зафиксировать точное имя пакета плагина (кандидат — `francisco-m001/opencode-mcp-tool-search`),
-сверить, что он совместим с 1.17.6 и не конфликтует с `oh-my-openagent`.
+Кандидат `francisco-m001/opencode-mcp-tool-search` — **блокеры, выявленные при разборе:**
+- пакет `@francisco-m001/opencode-mcp-tool-search` опубликован в **GitHub Packages**
+  (`npm.pkg.github.com`), не в публичном npm → `npm view` даёт 404; ставить через
+  `.npmrc` + токен `read:packages` ИЛИ собирать из исходников в `.opencode/plugin/`;
+- **README устарел**: учит `plugins`/`mcpServers`, а 1.17.6 хочет `plugin`/`mcp`;
+- архитектурно это **мини-гейтвей**: свой список `mcpServers`, сам коннектится через
+  MCP SDK, fuzzy-поиск `fuse.js`, регистрирует `mcp_tool_search` + `mcp_call_tool`;
+  требует **убрать серверы из native-конфига** и завести внутри плагина.
+- **интеграция с mcp-stack:** скормить ему как upstream URL'ы mcp-proxy →
+  `opencode → плагин → mcp-proxy → stdio`. Процессы остаются за proxy, `toolFilter`
+  режет наверху, плагин = только search-фасад. Это рабочий «MCP над MCP».
+
+Альт-кандидат: `opencode-raven@2.1.4` (есть в публичном npm) — но «routed through Raven»,
+вероятно внешний сервис → против C3/приватности; проверить отдельно.
 
 ## Шаги
 
-1. **Определить механизм.** Проверить, есть ли `experimental.mcp_lazy` в 1.17.6
-   (changelog / `opencode` config-schema / тестовый прогон). → выбрать A или B.
-2. **Включить** на одном контексте с жирным MCP-набором (напр. dev с github+lsp+filesystem).
-3. **Применить** через mcp-stack: правка источника `.config/opencode/opencode.json` → линк уже есть.
-4. **Проверить** (ниже).
-5. Если ок — раскатать на остальные контексты; задокументировать в mcp-stack как «решение для не-tool-search агентов».
+**Для OMO-проектов (основной кейс):**
+1. Эмпирически подтвердить, что OMO-builtins реально ленивы (через `skill_mcp`), а
+   native `mcp`-добавки — eager. → замер tool-set'а, уходящего модели.
+2. Упаковать общий флот mcp-stack (URL'ы mcp-proxy) как **skill-embedded MCP**
+   (`skills.sources`), а не native `mcp`, чтобы унаследовать ленивость OMO.
+3. Проверить, контролировать лишнее через `disabled_mcps`/`disabled_tools`.
+
+**Для не-OMO (отдельный трек):** путь B — собрать `francisco` из исходников в песочнице,
+указать upstream = mcp-proxy URLs, проверить регистрацию meta-тулов.
 
 ## Проверка (acceptance)
 
-- [ ] В `/mcp` серверы помечены `Lazy` (путь A) / плагин активен в логе старта (путь B).
-- [ ] В списке тулов сессии **нет** сырых MCP-тулов, но **есть** `mcp_search`.
-- [ ] Функционально: попросить агента найти и вызвать конкретный тул (напр. github `search_issues`)
-      — он сначала зовёт `mcp_search`, потом сам тул.
-- [ ] Замер контекста: токены tool-definitions на старте до/после (ожидание — десятки k → ~0).
-- [ ] Project-local HTTP-мосты (`:8400`, `:3001`) и `toolFilter` из mcp-proxy не сломаны.
+**OMO-трек:**
+- [ ] В tool-set модели на старте — `skill_mcp` (и/или капы скиллов), а **не** сырые
+      схемы всех тулов 6 серверов.
+- [ ] Общий флот mcp-stack виден агенту лениво (через `skill_mcp`), не eager.
+- [ ] `disabled_mcps`/`disabled_tools` режут лишнее.
+
+**Не-OMO-трек:**
+- [ ] Плагин активен в логе старта; зарегистрированы `mcp_tool_search` + `mcp_call_tool`.
+- [ ] В списке тулов сессии **нет** сырых MCP-тулов, но **есть** meta-тулы.
+- [ ] Функционально: агент сначала зовёт `mcp_tool_search`, потом `mcp_call_tool`.
+- [ ] upstream = mcp-proxy: `toolFilter` соблюдён (зарезанный тул не виден и в поиске).
+
+**Общее:**
+- [ ] Project-local HTTP-мосты (`:8400`, `:3001`) не сломаны.
 
 ## Анализ экосистемы: awesome-opencode
 
