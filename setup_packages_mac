@@ -16,12 +16,8 @@ cd "$dotfiles_dir"
 head "Setup base packages..."
 list_from_file packages/mac/init.txt | xargs brew install
 
-
-
-head "Setup base packages..."
+head "Setup dev packages..."
 list_from_file packages/mac/dev.txt | xargs brew install
-
-
 
 head "Setup go tools..."
 list_from_file packages/mac/go.txt | xargs -n1 go install
