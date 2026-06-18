@@ -30,6 +30,7 @@ link ".tmux.conf"
 link ".tmux.conf.local"
 
 link ".zprofile"
+link ".zlogin"
 link ".zshenv"
 link ".zshrc"
 link ".zsh"
@@ -68,12 +69,16 @@ link ".config/polybar/main"
 
 
 link ".config/opencode/opencode.json"
+link ".config/opencode/oh-my-openagent.json"
+link ".config/opencode/tui.json"
+link ".config/opencode/package.json"
 link ".config/opencode/agents"
 link ".config/opencode/instructions"
 link ".config/opencode/commands"
 link ".config/opencode/rules"
 link ".config/opencode/skills"
 link ".config/opencode/tools"
+link ".config/opencode/opencode-quota"
 
 
 link ".config/rofi/config.rasi"

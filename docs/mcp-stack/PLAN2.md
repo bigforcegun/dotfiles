@@ -60,7 +60,7 @@
 - `allow_server_add/remove:false` (+ `read_only_mode`) — UI/AI не правят состояние, **config.json авторитетен**;
 - `enabled_tools`/`disabled_tools` per-server — точечный tool-фильтр (== старый `toolFilter`);
 - `shared:true` — server-edition «shared» (для corpdev HTTP);
-- креды — `${ENV}` из env-файла вне репы.
+- креды — **типизированные секрет-рефы** `${env:VAR}` (из env-файла вне репы) или `${keyring:VAR}` (OS keyring). **Голый `${VAR}` НЕ раскрывается** — резолвер требует `${type:name}` (регекс `\$\{type:name\}`).
 
 ---
 
@@ -68,22 +68,48 @@
 
 ```
 ~/.dotfiles/
-  .config/mcpproxy/
-    config.json          → ~/.config/mcpproxy/config.json   [linked]   (флот + profiles + ${ENV})
-    env.example          (committed, НЕ linked)
+  .config/mcpproxy/                  → ~/.config/mcpproxy   [linked: вся ПАПКА]
+    config.json        (флот + profiles; демон ПЕРЕЗАПИСЫВАЕТ его — см. write-back)
+    config.json.bak    (бэкап от демона)
+    env                (живой, реальные токены — ДОЛЖЕН быть в .gitignore)
+    env.example        (шаблон)
   Library/LaunchAgents/
     com.bigforcegun.mcpproxy.plist   [linked]   (sources env + --config, KeepAlive)
 ```
 
-- линкуем `config.json` пофайлово (не директорию) — `env` и data-dir не утекают симлинком в репу;
-- runtime-state mcpproxy (`~/.mcpproxy/`) — вне git, авторитет — `config.json`;
+- **линкуем папку целиком** (`ln -sfn .config/mcpproxy ~/.config/mcpproxy`), НЕ пофайлово — иначе `rename`-write демона заменяет файл-симлинк реальным файлом, и live отъезжает от репы; директорный линк делает так, что записи демона **приклеиваются в репо** (config.json+api_key, .bak, env). Это осознанный размен: «всё в гит» ценой `api_key`/таймстампов в коммите;
+- runtime-state mcpproxy (`~/.mcpproxy/`, `data_dir`) — вне git;
 - rulesync направляет каждый проект на свой `/mcp/p/<ctx>` (+ rules/skills/subagents как раньше); project-local мосты остаются direct, мимо гейтвея.
+
+---
+
+## CLI-управление демоном и дебаг (единый диспетчер)
+
+Демон под launchd, но рулим из терминала **одной командой с глаголом** — как `systemctl --user <verb>`, а не россыпью `mcp-proxy-restart`/`-stop`/`-log`. Враппер `mcpd <verb>` поверх `launchctl` (macOS) под label `com.bigforcegun.mcpproxy`:
+
+```bash
+mcpd status      # launchctl print gui/$UID/<label> | grep -E 'state|pid'   — состояние job'ы
+mcpd start       # launchctl bootstrap gui/$UID <plist>
+mcpd stop        # launchctl bootout   gui/$UID/<label>
+mcpd restart     # launchctl kickstart -k gui/$UID/<label>
+mcpd reload      # bootout + bootstrap — подхватить правки plist
+mcpd logs [-f]   # tail [-f] /tmp/com.bigforcegun.mcpproxy.{out,err}.log
+mcpd health      # mcpproxy status   (нативный self-check демона: API key, Web UI URL)
+mcpd doctor      # mcpproxy doctor    (нативные health-checks)
+mcpd profiles    # curl -s localhost:9090/... — профили и серверы в каждом (endpoint — на пилоте)
+mcpd run         # foreground-дебаг мимо launchd (см. ниже)
+```
+
+- **`mcpd run`** = `mcpproxy serve --config ~/.config/mcpproxy/config.json --log-level debug` в форграунде — чтобы ловить старт-ошибки и индексацию `retrieve_tools` глазами, а не по логам демона (флаги `serve` сверены: `-c/--config`, `-l/--listen`, `--log-level`);
+- глаголы — `systemctl`-стиль: `status/start/stop/restart/reload/logs`, плюс нативные `mcpproxy status|doctor` под `health/doctor`;
+- одна функция-диспетчер в `.zsh/mcp.zsh` рядом с `mcpctx`, label/plist/порт — переменными сверху; zsh-комплишен на список глаголов;
+- на время пилота TBXark-демон рулится своим (старый `mcp-proxy-*`), `mcpd` — только новый инстанс; старое снести на раскатке.
 
 ---
 
 ## Запуск / пилот
 
-1. `go install github.com/smart-mcp-proxy/mcpproxy-go@latest` (+ в `setup_packages_mac`).
+1. `go install github.com/smart-mcp-proxy/mcpproxy-go/cmd/mcpproxy@v0.39.0-rc.9` (бинарь = `cmd/mcpproxy`, корень модуля `main` не содержит; профили только в pre-release `v0.39.0-rc.x`, `@latest=v0.38.1` их НЕ содержит). Реестр — `packages/mac/go.txt`, не `setup_packages_mac`.
 2. Залить `config.json` с профилем `corpdev` (HTTP shared) + env с токенами.
 3. Поднять демон (`:9090`), проверить `/mcp/p/corpdev`.
 4. rulesync → corpdev-контекст на `/mcp/p/corpdev`.
@@ -122,3 +148,25 @@
 Берём: подгрузку по запросу (главное), tool-search для всех агентов, остаёмся в Go + файловом конфиге. F2 (профили), F5 (`enabled/disabled_tools`), F6 — на месте.
 
 Отдаём ровно одно: **C2** — агент видит `/mcp/p/<ctx>`, а не per-server native-записи. Эндпоинт честный (не скрытый враппер), но per-server видимость в агентском конфиге уходит.
+
+---
+
+## Статус реализации (факты пилота, v0.39.0-rc.9)
+
+Что фактически собрано и где скелет выше расходится с реальностью.
+
+**Сделано:**
+- `mcpproxy` rc.9 в `packages/mac/go.txt`; конфиг+профили в `.config/mcpproxy/{config.json,env.example}`; плист `com.bigforcegun.mcpproxy.plist`; диспетчер `mcpd` в `.zsh/mcp.zsh`; rulesync (4 контекста) → `/mcp/p/<ctx>`.
+- **Флот — фактический, не аспирационный.** Скелет рисует corpdev (grafana/kibana/redash/trino/figma/miro) как замысел; реально завели текущий флот: `semble, playwright, context7, grep-app, websearch-exa, salotech-{slack,atlassian,freshdesk,mongodb-sisa}, godot`.
+- **Профили:** `corpodev`, `code-research`, `dev`, `gamedev` (имена как в rulesync-контекстах, не `corpdev/research`).
+
+**Раскладка по портам (текущая, не как в скелете):**
+- **:9091** — mcpproxy-go под launchd = **активная система**;
+- **:9090** — старый TBXark `mcp-proxy` = бэкап, `bootout`+`disable` (выключен, не стартует при логине).
+
+**Реальные MCP-эндпоинты** (захардкожены, глобально на инстанс): `/mcp` (дефолт), `/mcp/call` (focused: `retrieve_tools`+`call_tool_*`), `/mcp/all` (direct, `server__tool`), `/mcp/code` (JS), **`/mcp/p/<slug>`** (профиль). Зарезервированные слаги: `all/call/code/livez/readyz/...`.
+
+**⚠️ Write-back — открытый вопрос (отложено).** `mcpproxy serve` **перезаписывает `--config` на каждом старте**: инжектит сгенерённый `api_key`, `created/updated`-таймстампы на все серверы, нормализует дефолты (`docker_isolation`/`registries`/…), плюс плодит `config.json.bak`. `read_only_mode` это **не** глушит (проверено: даже с заданным `MCPPROXY_API_KEY` файл меняется каждый старт). Апстрим-issue на это нет.
+- **Следствие:** пофайловый симлинк git→live **отваливается** — `rename`-write демона заменяет файл-симлинк реальным файлом, live отъезжает от репы.
+- **Выбрано (текущее):** **директорный симлинк** `~/.config/mcpproxy → репо` — записи демона приклеиваются в репу (см. «Раскладку»). Размен: в коммит уходят `api_key`, таймстампы, `.bak`. Минимум — `.gitignore` на `.config/mcpproxy/env` (живые токены). Занесено в `setup_user_mac` + `packages/mac/go.txt`.
+- **Альтернатива (вариант A, если надоест мусор):** git = шаблон, live = копия в `~/.mcpproxy/mcp_config.json`, демон владеет копией, правка → `mcpd reload` (copy+restart).

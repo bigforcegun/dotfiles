@@ -16,6 +16,8 @@ cache/
 .thunderbird/
 .wine/
 .idea/
+.env
+env
 
 .Idea*/
 .RubyMine*/

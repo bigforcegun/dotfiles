@@ -1,0 +1,14 @@
+{
+  "enabledProviders": "auto",
+  "enableToast": true,
+  "tuiSidebarPanel": {
+    "enabled": true
+  },
+  "tuiCompactStatus": {
+    "enabled": true
+  },
+  "maintainerAnnouncements": {
+    "enabled": true,
+    "home": true
+  }
+}

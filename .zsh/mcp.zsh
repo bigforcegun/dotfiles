@@ -49,6 +49,51 @@ mcp-proxy-log() {
   tail -f /tmp/com.bigforcegun.mcp-proxy.{out,err}.log
 }
 
+# ─── mcpproxy-go (mcpproxy-go + профили, /mcp/p/<ctx>) ────────────────────────
+# Единый диспетчер демоном в стиле `systemctl --user <verb>`.
+MCPD_LABEL="${MCPD_LABEL:-com.bigforcegun.mcpproxy}"
+MCPD_PLIST="${MCPD_PLIST:-$HOME/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist}"
+MCPD_CONFIG="${MCPD_CONFIG:-$HOME/.config/mcpproxy/config.json}"
+
+# mcpd <verb> — управление/дебаг демона mcpproxy
+mcpd() {
+  local uid; uid=$(id -u)
+  local svc="gui/$uid/$MCPD_LABEL"
+  local verb="${1:-status}"; shift 2>/dev/null
+  case "$verb" in
+    start)    launchctl bootstrap "gui/$uid" "$MCPD_PLIST" && echo "mcpd: started" ;;
+    stop)     launchctl bootout   "$svc" && echo "mcpd: stopped" ;;
+    restart)  launchctl kickstart -k "$svc" && echo "mcpd: restarted" ;;
+    reload)   launchctl bootout "$svc" 2>/dev/null; launchctl bootstrap "gui/$uid" "$MCPD_PLIST" && echo "mcpd: reloaded (plist подхвачен)" ;;
+    logs)     tail "${@:--f}" /tmp/$MCPD_LABEL.{out,err}.log ;;
+    health)   mcpproxy status ;;
+    doctor)   mcpproxy doctor ;;
+    profiles) command -v jq >/dev/null && jq -r '.profiles[] | "\(.name): \(.servers | join(", "))"' "$MCPD_CONFIG" || grep -A99 '"profiles"' "$MCPD_CONFIG" ;;
+    run)      exec mcpproxy serve --config "$MCPD_CONFIG" --log-level debug ;;
+    help|-h|--help)
+      cat >&2 <<EOF
+mcpd <verb> — управление демоном mcpproxy ($MCPD_LABEL)
+  status            состояние launchd-job (pid/state)
+  start|stop        bootstrap / bootout
+  restart           kickstart -k (быстрый перезапуск)
+  reload            bootout+bootstrap (подхватить правки plist)
+  logs [-f|-n N]    хвост out/err логов
+  health            mcpproxy status   (нативный self-check)
+  doctor            mcpproxy doctor   (нативные health-checks)
+  profiles          профили и их серверы (из config.json)
+  run               foreground-дебаг (--log-level debug), мимо launchd
+
+любой другой <verb> уходит как есть в `mcpproxy <verb> [args...]`
+EOF
+      return 0 ;;
+    *)        mcpproxy "$verb" "$@" ;;
+  esac
+}
+
+# комплишен глаголов mcpd
+_mcpd() { compadd -- status start stop restart reload logs health doctor profiles run help }
+compdef _mcpd mcpd 2>/dev/null
+
 # zsh-автодополнение имён контекстов для mcpctx
 _mcpctx() {
   local -a ctxs

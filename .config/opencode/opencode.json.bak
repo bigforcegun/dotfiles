@@ -78,8 +78,6 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest",
-    "@slkiser/opencode-quota@latest",
-    "@ramtinj95/opencode-tokenscope@latest"
+    "oh-my-openagent@latest"
   ]
 }

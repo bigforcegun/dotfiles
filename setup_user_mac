@@ -30,6 +30,7 @@ link ".tmux.conf"
 link ".tmux.conf.local"
 
 link ".zprofile"
+link ".zlogin"
 link ".zshenv"
 link ".zshrc"
 link ".zsh_plugins"
@@ -70,12 +71,16 @@ link ".config/opencode/rules"
 link ".config/opencode/skills"
 link ".config/opencode/tools"
 
-## MCP Stack (см. docs/mcp-stack/PLAN.md)
+## MCP Stack (см. docs/mcp-stack/PLAN2.md)
 
-# config.json линкуем ОТДЕЛЬНЫМ файлом (не всю .config/mcp-proxy/),
-# чтобы реальный ~/.config/mcp-proxy/env остался ВНЕ git.
-link ".config/mcp-proxy/config.json"
+link ".config/mcpproxy"
+link ".mcpproxy"
+link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
+
 link ".config/rulesync/contexts"
+
+# старый TBXark mcp-proxy (:9090) — выключенный бэкап: файлы линкуем, демон НЕ грузим
+link ".config/mcp-proxy/config.json"
 link "Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist"
 
 ## Yabay
@@ -129,7 +134,10 @@ head "Enable userspace services..."
 
 # FIXME check service before loading
 launchctl load -w ~/Library/LaunchAgents/ke.bou.dark-mode-notify.plist
-launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
+# mcpproxy-go — активная система (:9091)
+launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist
+# старый TBXark (:9090) — бэкап, выключен; раскомментить для отката:
+# launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
 
 #systemctl --user daemon-reload
 
