@@ -156,13 +156,7 @@
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_SISA_URI}"
       },
       "enabled": true,
-      "quarantined": false,
-      "disabled_tools": [
-        "_aggregate",
-        "_aggregate-db",
-        "export",
-        "switch-connection"
-      ]
+      "quarantined": false
     },
     {
       "name": "salotech-freshdesk",
@@ -177,36 +171,7 @@
       },
       "oauth": null,
       "enabled": true,
-      "quarantined": false,
-      "disabled_tools": [
-        "create_ticket",
-        "update_ticket",
-        "delete_ticket",
-        "create_ticket_note",
-        "create_ticket_reply",
-        "update_ticket_conversation",
-        "update_ticket_summary",
-        "delete_ticket_summary",
-        "create_ticket_field",
-        "update_ticket_field",
-        "update_contact",
-        "create_contact_field",
-        "update_contact_field",
-        "create_agent",
-        "update_agent",
-        "create_group",
-        "update_group",
-        "create_canned_response",
-        "update_canned_response",
-        "create_canned_response_folder",
-        "update_canned_response_folder",
-        "create_solution_article",
-        "update_solution_article",
-        "create_solution_category",
-        "update_solution_category",
-        "create_solution_category_folder",
-        "update_solution_category_folder"
-      ]
+      "quarantined": false
     },
     {
       "name": "godot",
@@ -231,15 +196,7 @@
         "client_id": "1601185624273.8899143856786",
         "redirect_uri": "http://localhost:3118/callback",
         "scopes": []
-      },
-      "disabled_tools": [
-        "slack_add_reaction",
-        "slack_create_canvas",
-        "slack_schedule_message",
-        "slack_send_message",
-        "slack_send_message_draft",
-        "slack_update_canvas"
-      ]
+      }
     },
     {
       "name": "salotech-atlassian",
@@ -254,19 +211,7 @@
       },
       "oauth": null,
       "enabled": true,
-      "quarantined": false,
-      "disabled_tools": [
-        "addCommentToJiraIssue",
-        "addWorklogToJiraIssue",
-        "createJiraIssue",
-        "createIssueLink",
-        "editJiraIssue",
-        "transitionJiraIssue",
-        "createConfluencePage",
-        "updateConfluencePage",
-        "createConfluenceFooterComment",
-        "createConfluenceInlineComment"
-      ]
+      "quarantined": false
     }
   ],
   "observability": {
