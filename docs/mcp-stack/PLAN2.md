@@ -103,6 +103,7 @@ mcpd run         # foreground-дебаг мимо launchd (см. ниже)
 - **`mcpd run`** = `mcpproxy serve --config ~/.config/mcpproxy/config.json --log-level debug` в форграунде — чтобы ловить старт-ошибки и индексацию `retrieve_tools` глазами, а не по логам демона (флаги `serve` сверены: `-c/--config`, `-l/--listen`, `--log-level`);
 - глаголы — `systemctl`-стиль: `status/start/stop/restart/reload/logs`, плюс нативные `mcpproxy status|doctor` под `health/doctor`;
 - одна функция-диспетчер в `.zsh/mcp.zsh` рядом с `mcpctx`, label/plist/порт — переменными сверху; zsh-комплишен на список глаголов;
+- **После правок `mcpproxy` binary/config или OAuth-настроек перезапускать только через `mcpd restart`**; в non-interactive shell: `source ~/.zsh/mcp.zsh && mcpd restart`. Не запускать отдельный `mcpproxy serve`, чтобы не получить второй инстанс/старый binary в launchd;
 - на время пилота TBXark-демон рулится своим (старый `mcp-proxy-*`), `mcpd` — только новый инстанс; старое снести на раскатке.
 
 ---

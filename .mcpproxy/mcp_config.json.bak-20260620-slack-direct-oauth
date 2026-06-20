@@ -188,15 +188,17 @@
     },
     {
       "name": "salotech-slack",
-      "protocol": "streamable-http",
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/bigforcegun/Sources/mcp-remote/dist/proxy.js",
+        "https://mcp.slack.com/mcp"
+      ],
+      "env": {
+        "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
+      },
       "enabled": true,
-      "quarantined": false,
-      "url": "https://mcp.slack.com/mcp",
-      "oauth": {
-        "client_id": "1601185624273.8899143856786",
-        "redirect_uri": "http://localhost:3118/callback",
-        "scopes": []
-      }
+      "quarantined": false
     },
     {
       "name": "salotech-atlassian",

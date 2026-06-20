@@ -83,7 +83,7 @@ mcpd <verb> — управление демоном mcpproxy ($MCPD_LABEL)
   profiles          профили и их серверы (из config.json)
   run               foreground-дебаг (--log-level debug), мимо launchd
 
-любой другой <verb> уходит как есть в `mcpproxy <verb> [args...]`
+любой другой <verb> уходит как есть в 'mcpproxy <verb> [args...]'
 EOF
       return 0 ;;
     *)        mcpproxy "$verb" "$@" ;;
@@ -93,6 +93,56 @@ EOF
 # комплишен глаголов mcpd
 _mcpd() { compadd -- status start stop restart reload logs health doctor profiles run help }
 compdef _mcpd mcpd 2>/dev/null
+
+# oc — OpenCode TUI client with auto-attach to a shared local backend.
+#   Starts `opencode serve` on first use, then attaches TUI clients to it.
+#   Examples:
+#     oc
+#     oc --continue
+#     oc --session ses_xxx
+#     OPENCODE_ATTACH_URL=http://127.0.0.1:4097 oc
+oc() {
+  local url="${OPENCODE_ATTACH_URL:-http://127.0.0.1:4096}"
+  local port="${OPENCODE_ATTACH_PORT:-4096}"
+  local state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+  local log="$state_dir/serve.log"
+  local code
+
+  if ! command -v opencode >/dev/null 2>&1; then
+    echo "oc: opencode not found in PATH" >&2
+    return 127
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "oc: curl not found in PATH" >&2
+    return 127
+  fi
+
+  code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 0.5 "$url/session" 2>/dev/null || true)
+  if [[ "$code" != 200 && "$code" != 401 ]]; then
+    mkdir -p "$state_dir"
+    echo "oc: starting opencode backend at $url" >&2
+    command opencode serve --hostname 127.0.0.1 --port "$port" >>"$log" 2>&1 &!
+
+    local ready=0
+    local i
+    for i in {1..50}; do
+      code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 0.5 "$url/session" 2>/dev/null || true)
+      if [[ "$code" == 200 || "$code" == 401 ]]; then
+        ready=1
+        break
+      fi
+      sleep 0.1
+    done
+
+    if [[ "$ready" != 1 ]]; then
+      echo "oc: backend did not become ready; see $log" >&2
+      return 1
+    fi
+  fi
+
+  command opencode attach "$url" --dir "$PWD" "$@"
+}
 
 # zsh-автодополнение имён контекстов для mcpctx
 _mcpctx() {

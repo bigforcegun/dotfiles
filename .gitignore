@@ -24,3 +24,4 @@ vendor/bundle
 .git-worktrees/
 
 env
+.omo/
