@@ -1,0 +1,353 @@
+{
+  "call_tool_timeout": "2m0s",
+  "data_dir": "/Users/bigforcegun/.mcpproxy-data",
+  "debug_search": false,
+  "disable_management": false,
+  "docker_isolation": {
+    "enabled": false,
+    "enable_cache_volume": true,
+    "default_images": {
+      "bash": "alpine:3.18",
+      "binary": "alpine:3.18",
+      "cargo": "rust:1.75-slim",
+      "composer": "php:8.2-cli-alpine",
+      "gem": "ruby:3.2-alpine",
+      "go": "golang:1.21-alpine",
+      "node": "node:22",
+      "npm": "node:22",
+      "npx": "node:22",
+      "php": "php:8.2-cli-alpine",
+      "pip": "ghcr.io/astral-sh/uv:python3.13-bookworm-slim",
+      "pipx": "ghcr.io/astral-sh/uv:python3.13-bookworm-slim",
+      "python": "ghcr.io/astral-sh/uv:python3.13-bookworm-slim",
+      "python3": "ghcr.io/astral-sh/uv:python3.13-bookworm-slim",
+      "ruby": "ruby:3.2-alpine",
+      "rustc": "rust:1.75-slim",
+      "sh": "alpine:3.18",
+      "uvx": "ghcr.io/astral-sh/uv:python3.13-bookworm-slim",
+      "yarn": "node:22"
+    },
+    "registry": "docker.io",
+    "network_mode": "bridge",
+    "memory_limit": "512m",
+    "cpu_limit": "1.0",
+    "timeout": "30s",
+    "log_max_size": "100m",
+    "log_max_files": "3"
+  },
+  "enable_code_execution": false,
+  "enable_prompts": true,
+  "enable_socket": true,
+  "environment": {
+    "inherit_system_safe": true,
+    "allowed_system_vars": [
+      "PATH",
+      "HOME",
+      "TMPDIR",
+      "TEMP",
+      "TMP",
+      "SHELL",
+      "TERM",
+      "LANG",
+      "USER",
+      "USERNAME",
+      "SALOTECH_FRESHDESK_API_KEY",
+      "SALOTECH_FRESHDESK_DOMAIN",
+      "XDG_CONFIG_HOME",
+      "XDG_DATA_HOME",
+      "XDG_CACHE_HOME",
+      "XDG_RUNTIME_DIR",
+      "LC_ALL",
+      "LC_CTYPE",
+      "LC_NUMERIC",
+      "LC_TIME",
+      "LC_COLLATE",
+      "LC_MONETARY",
+      "LC_MESSAGES",
+      "LC_PAPER",
+      "LC_NAME",
+      "LC_ADDRESS",
+      "LC_TELEPHONE",
+      "LC_MEASUREMENT",
+      "LC_IDENTIFICATION"
+    ],
+    "custom_vars": {},
+    "enhance_path": false
+  },
+  "intent_declaration": {
+    "strict_server_validation": true
+  },
+  "listen": ":9091",
+  "logging": {
+    "level": "info",
+    "enable_file": true,
+    "enable_console": true,
+    "filename": "main.log",
+    "max_size": 10,
+    "max_backups": 5,
+    "max_age": 30,
+    "compress": true,
+    "json_format": false
+  },
+  "max_result_size_chars": 500000,
+  "mcpServers": [
+    {
+      "name": "semble",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "--python",
+        "3.13",
+        "--from",
+        "semble[mcp]",
+        "semble"
+      ],
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "playwright",
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "context7",
+      "url": "https://mcp.context7.com/mcp",
+      "protocol": "streamable-http",
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "grep-app",
+      "url": "https://mcp.grep.app",
+      "protocol": "streamable-http",
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "websearch-exa",
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa",
+      "protocol": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer ${env:EXA_API_KEY}"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-mongodb-sisa",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server",
+        "--readOnly"
+      ],
+      "env": {
+        "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_SISA_URI}"
+      },
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-freshdesk",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "freshdesk-mcp"
+      ],
+      "env": {
+        "FRESHDESK_API_KEY": "${env:SALOTECH_FRESHDESK_API_KEY}",
+        "FRESHDESK_DOMAIN": "${env:SALOTECH_FRESHDESK_DOMAIN}"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "godot",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "@coding-solo/godot-mcp"
+      ],
+      "env": {
+        "GODOT_PATH": "${env:GODOT_PATH}"
+      },
+      "enabled": false,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-slack",
+      "protocol": "streamable-http",
+      "enabled": true,
+      "quarantined": false,
+      "url": "https://mcp.slack.com/mcp",
+      "oauth": {
+        "client_id": "1601185624273.8899143856786",
+        "redirect_uri": "http://localhost:3118/callback",
+        "scopes": []
+      }
+    },
+    {
+      "name": "salotech-atlassian",
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/bigforcegun/Sources/mcp-remote/dist/proxy.js",
+        "https://mcp.atlassian.com/v1/mcp"
+      ],
+      "env": {
+        "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    }
+  ],
+  "observability": {
+    "usage_cache_ttl": "5s",
+    "usage_persist_interval": "30s"
+  },
+  "output_sanitisation": {
+    "response_action": "spotlight",
+    "strip_classes": [
+      "ansi",
+      "c0c1",
+      "bidi",
+      "zero_width"
+    ],
+    "max_redactions": 100
+  },
+  "output_validation": {
+    "mode": "warn",
+    "max_bytes": 5242880,
+    "max_depth": 64,
+    "missing_structured_content": "allow"
+  },
+  "profiles": [
+    {
+      "name": "salotech",
+      "servers": [
+        "playwright",
+        "salotech-slack",
+        "salotech-atlassian",
+        "salotech-freshdesk",
+        "salotech-mongodb-sisa",
+        "semble",
+        "context7"
+      ]
+    },
+    {
+      "name": "code-research",
+      "servers": [
+        "context7",
+        "grep-app",
+        "websearch-exa",
+        "semble"
+      ]
+    },
+    {
+      "name": "dev",
+      "servers": [
+        "context7",
+        "semble"
+      ]
+    },
+    {
+      "name": "gamedev",
+      "servers": [
+        "godot",
+        "semble",
+        "context7"
+      ]
+    }
+  ],
+  "quarantine_enabled": false,
+  "read_only_mode": false,
+  "registries": [
+    {
+      "id": "official",
+      "name": "Official MCP Registry",
+      "description": "The official Model Context Protocol server registry (zero-config, no key required)",
+      "url": "https://registry.modelcontextprotocol.io/",
+      "servers_url": "https://registry.modelcontextprotocol.io/v0.1/servers",
+      "tags": [
+        "verified",
+        "official"
+      ],
+      "protocol": "modelcontextprotocol/registry",
+      "provenance": "official"
+    },
+    {
+      "id": "reference",
+      "name": "Reference Servers",
+      "description": "Curated @modelcontextprotocol reference servers, shipped built-in for offline discovery",
+      "url": "https://github.com/modelcontextprotocol/servers",
+      "servers_url": "builtin://reference",
+      "tags": [
+        "verified",
+        "official",
+        "reference"
+      ],
+      "protocol": "builtin/reference",
+      "provenance": "official"
+    },
+    {
+      "id": "docker-mcp-catalog",
+      "name": "Docker MCP Catalog",
+      "description": "A collection of secure, high-quality MCP servers as docker images",
+      "url": "https://hub.docker.com/catalogs/mcp",
+      "servers_url": "https://hub.docker.com/v2/repositories/mcp/",
+      "tags": [
+        "verified"
+      ],
+      "protocol": "custom/docker",
+      "provenance": "official"
+    }
+  ],
+  "require_mcp_auth": false,
+  "routing_mode": "retrieve_tools",
+  "sensitive_data_detection": {
+    "enabled": true,
+    "scan_requests": true,
+    "scan_responses": true,
+    "max_payload_size_kb": 1024,
+    "entropy_threshold": 4.5,
+    "categories": {
+      "api_token": true,
+      "auth_token": true,
+      "cloud_credentials": true,
+      "credit_card": true,
+      "database_credential": true,
+      "high_entropy": true,
+      "private_key": true,
+      "sensitive_file": true
+    }
+  },
+  "telemetry": {
+    "last_startup_outcome": "success",
+    "notice_shown": true
+  },
+  "tls": {
+    "enabled": false,
+    "require_client_cert": false,
+    "hsts": true
+  },
+  "tokenizer": {
+    "enabled": true,
+    "default_model": "gpt-4",
+    "encoding": "cl100k_base"
+  },
+  "tool_response_limit": 20000,
+  "tools_limit": 15
+}

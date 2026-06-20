@@ -1,0 +1,117 @@
+#!/usr/bin/env zsh
+
+# OpenCode TUI client with auto-attach to a shared local backend.
+# Starts `opencode serve` on first use, then attaches TUI clients to it.
+# Owns a per-user password file so attach never prompts for the backend it starts.
+
+set -u
+
+bind_host="127.0.0.1"
+url="${OPENCODE_ATTACH_URL:-http://127.0.0.1:4096}"
+port="${OPENCODE_ATTACH_PORT:-4096}"
+user="${OPENCODE_SERVER_USERNAME:-opencode}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+password_file="$state_dir/server.password"
+serve_log="$state_dir/serve.log"
+password="${OPENCODE_ATTACH_PASSWORD:-${OPENCODE_SERVER_PASSWORD:-}}"
+tmux_window_id=""
+tmux_window_name=""
+tmux_window_auto_rename=""
+
+restore_tmux_window_name() {
+  [[ -n "$tmux_window_id" && -n "$tmux_window_name" ]] || return 0
+
+  tmux rename-window -t "$tmux_window_id" "$tmux_window_name" >/dev/null 2>&1 || true
+  if [[ -n "$tmux_window_auto_rename" ]]; then
+    tmux set-window-option -t "$tmux_window_id" automatic-rename "$tmux_window_auto_rename" >/dev/null 2>&1 || true
+  fi
+}
+
+rename_tmux_window_for_oc() {
+  [[ -n "${TMUX:-}" ]] || return 0
+  command -v tmux >/dev/null 2>&1 || return 0
+
+  tmux_window_id="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
+  [[ -n "$tmux_window_id" ]] || return 0
+
+  tmux_window_name="$(tmux display-message -p '#{window_name}' 2>/dev/null || true)"
+  tmux_window_auto_rename="$(tmux show-window-options -v -t "$tmux_window_id" automatic-rename 2>/dev/null || true)"
+
+  tmux rename-window -t "$tmux_window_id" "oc:${PWD:t}" >/dev/null 2>&1 || true
+}
+
+trap 'restore_tmux_window_name' EXIT
+
+if ! command -v opencode >/dev/null 2>&1; then
+  echo "oc: opencode not found in PATH" >&2
+  exit 127
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "oc: curl not found in PATH" >&2
+  exit 127
+fi
+
+case "$url" in
+  http://127.0.0.1:*|http://localhost:*|http://\[::1\]:*) ;;
+  *)
+    echo "oc: refusing non-loopback backend URL: $url" >&2
+    echo "oc: use http://127.0.0.1:<port> or http://localhost:<port>" >&2
+    exit 2
+    ;;
+esac
+
+mkdir -p "$state_dir"
+
+if [[ -z "$password" && -r "$password_file" ]]; then
+  password="$(<"$password_file")"
+fi
+
+if [[ -z "$password" ]]; then
+  if command -v openssl >/dev/null 2>&1; then
+    password="$(openssl rand -hex 24)"
+  else
+    password="${${$(uuidgen 2>/dev/null)//-/}:l}"
+  fi
+  (umask 077 && print -r -- "$password" >| "$password_file")
+elif [[ ! -e "$password_file" ]]; then
+  (umask 077 && print -r -- "$password" >| "$password_file")
+fi
+
+code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 0.5 -u "$user:$password" "$url/session" 2>/dev/null || true)
+if [[ "$code" != 200 ]]; then
+  public_code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 0.5 "$url/session" 2>/dev/null || true)
+
+  if [[ "$public_code" == 401 ]]; then
+    echo "oc: backend at $url requires a different password" >&2
+    echo "oc: stop that backend or set OPENCODE_SERVER_PASSWORD/OPENCODE_ATTACH_PASSWORD" >&2
+    exit 1
+  fi
+
+  echo "oc: starting opencode backend at $url" >&2
+  OPENCODE_SERVER_USERNAME="$user" OPENCODE_SERVER_PASSWORD="$password" \
+    command opencode serve --hostname "$bind_host" --port "$port" >>"$serve_log" 2>&1 &
+
+  ready=0
+  for i in {1..50}; do
+    code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 0.5 -u "$user:$password" "$url/session" 2>/dev/null || true)
+    if [[ "$code" == 200 ]]; then
+      ready=1
+      break
+    fi
+    sleep 0.1
+  done
+
+  if [[ "$ready" != 1 ]]; then
+    echo "oc: backend did not become ready; see $serve_log" >&2
+    exit 1
+  fi
+fi
+
+rename_tmux_window_for_oc
+
+OPENCODE_SERVER_USERNAME="$user" OPENCODE_SERVER_PASSWORD="$password" \
+  command opencode attach "$url" --dir "$PWD" "$@"
+status=$?
+restore_tmux_window_name
+exit "$status"
