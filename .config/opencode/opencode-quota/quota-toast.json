@@ -1,6 +1,6 @@
 {
   "enabledProviders": "auto",
-  "enableToast": true,
+  "enableToast": false,
   "tuiSidebarPanel": {
     "enabled": true
   },

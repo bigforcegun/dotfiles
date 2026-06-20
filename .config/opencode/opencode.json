@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "plan",
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",

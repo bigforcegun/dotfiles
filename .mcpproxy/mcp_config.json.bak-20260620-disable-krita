@@ -160,7 +160,7 @@
       "env": {
         "KRITA_URL": "http://localhost:5678"
       },
-      "enabled": false,
+      "enabled": true,
       "quarantined": false
     },
     {

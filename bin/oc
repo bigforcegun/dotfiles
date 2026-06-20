@@ -1,16 +1,30 @@
 #!/usr/bin/env zsh
 
-# OpenCode TUI client with auto-attach to a shared local backend.
-# Starts `opencode serve` on first use, then attaches TUI clients to it.
+# OpenCode TUI client with auto-attach to a project-local backend.
+# Starts `opencode serve` for the current directory on first use, then attaches
+# TUI clients to that backend. Set OPENCODE_ATTACH_URL/PORT to intentionally use
+# a shared or manually managed backend.
 # Owns a per-user password file so attach never prompts for the backend it starts.
 
 set -u
 
 bind_host="127.0.0.1"
-url="${OPENCODE_ATTACH_URL:-http://127.0.0.1:4096}"
-port="${OPENCODE_ATTACH_PORT:-4096}"
 user="${OPENCODE_SERVER_USERNAME:-opencode}"
-state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+state_root="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+project_path="${PWD:A}"
+project_hash="$(print -nr -- "$project_path" | cksum | cut -d ' ' -f 1)"
+project_slug="${${PWD:t}//[^A-Za-z0-9._-]/_}"
+[[ -n "$project_slug" ]] || project_slug="project"
+
+if [[ -n "${OPENCODE_ATTACH_URL:-}" ]]; then
+  url="$OPENCODE_ATTACH_URL"
+  port="${OPENCODE_ATTACH_PORT:-${${url##*:}%%/*}}"
+  state_dir="$state_root/backends/explicit-${port}"
+else
+  port="${OPENCODE_ATTACH_PORT:-$((4100 + (project_hash % 1000)))}"
+  url="http://127.0.0.1:$port"
+  state_dir="$state_root/backends/${project_slug}-${project_hash}"
+fi
 password_file="$state_dir/server.password"
 serve_log="$state_dir/serve.log"
 password="${OPENCODE_ATTACH_PASSWORD:-${OPENCODE_SERVER_PASSWORD:-}}"

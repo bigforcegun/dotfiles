@@ -144,26 +144,6 @@
       "quarantined": false
     },
     {
-      "name": "krita",
-      "protocol": "stdio",
-      "command": "/opt/homebrew/bin/uv",
-      "args": [
-        "--directory",
-        "/Users/bigforcegun/Sources/krita-mcp",
-        "run",
-        "--with",
-        "fastmcp",
-        "--with",
-        "httpx",
-        "server.py"
-      ],
-      "env": {
-        "KRITA_URL": "http://localhost:5678"
-      },
-      "enabled": false,
-      "quarantined": false
-    },
-    {
       "name": "godot",
       "protocol": "stdio",
       "command": "npx",
@@ -342,7 +322,6 @@
     {
       "name": "gamedev",
       "servers": [
-        "krita",
         "godot",
         "semble",
         "context7"
