@@ -323,15 +323,6 @@
       ]
     },
     {
-      "name": "code-research",
-      "servers": [
-        "context7",
-        "grep-app",
-        "websearch-exa",
-        "semble"
-      ]
-    },
-    {
       "name": "dev",
       "servers": [
         "context7",

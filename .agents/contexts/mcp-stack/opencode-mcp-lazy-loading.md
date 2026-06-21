@@ -1,8 +1,8 @@
-# OpenCode Optimisations — Ep.1: MCP tool-search (lazy loading)
+# OpenCode MCP lazy-loading research
 
-Черновик. Цель — дать OpenCode «динамическую подгрузку тулов» (как ToolSearch в Claude Code),
-чтобы MCP-флот не раздувал контекст. Связано с [MCP Stack](../mcp-stack/PLAN.md):
-закрывает дыру «толщина контекста = по наименее способному агенту».
+Исследование внутри MCP Stack: как не раздувать контекст OpenCode сырыми MCP tool schemas и где проходит граница между OMO-native lazy-loading и non-OMO решениями.
+
+Связано с `plan.md`: закрывает дыру «толщина контекста = по наименее способному агенту».
 
 ## Проблема
 
