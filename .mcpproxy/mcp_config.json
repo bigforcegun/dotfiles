@@ -77,7 +77,7 @@
   "intent_declaration": {
     "strict_server_validation": true
   },
-  "listen": ":9091",
+  "listen": "127.0.0.1:9091",
   "logging": {
     "level": "info",
     "enable_file": true,
