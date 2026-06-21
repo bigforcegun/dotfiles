@@ -2,9 +2,9 @@
 
 ## State
 
-- Status: active design
+- Status: active pilot on `mcpproxy-go`
 - Last updated: 2026-06-21
-- Next step: reconcile `plan.md` and `plan-v2.md`, then keep the canonical version as `plan.md`.
+- Next step: keep `plan-v2.md` as the canonical current-state plan; treat `plan.md` as the older per-server design until it is either archived or folded into `plan-v2.md`.
 
 ## Purpose
 
@@ -12,12 +12,12 @@ Design the dotfiles-managed MCP stack for multiple agents and projects: shared M
 
 ## Files
 
-- `plan.md` - main plan, ported from `docs/mcp-stack/PLAN.md`.
-- `plan-v2.md` - later plan variant, ported from `docs/mcp-stack/PLAN2.md`.
+- `plan-v2.md` - canonical current-state plan for `mcpproxy-go`, profiles, `mcpd`, and rulesync contexts.
+- `plan.md` - older per-server `mcp-proxy` design, kept for historical comparison.
 - `research.md` - ecosystem research, ported from `docs/mcp-stack/RESEARCH.md`.
 - `omo.md` - OMO/OpenCode-specific integration notes, ported from `docs/mcp-stack/OMO.md`.
 - `opencode-mcp-lazy-loading.md` - OpenCode/OMO MCP lazy-loading research, ported from the former `opencode-optimisations-ep1` context.
 
 ## Load policy
 
-Read this file first. For design work, read `plan.md` and `research.md`. For OMO/OpenCode changes, also read `omo.md` and `opencode-mcp-lazy-loading.md`.
+Read this file first. For current design work, read `plan-v2.md` and `research.md`. Read `plan.md` only when comparing with the older design. For OMO/OpenCode changes, also read `omo.md` and `opencode-mcp-lazy-loading.md`.
