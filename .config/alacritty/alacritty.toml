@@ -727,3 +727,4 @@ live_config_reload = true
 import = ["~/.config/alacritty/active_theme.toml"]
 
 [terminal]
+
