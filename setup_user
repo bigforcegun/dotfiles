@@ -46,6 +46,7 @@ link ".config/nvim"
 link ".config/ranger/rc.conf"
 
 link ".config/fd/ignore" #https://github.com/sharkdp/fd/issues/608
+link ".config/ripgrep/config"
 
 link ".config/trashrc"
 link ".config/user-dirs.dirs"

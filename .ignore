@@ -13,9 +13,14 @@ cache/
 .mozilla/
 .node-gyp/
 .npm/
+.bun/
+.cargo/
+.rustup/
+.venv/
 .thunderbird/
 .wine/
 .idea/
+Library/Caches/
 
 .Idea*/
 .RubyMine*/
@@ -24,5 +29,8 @@ cache/
 
 node_modules/
 bower_components/
+dist/
+build/
+target/
 ant-build
 ant-gen

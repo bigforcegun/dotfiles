@@ -13,6 +13,7 @@ export EDITOR='nvim'
 export VISUAL='nvim'
 export DIFFPROG='nvim -d'
 export TERMINAL='alacritty'
+export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/config"
 
 # export MANPAGER='kak-man-pager'
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
