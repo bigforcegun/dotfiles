@@ -138,9 +138,9 @@ head "Enable userspace services..."
 
 # FIXME check service before loading
 launchctl load -w ~/Library/LaunchAgents/ke.bou.dark-mode-notify.plist
-# mcpproxy-go — активная система (:9091)
+# mcpproxy-go
 launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist
-# старый TBXark (:9090) — бэкап, выключен; раскомментить для отката:
+# TBXark
 # launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
 
 #systemctl --user daemon-reload
