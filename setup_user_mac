@@ -64,12 +64,16 @@ link ".config/espanso"
 ## Opencode Section 🤡 (привет NPM модули в .config)
 
 link ".config/opencode/opencode.json"
+link ".config/opencode/oh-my-openagent.json"
+link ".config/opencode/tui.json"
+link ".config/opencode/package.json"
 link ".config/opencode/agents"
 link ".config/opencode/instructions"
 link ".config/opencode/commands"
 link ".config/opencode/rules"
 link ".config/opencode/skills"
 link ".config/opencode/tools"
+link ".config/opencode/opencode-quota"
 
 ## MCP Stack (см. docs/mcp-stack/PLAN2.md)
 
@@ -79,7 +83,7 @@ link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
 
 link ".config/rulesync/contexts"
 
-# старый TBXark mcp-proxy (:9090) — выключенный бэкап: файлы линкуем, демон НЕ грузим
+# старый TBXark mcp-proxy (:9090) — выключенный бэкап
 link ".config/mcp-proxy/config.json"
 link "Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist"
 
