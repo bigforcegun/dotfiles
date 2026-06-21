@@ -16,8 +16,6 @@ cache/
 .thunderbird/
 .wine/
 .idea/
-.env
-env
 
 .Idea*/
 .RubyMine*/
@@ -28,8 +26,3 @@ node_modules/
 bower_components/
 ant-build
 ant-gen
-
-.DS_Store
-*.bak
-*.bak-*
-token-usage-output.txt

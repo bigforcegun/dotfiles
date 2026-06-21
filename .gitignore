@@ -26,7 +26,6 @@ vendor/bundle
 env
 .omo/
 
-
 .DS_Store
 *.bak
 *.bak-*
