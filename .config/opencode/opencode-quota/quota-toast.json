@@ -5,7 +5,8 @@
     "enabled": true
   },
   "tuiCompactStatus": {
-    "enabled": true
+    "enabled": true,
+    "sessionPrompt": false
   },
   "maintainerAnnouncements": {
     "enabled": true,
