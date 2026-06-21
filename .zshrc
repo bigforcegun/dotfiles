@@ -30,10 +30,10 @@ source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
 # TODO: разобраться с комбинацией prezto+antibody - что настраиваешь сам, что через презто, когда надобно инклудить файлы
 source ~/.zsh/prezto.zsh
 
-source ~/.zsh/completions.zsh
 source ~/.zsh/zsh-notify.zsh
 
 source ~/.zsh/antibody.zsh
+source ~/.zsh/completions.zsh
 source ~/.zsh/environment.zsh
 
 #source ~/.zsh/keybindings.zsh
@@ -42,9 +42,7 @@ source ~/.zsh/aliases/git.zsh
 source ~/.zsh/aliases/kube.zsh
 source ~/.zsh/fuzzy.zsh
 source ~/.zsh/ssh.zsh
-source ~/.zsh/mcp.zsh
 
 # Added by LM Studio CLI (lms)
 # export PATH="$PATH:/Users/bigforcegun/.lmstudio/bin"
 # End of LM Studio CLI section
-

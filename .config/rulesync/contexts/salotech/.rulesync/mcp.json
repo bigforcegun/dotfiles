@@ -1,9 +1,9 @@
 {
   "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
   "mcpServers": {
-    "mcpproxy-gamedev": {
+    "mcpproxy-salotech": {
       "type": "http",
-      "url": "http://localhost:9091/mcp/p/gamedev",
+      "url": "http://localhost:9091/mcp/p/salotech",
       "env": {}
     }
   }

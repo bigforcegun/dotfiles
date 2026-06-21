@@ -1,14 +1,9 @@
 {
   "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
   "mcpServers": {
-    "context7": {
+    "mcpproxy-dev": {
       "type": "http",
-      "url": "http://localhost:9090/context7/mcp",
-      "env": {}
-    },
-    "semble": {
-      "type": "http",
-      "url": "http://localhost:9090/semble/mcp",
+      "url": "http://localhost:9091/mcp/p/dev",
       "env": {}
     }
   }

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MCPD_LABEL="${MCPD_LABEL:-com.bigforcegun.mcpproxy}"
+MCPD_PLIST="${MCPD_PLIST:-$HOME/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist}"
+MCPD_CONFIG="${MCPD_CONFIG:-$HOME/.mcpproxy/mcp_config.json}"
+MCPD_VERBS=(status start stop restart reload logs health doctor profiles run help --help)
+
+usage() {
+  cat >&2 <<EOF
+mcpd <verb> — manage mcpproxy daemon ($MCPD_LABEL)
+  status            launchd job state
+  start|stop        bootstrap / bootout
+  restart           kickstart -k
+  reload            bootout + bootstrap, reload plist
+  logs [-f|-n N]    tail out/err logs
+  health            mcpproxy status
+  doctor            mcpproxy doctor
+  profiles          profiles and servers from config
+  run               foreground debug with --log-level debug
+
+Any other <verb> is passed to 'mcpproxy <verb> [args...]'.
+EOF
+}
+
+svc() {
+  printf 'gui/%s/%s' "$(id -u)" "$MCPD_LABEL"
+}
+
+verb="${1:-status}"
+if (($# > 0)); then
+  shift
+fi
+
+case "$verb" in
+  complete-verbs)
+    printf '%s\n' "${MCPD_VERBS[@]}"
+    ;;
+  status)
+    launchctl print "$(svc)"
+    ;;
+  start)
+    launchctl bootstrap "gui/$(id -u)" "$MCPD_PLIST"
+    printf 'mcpd: started\n'
+    ;;
+  stop)
+    launchctl bootout "$(svc)"
+    printf 'mcpd: stopped\n'
+    ;;
+  restart)
+    launchctl kickstart -k "$(svc)"
+    printf 'mcpd: restarted\n'
+    ;;
+  reload)
+    launchctl bootout "$(svc)" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$MCPD_PLIST"
+    printf 'mcpd: reloaded (plist loaded)\n'
+    ;;
+  logs)
+    if (($# > 0)); then
+      tail "$@" "/tmp/$MCPD_LABEL.out.log" "/tmp/$MCPD_LABEL.err.log"
+    else
+      tail -f "/tmp/$MCPD_LABEL.out.log" "/tmp/$MCPD_LABEL.err.log"
+    fi
+    ;;
+  health)
+    mcpproxy status
+    ;;
+  doctor)
+    mcpproxy doctor
+    ;;
+  profiles)
+    if command -v jq >/dev/null; then
+      jq -r '.profiles[] | "\(.name): \(.servers | join(", "))"' "$MCPD_CONFIG"
+    else
+      grep -A99 '"profiles"' "$MCPD_CONFIG"
+    fi
+    ;;
+  run)
+    exec mcpproxy serve --log-level debug
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    mcpproxy "$verb" "$@"
+    ;;
+esac

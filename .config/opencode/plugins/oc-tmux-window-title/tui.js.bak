@@ -40,10 +40,19 @@ async function sessionWindowName(api, sessionID) {
   return cleanTmuxName(`${TMUX_WINDOW_PREFIX}${directory || "session"}`)
 }
 
+async function renameForSession(api, sessionID) {
+  if (!sessionID) return
+
+  try {
+    await renameTmuxWindow(await sessionWindowName(api, sessionID))
+  } catch {
+  }
+}
+
 const plugin = {
   id: "oc-tmux-window-title",
   async tui(api) {
-    let lastWindowName
+    let lastSessionID
 
     function currentSessionID() {
       const route = api.route.current
@@ -53,27 +62,12 @@ const plugin = {
       if (typeof sessionID === "string") return sessionID
     }
 
-    async function renameCurrentSession() {
+    function renameCurrentSession() {
       const sessionID = currentSessionID()
-      if (!sessionID) return
+      if (!sessionID || sessionID === lastSessionID) return
 
-      try {
-        const windowName = await sessionWindowName(api, sessionID)
-        if (windowName === lastWindowName) return
-
-        lastWindowName = windowName
-        await renameTmuxWindow(windowName)
-      } catch {
-      }
-    }
-
-    async function renameSelectedSession(sessionID) {
-      try {
-        const windowName = await sessionWindowName(api, sessionID)
-        lastWindowName = windowName
-        await renameTmuxWindow(windowName)
-      } catch {
-      }
+      lastSessionID = sessionID
+      renameForSession(api, sessionID)
     }
 
     queueMicrotask(renameCurrentSession)
@@ -81,8 +75,8 @@ const plugin = {
     const interval = setInterval(renameCurrentSession, 500)
 
     const disposeSelect = api.event.on("tui.session.select", (event) => {
-      lastWindowName = undefined
-      renameSelectedSession(event.properties.sessionID)
+      lastSessionID = event.properties.sessionID
+      renameForSession(api, event.properties.sessionID)
     })
 
     api.lifecycle.onDispose(() => {
