@@ -76,14 +76,14 @@ link ".config/opencode/skills"
 link ".config/opencode/tools"
 link ".config/opencode/opencode-quota"
 
-## MCP Stack (см. docs/mcp-stack/PLAN2.md)
+## mcpproxy
 
 link ".mcpproxy"
 link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
 
 link ".config/rulesync/contexts"
 
-# старый TBXark mcp-proxy (:9090) — выключенный бэкап
+# TBXark mcp-proxy
 link ".config/mcp-proxy/config.json"
 link "Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist"
 
