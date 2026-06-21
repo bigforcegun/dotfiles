@@ -52,12 +52,10 @@ ps_mcpd() {
     upstream_labels="$(jq -r '
       .mcpServers[]?
       | select(.protocol == "stdio" or (.command // "") != "")
-      | [
-          .name,
-          ([.command, (.url // "")] + (.args // [])
-            | map(select(. != null and . != ""))
-            | join("\u001f"))
-        ]
+      | .name as $name
+      | ([.command, (.url // "")] + (.args // []))[]
+      | select(. != null and . != "")
+      | [$name, .]
       | @tsv
     ' "$config_path" 2>/dev/null || true)"
   fi
@@ -97,25 +95,36 @@ ps_mcpd() {
       return token
     }
 
-    function useful_token(token) {
-      return token != "" && token !~ /^-/ && token !~ /^[0-9]+([.][0-9]+)*$/ && token !~ /^(npx|uvx|uv|node|python|python3|run)$/
+    function useful_token(token,    base) {
+      base = basename(token)
+      return token != "" && token !~ /^-/ && token !~ /^[0-9]+([.][0-9]+)*$/ && token !~ /^(mcp|npx|uvx|uv|node|python|python3|run)$/ && !(token ~ /^\// && base ~ /^(npx|uvx|uv|node|python|python3)$/)
     }
 
-    function discovered_label(command,    best_label, best_score, i, j, needle_count, needles, token, score) {
+    function add_match_score(command, token,    clean) {
+      clean = strip_version(token)
+      if (useful_token(clean) && index(command, clean) > 0) return length(clean)
+      return 0
+    }
+
+    function discovered_label(command,    best_label, best_score, i, raw_token, base_token, label, score) {
       best_label = ""
       best_score = 0
+      delete label_score
 
       for (i = 1; i <= label_count; i++) {
-        score = 0
-        needle_count = split(label_needles[i], needles, "\037")
-        for (j = 1; j <= needle_count; j++) {
-          token = strip_version(basename(needles[j]))
-          if (useful_token(token) && index(command, token) > 0) score++
-        }
+        label = label_id[i]
+        raw_token = label_needles[i]
+        base_token = basename(raw_token)
 
+        label_score[label] += add_match_score(command, raw_token)
+        if (base_token != raw_token) label_score[label] += add_match_score(command, base_token)
+      }
+
+      for (label in label_score) {
+        score = label_score[label]
         if (score > best_score) {
           best_score = score
-          best_label = label_id[i]
+          best_label = label
         }
       }
 
