@@ -2,11 +2,11 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium"
     },
     "hephaestus": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium"
     },
     "oracle": {
@@ -68,11 +68,11 @@
       ]
     },
     "atlas": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium"
     },
     "sisyphus-junior": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium"
     }
   },
@@ -92,7 +92,7 @@
       ]
     },
     "deep": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium",
       "fallback_models": [
         {
@@ -111,7 +111,7 @@
       ]
     },
     "quick": {
-      "model": "openai/gpt-5.4-mini",
+      "model": "openai/gpt-5.4-mini-fast",
       "variant": "low",
       "reasoningEffort": "low",
       "fallback_models": [
@@ -136,7 +136,7 @@
       ]
     },
     "unspecified-high": {
-      "model": "openai/gpt-5.5",
+      "model": "openai/gpt-5.5-fast",
       "variant": "medium",
       "fallback_models": [
         {
