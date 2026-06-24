@@ -191,10 +191,7 @@
       "enabled": true,
       "quarantined": false,
       "disabled_tools": [
-        "_aggregate",
-        "_aggregate-db",
-        "export",
-        "switch-connection"
+        "export"
       ]
     },
     {
