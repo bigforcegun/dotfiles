@@ -13,6 +13,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/omo-subagents-refining/` | active tuning notes | `contexts/omo-subagents-refining/README.md` | OMO package cache, GitHub issues/PRs |
 | `contexts/agents-session-dumper/` | research/design | `contexts/agents-session-dumper/README.md` | `docs/agents-session-dumper.md` |
 | `contexts/opencode-config-tuning/` | draft plans | `contexts/opencode-config-tuning/README.md` | `.omo/drafts/oh-my-openagent-config-fixes.md`, `.omo/drafts/opencode-token-overhead-profiles.md` |
+| `contexts/hotkeys-and-plugins/` | discovery/context capture | `contexts/hotkeys-and-plugins/README.md` | current branch scan, OpenCode docs |
 
 ## Root rules
 

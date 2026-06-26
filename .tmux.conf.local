@@ -502,6 +502,13 @@ set -g status-interval 5
 # Enable focus events
 set -g focus-events on
 
+# Pass modified keys like Ctrl+Enter through tmux.
+# Alacritty sends Ctrl+Enter as CSI u: \033[13;5u.
+set -g xterm-keys on
+set -s extended-keys on
+set -s extended-keys-format csi-u
+set -as terminal-features ',alacritty*:extkeys'
+
 # Define word separators
 set -g word-separators " -@"
 

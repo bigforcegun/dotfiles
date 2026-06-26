@@ -36,7 +36,7 @@ source ~/.zsh/antibody.zsh
 source ~/.zsh/completions.zsh
 source ~/.zsh/environment.zsh
 
-#source ~/.zsh/keybindings.zsh
+source ~/.zsh/keybindings.zsh
 source ~/.zsh/aliases/aliases.zsh
 source ~/.zsh/aliases/git.zsh
 source ~/.zsh/aliases/kube.zsh

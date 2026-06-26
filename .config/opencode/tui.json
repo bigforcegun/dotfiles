@@ -6,5 +6,12 @@
     "/Users/bigforcegun/.dotfiles/.config/opencode/plugins/oc-tmux-window-title/tui.js",
     "@slkiser/opencode-quota@latest",
     "opencode-subagent-statusline"
-  ]
+  ],
+  "keybinds": {
+    "input_submit": "ctrl+return, ctrl+s",
+    "input_newline": "return,shift+return,ctrl+j",
+    "input_word_forward": "alt+f,alt+right,ctrl+right",
+    "input_word_backward": "alt+b,alt+left,ctrl+left",
+    "dialog.prompt.submit": "ctrl+return"
+  }
 }

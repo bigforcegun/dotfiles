@@ -38,22 +38,22 @@ y = 0
 
 [[keyboard.bindings]]
 action = "Paste"
-key = "V"
+key = 9
 mods = "Control|Shift"
 
 [[keyboard.bindings]]
 action = "Paste"
-key = "V"
+key = 9
 mods = "Command|Shift"
 
 [[keyboard.bindings]]
 action = "Copy"
-key = "C"
+key = 8
 mods = "Control|Shift"
 
 [[keyboard.bindings]]
 action = "Copy"
-key = "C"
+key = 8
 mods = "Command|Shift"
 
 [[keyboard.bindings]]
@@ -679,15 +679,35 @@ chars = "\u001B[1;5B"
 key = "Down"
 mods = "Alt"
 
-[[keyboard.bindings]]
-chars = "\u001Bb"
-key = "Left"
-mods = "Alt"
+#[[keyboard.bindings]]
+#chars = "\u001Bb"
+#key = "Left"
+#mods = "Alt"
+
+#[[keyboard.bindings]]
+#chars = "\u001Bf"
+#key = "Right"
+#mods = "Alt"
 
 [[keyboard.bindings]]
-chars = "\u001Bf"
+key = "Left"
+mods = "Alt"
+chars = "\u001B[1;3D"
+
+[[keyboard.bindings]]
 key = "Right"
 mods = "Alt"
+chars = "\u001B[1;3C"
+
+[[keyboard.bindings]]
+chars = "\u001B[13;5u"
+key = "Enter"
+mods = "Control"
+
+[[keyboard.bindings]]
+chars = "\u001B[13;5u"
+key = "Enter"
+mods = "Command"
 
 [mouse]
 hide_when_typing = false
@@ -727,4 +747,3 @@ live_config_reload = true
 import = ["~/.config/alacritty/active_theme.toml"]
 
 [terminal]
-
