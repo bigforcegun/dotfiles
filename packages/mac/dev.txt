@@ -3,6 +3,12 @@ npm
 yarn
 go
 uv
+shellcheck
+taplo
+lua-language-server
+basedpyright
+ruff
+godot
 android-platform-tools
 kubectl
 

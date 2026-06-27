@@ -13,6 +13,9 @@ yad
 postgresql-client
 
 nodejs
+npm
+
+shellcheck
 
 redis-tools
 

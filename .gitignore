@@ -33,3 +33,6 @@ env
 *.bak
 *.bak-*
 token-usage-output.txt
+
+.opencode/skills/
+.config/opencode/skills/

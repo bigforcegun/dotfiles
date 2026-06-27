@@ -38,3 +38,6 @@ do
     head " Installing packages from category ${category}"
     sudo apt install -y $(list_from_file packages/ubuntu/${category}.txt)
 done
+
+head "Setup npm global tools..."
+list_from_file packages/ubuntu/npm-global.txt | xargs sudo npm install -g

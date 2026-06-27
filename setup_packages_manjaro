@@ -34,3 +34,6 @@ yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/utils.txt)
 head "Install dev packages..."
 yay -S --noconfirm --needed - < <(list_from_file packages/manjaro/dev.txt)
 yay -S --noconfirm --needed --asdeps - < <(list_from_file packages/manjaro/libs.txt)
+
+head "Setup npm global tools..."
+list_from_file packages/manjaro/npm-global.txt | xargs sudo npm install -g

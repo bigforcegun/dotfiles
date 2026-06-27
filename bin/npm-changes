@@ -1,0 +1,297 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DIFF=0
+SHOW_DIST_TAGS=0
+RELEASE_LIMIT="${NPM_CHANGES_RELEASE_LIMIT:-5}"
+RELEASE_NOTES_LIMIT="${NPM_CHANGES_RELEASE_NOTES_LIMIT:-3}"
+PACKAGE_JSON="${NPM_CHANGES_PACKAGE_JSON:-./package.json}"
+
+usage() {
+  cat >&2 <<EOF
+usage: npm-changes [--diff] [--dist-tags] [--package-json path] [package...]
+
+Summarize what changed for npm packages: local baseline, npm latest, recent
+publish history, GitHub release notes when available, and the links/commands an
+agent should inspect next. By default, reads ./package.json in the current
+directory and, when no packages are passed, checks every dependency in that
+package.json. When --diff is passed, also runs npm diff from the local
+package.json version/range baseline to npm latest.
+
+Examples:
+  npm-changes
+  npm-changes @opencode-ai/plugin opencode-subagent-statusline
+  npm-changes --package-json ~/.config/opencode/package.json --diff @opencode-ai/plugin
+
+Environment:
+  NPM_CHANGES_RELEASE_LIMIT=5       GitHub releases to show
+  NPM_CHANGES_RELEASE_NOTES_LIMIT=3 GitHub release notes to fetch
+  NPM_CHANGES_PACKAGE_JSON=path     package.json used for local baseline
+EOF
+}
+
+die() {
+  printf 'npm-changes: %s\n' "$*" >&2
+  exit 1
+}
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"
+}
+
+json_get() {
+  jq -r "$1 // empty" 2>/dev/null
+}
+
+repo_slug() {
+  local raw="$1"
+  raw="${raw%%#*}"
+  raw="${raw#git+}"
+  raw="${raw%.git}"
+  raw="${raw#https://github.com/}"
+  raw="${raw#http://github.com/}"
+  raw="${raw#git://github.com/}"
+  raw="${raw#ssh://git@github.com/}"
+  raw="${raw#git@github.com:}"
+
+  if [[ "$raw" == */* && "$raw" != http* && "$raw" != git:* ]]; then
+    printf '%s\n' "${raw%%/*}/${raw#*/}"
+  fi
+}
+
+print_dist_tags() {
+  local meta="$1"
+
+  if (( SHOW_DIST_TAGS )); then
+    printf 'dist-tags:  '
+    printf '%s' "$meta" | jq -r '."dist-tags" // {} | to_entries | map("\(.key)=\(.value)") | join(", ")'
+  fi
+}
+
+print_publish_history() {
+  local meta="$1"
+
+  printf 'recent npm publishes:\n'
+  printf '%s' "$meta" | jq -r '
+    .time // {}
+    | to_entries
+    | map(select(.key != "created" and .key != "modified"))
+    | sort_by(.value)
+    | reverse
+    | .[:5][]?
+    | "  \(.key)  \(.value)"
+  '
+}
+
+print_release_notes() {
+  local slug="$1" tag tags=() count=0 note
+
+  if ! command -v gh >/dev/null 2>&1; then
+    printf 'release notes: gh unavailable\n'
+    return 0
+  fi
+
+  while IFS=$'\t' read -r tag _; do
+    [[ -n "$tag" ]] && tags+=("$tag")
+  done < <(gh release list -R "$slug" --limit "$RELEASE_LIMIT" 2>/dev/null || true)
+
+  if ((${#tags[@]} == 0)); then
+    printf 'release notes: unavailable via gh\n'
+    return 0
+  fi
+
+  printf 'release notes:\n'
+  for tag in "${tags[@]}"; do
+    ((count += 1))
+    if (( count > RELEASE_NOTES_LIMIT )); then
+      break
+    fi
+
+    printf '  ## %s\n' "$tag"
+    note="$(gh release view "$tag" -R "$slug" --json name,publishedAt,url,body --jq '
+      "  title: \(.name // "")\n  date:  \(.publishedAt // "")\n  url:   \(.url // "")\n" +
+      ((.body // "") | split("\n") | map(select(length > 0)) | .[:12] | map("    " + .) | join("\n"))
+    ' 2>/dev/null || true)"
+
+    if [[ -n "$note" ]]; then
+      printf '%s\n' "$note"
+    else
+      printf '    no release body available\n'
+    fi
+  done
+}
+
+local_spec() {
+  local pkg="$1"
+
+  if [[ ! -f "$PACKAGE_JSON" ]]; then
+    return 0
+  fi
+
+  jq -r --arg pkg "$pkg" '
+    .dependencies[$pkg]
+    // .devDependencies[$pkg]
+    // .peerDependencies[$pkg]
+    // .optionalDependencies[$pkg]
+    // empty
+  ' "$PACKAGE_JSON" 2>/dev/null || true
+}
+
+package_names_from_json() {
+  jq -r '
+    [
+      (.dependencies // {}),
+      (.devDependencies // {}),
+      (.peerDependencies // {}),
+      (.optionalDependencies // {})
+    ]
+    | add
+    | keys[]?
+  ' "$PACKAGE_JSON" | sort -u
+}
+
+package_json_label() {
+  local path="$PACKAGE_JSON"
+  case "$path" in
+    /*) ;;
+    *) path="$PWD/${path#./}" ;;
+  esac
+
+  if [[ -f "$PACKAGE_JSON" ]]; then
+    printf '%s' "$path"
+  else
+    printf '%s missing' "$path"
+  fi
+}
+
+baseline_version() {
+  local pkg="$1" spec="$2"
+
+  if [[ -z "$spec" || "$spec" == latest ]]; then
+    return 0
+  fi
+
+  if [[ "$spec" =~ ^[0-9]+([.][0-9]+){1,2}([-+][0-9A-Za-z.-]+)?$ ]]; then
+    printf '%s\n' "$spec"
+    return 0
+  fi
+
+  npm view "${pkg}@${spec}" version --json 2>/dev/null | jq -r 'if type == "array" then .[-1] else . end // empty' || true
+}
+
+show_package() {
+  local pkg="$1" meta latest spec base repo homepage bugs slug
+
+  printf '\n== %s ==\n' "$pkg"
+
+  if ! meta="$(npm view "$pkg" name version dist-tags repository.url homepage bugs.url time --json 2>&1)"; then
+    printf 'npm: failed to fetch metadata\n%s\n' "$meta" >&2
+    return 1
+  fi
+
+  latest="$(printf '%s' "$meta" | json_get '.version')"
+  spec="$(local_spec "$pkg")"
+  base="$(baseline_version "$pkg" "$spec")"
+  repo="$(printf '%s' "$meta" | json_get '.repository.url')"
+  homepage="$(printf '%s' "$meta" | json_get '.homepage')"
+  bugs="$(printf '%s' "$meta" | json_get '.bugs.url')"
+
+  printf 'package:    %s\n' "$(package_json_label)"
+  printf 'local spec: %s\n' "${spec:-not found}"
+  printf 'baseline:   %s\n' "${base:-unknown}"
+  printf 'latest:     %s\n' "${latest:-unknown}"
+
+  print_dist_tags "$meta"
+  print_publish_history "$meta"
+
+  [[ -n "$repo" ]] && printf 'repo:       %s\n' "$repo"
+  [[ -n "$homepage" ]] && printf 'homepage:   %s\n' "$homepage"
+  [[ -n "$bugs" ]] && printf 'bugs:       %s\n' "$bugs"
+
+  slug="$(repo_slug "$repo")"
+  if [[ -z "$slug" ]]; then
+    slug="$(repo_slug "$homepage")"
+  fi
+  if [[ -n "$slug" ]]; then
+    print_release_notes "$slug"
+
+    printf 'inspect next:\n'
+    printf '  releases: https://github.com/%s/releases\n' "$slug"
+    printf '  commits:  https://github.com/%s/commits\n' "$slug"
+    printf '  compare:  https://github.com/%s/compare/v%s...v%s\n' "$slug" "${base:-OLD}" "${latest:-NEW}"
+  else
+    printf 'inspect next:\n'
+    printf '  npm:      https://www.npmjs.com/package/%s\n' "$pkg"
+    printf '  diff:     npm diff --diff=%s@%s --diff=%s@%s\n' "$pkg" "${base:-OLD}" "$pkg" "${latest:-NEW}"
+  fi
+
+  if (( DIFF )); then
+    if [[ -n "$base" && -n "$latest" && "$base" != "$latest" ]]; then
+      printf 'npm diff: %s@%s -> %s@%s\n' "$pkg" "$base" "$pkg" "$latest"
+      npm diff --diff="${pkg}@${base}" --diff="${pkg}@${latest}" || true
+    else
+      printf 'npm diff: skipped (baseline missing or already latest)\n'
+    fi
+  else
+    printf 'npm diff command: npm diff --diff=%s@%s --diff=%s@%s\n' "$pkg" "${base:-OLD}" "$pkg" "${latest:-NEW}"
+  fi
+}
+
+packages=()
+while (($#)); do
+  case "$1" in
+    --diff)
+      DIFF=1
+      shift
+      ;;
+    --dist-tags)
+      SHOW_DIST_TAGS=1
+      shift
+      ;;
+    --package-json)
+      [[ $# -ge 2 ]] || die '--package-json requires a path'
+      PACKAGE_JSON="$2"
+      shift 2
+      ;;
+    -h|--help|help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      packages+=("$@")
+      break
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      packages+=("$1")
+      shift
+      ;;
+  esac
+done
+
+need npm
+need jq
+
+if ((${#packages[@]} == 0)); then
+  if [[ ! -f "$PACKAGE_JSON" ]]; then
+    die "no packages passed and $(package_json_label); cd into a package directory or pass --package-json"
+  fi
+
+  while IFS= read -r pkg; do
+    [[ -n "$pkg" ]] && packages+=("$pkg")
+  done < <(package_names_from_json)
+
+  if ((${#packages[@]} == 0)); then
+    die "no dependencies found in $(package_json_label)"
+  fi
+fi
+
+status=0
+for pkg in "${packages[@]}"; do
+  show_package "$pkg" || status=1
+done
+
+exit "$status"

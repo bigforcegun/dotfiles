@@ -14,6 +14,10 @@ mongodb-tools-bin
 postgresql-client
 nodejs
 npm
+shellcheck
+lua-language-server
+taplo-cli
+godot
 redis
 #redis-client
 #mysql-clients
