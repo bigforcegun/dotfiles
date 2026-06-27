@@ -1,15 +1,23 @@
-# Draft: OpenCode Token Overhead Profiles
+# Rejected: OpenCode Token Overhead Profiles
+
+## Status
+
+- Rejected on 2026-06-27.
+- User decision: the `lean` / `dev` / `full` profile model is not a useful idea for this workspace.
+- Keep this file only as historical research and diagnostics; do not continue this plan unless a new request reframes the problem.
 
 ## Requirements (confirmed)
 - User wants to reduce OpenCode startup/context token overhead.
 - User wants this remembered as a persistent project to revisit later.
-- No OpenCode config changes have been approved or made.
+- OpenCode/OMO config changes were made outside the original plan; this file now tracks the remaining profile/token-overhead implications rather than claiming no changes exist.
+- Later decision: the profile-based approach below is rejected and should not be implemented.
 
 ## Technical Decisions
-- Primary optimization target: always-on tools / MCP schemas and heavy orchestration prompt, not user disk instruction files.
-- Recommended operating model: separate `lean`, `dev`, and `full` profiles.
-- Safest profile operation mechanism: wrapper commands using `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `OPENCODE_CONFIG_CONTENT`, and/or `--pure`.
-- Important caveat: `OPENCODE_CONFIG` merges with global/project config according to OpenCode precedence; it may not fully isolate from global heavy plugin unless global config is slimmed or `--pure` is used.
+- Superseded decision: do not implement the profile split described below.
+- Historical finding: the likely major token costs were always-on tools / MCP schemas and heavy orchestration prompt, not user disk instruction files.
+- Rejected operating model: separate `lean`, `dev`, and `full` profiles.
+- Historical mechanism considered: wrapper commands using `OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`, `OPENCODE_CONFIG_CONTENT`, and/or `--pure`.
+- Historical caveat: `OPENCODE_CONFIG` merges with global/project config according to OpenCode precedence; it may not fully isolate from global heavy plugin unless global config is slimmed or `--pure` is used.
 
 ## Research Findings
 - Current working directory: `/Users/bigforcegun/.dotfiles`.
@@ -34,8 +42,18 @@
   - `OPENCODE_DISABLE_CLAUDE_CODE`: disable reading `.claude` prompt + skills.
   - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT`: disable reading `~/.claude/CLAUDE.md`.
 - OpenCode CLI supports `--pure`: run without external plugins.
+- Live verification on 2026-06-27 showed OpenCode 1.17.11 starts with OMO 4.13.0 and connects OMO-native `websearch`, `context7`, `grep_app`, `lsp`, plus `mcpproxy-salotech`.
+- `.mcpproxy/mcp_config.json` now has profiles `salotech`, `dev`, and `gamedev`; `salotech` includes `playwright`, `semble`, `context7`, `salotech-slack`, `salotech-atlassian`, `salotech-freshdesk`, `salotech-mongodb-sisa`, `salotech-grafana`, `salotech-trino`, and `salotech-opensearch`.
+- `mcpd status` showed `com.bigforcegun.mcpproxy` running on launchd; `mcpd ps` showed the mcpproxy process tree at roughly 622 MB RSS during verification.
+- `mcpproxy-salotech` retrieve-tools returned read-only tools from Slack, MongoDB, Atlassian, and Grafana, confirming the profile is usable through the lazy retrieval surface.
+- `salotech-trino` and `salotech-opensearch` are listed in the `salotech` profile but are currently `enabled: false` in `.mcpproxy/mcp_config.json`; retrieve-tools did not expose clear Trino/OpenSearch tools.
+- `mcpd ps` still showed a `salotech-opensearch` process despite `enabled: false`; user decided this is out of scope for this context.
+- `.config/opencode/package.json` currently still declares `@opencode-ai/plugin = 1.15.10` and `opencode-subagent-statusline = ^0.9.2`, while actual `opencode --version` is `1.17.11` and `.opencode` has `@opencode-ai/plugin@1.17.11`. User decision: package drift only matters for self-written plugins; do not chase generic package drift here.
+- `bin/npm-changes` exists and was smoke-tested with `--help` and package metadata lookup. It is useful for freshness/changelog checks, but it currently reports baselines from whichever package file is passed.
 
 ## Proposed Profile Model
+
+Rejected. Do not implement this model as written.
 
 ### `lean`
 - Purpose: fast questions, grep, tiny edits, low overhead.
@@ -58,19 +76,19 @@
 - Keep current heavy framework/plugin behavior.
 
 ## Open Questions
-- Should global `.config/opencode/opencode.json` be slimmed so heavy plugin only lives in `full` profile?
-- Should profile files live in `~/.config/opencode/profiles/` or in this dotfiles repo under `.config/opencode/profiles/`?
-- Should aliases/functions be added to zsh config, and where exactly?
-- Which exact tools/MCPs are mandatory for `dev` versus `full`?
-- Should Claude prompt integration be disabled only for `lean`, or for all profiles?
+- None. The profile idea is rejected, `salotech-opensearch` cleanup is out of scope, and package drift matters only for self-written plugins.
 
 ## Scope Boundaries
-- INCLUDE: profile strategy, measurement strategy, wrapper commands, config layout, token-overhead reduction plan.
+- INCLUDE: historical profile strategy, measurement strategy, wrapper commands, config layout, and token-overhead reduction notes.
 - INCLUDE: backup-first approach before any future OpenCode config modification.
+- INCLUDE: live diagnostics for current MCP profile and package/runtime drift.
+- EXCLUDE: implementing `lean` / `dev` / `full` profile split.
+- EXCLUDE: cleaning stale `salotech-opensearch` process in this context.
+- EXCLUDE: generic package/runtime drift except self-written plugin dependencies.
 - EXCLUDE: editing OpenCode config now.
 - EXCLUDE: removing tools/plugins without explicit permission.
 - EXCLUDE: changing git hooks or git config.
 
 ## Future Continuation Prompt
 When returning to this project, ask Prometheus or another agent:
-> Continue the OpenCode token overhead profile project from `.omo/drafts/opencode-token-overhead-profiles.md`. First inspect current OpenCode config and CLI behavior, then propose a decision-complete plan for lean/dev/full profiles. Do not modify OpenCode config without explicit permission and backup.
+> Revisit OpenCode token overhead only if there is a new concrete bottleneck. Do not resume the rejected lean/dev/full profile plan. First inspect current OpenCode config and CLI behavior, then propose a narrower fix. Do not modify OpenCode config without explicit permission and backup.
