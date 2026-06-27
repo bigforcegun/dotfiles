@@ -14,6 +14,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/agents-session-dumper/` | research/design | `contexts/agents-session-dumper/README.md` | `docs/agents-session-dumper.md` |
 | `contexts/opencode-config-tuning/` | draft plans | `contexts/opencode-config-tuning/README.md` | `.omo/drafts/oh-my-openagent-config-fixes.md`, `.omo/drafts/opencode-token-overhead-profiles.md` |
 | `contexts/hotkeys-and-plugins/` | discovery/context capture | `contexts/hotkeys-and-plugins/README.md` | current branch scan, OpenCode docs |
+| `contexts/self-opencode-plugins/` | discovery/context capture | `contexts/self-opencode-plugins/README.md` | chat discussion, OpenCode docs/code lookup |
 | `contexts/domovoi-dotfiles-caretaker/` | concept/design | `contexts/domovoi-dotfiles-caretaker/README.md` | chat discussion |
 | `contexts/agent-todo-txt-bridge/` | research/design | `contexts/agent-todo-txt-bridge/README.md` | chat research, todo.txt/Taskwarrior/Org/agent-memory references |
 

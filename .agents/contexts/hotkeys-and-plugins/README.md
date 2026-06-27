@@ -3,7 +3,7 @@
 ## State
 
 - Status: discovery/context capture, no keybinding or OpenCode config changes applied yet
-- Last updated: 2026-06-24
+- Last updated: 2026-06-28
 - Branch: `omo`
 - Current worktree note: `.mcpproxy/mcp_config.json` was already modified before this context was created; do not treat it as part of this workstream unless explicitly requested.
 
@@ -15,7 +15,7 @@ This context exists because the hotkey surface is split across multiple config s
 
 ## Files
 
-- `research.md` - current map of hotkey/plugin files, OpenCode keybind rules, conflicts, and next decisions.
+- `research.md` - current map of hotkey/plugin files, OpenCode keybind rules, chat navigation/minimap findings, conflicts, and next decisions.
 
 ## Load policy
 

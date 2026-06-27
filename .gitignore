@@ -36,3 +36,4 @@ token-usage-output.txt
 
 .opencode/skills/
 .config/opencode/skills/
+.mcp_proxy/mcp_config.json
