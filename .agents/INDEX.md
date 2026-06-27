@@ -17,6 +17,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/self-opencode-plugins/` | discovery/context capture | `contexts/self-opencode-plugins/README.md` | chat discussion, OpenCode docs/code lookup |
 | `contexts/domovoi-dotfiles-caretaker/` | concept/design | `contexts/domovoi-dotfiles-caretaker/README.md` | chat discussion |
 | `contexts/agent-todo-txt-bridge/` | research/design | `contexts/agent-todo-txt-bridge/README.md` | chat research, todo.txt/Taskwarrior/Org/agent-memory references |
+| `contexts/mcpd-envless-start/` | decision/design | `contexts/mcpd-envless-start/README.md` | chat discussion, `.mcpproxy/mcp_config.json`, `bin/mcpd`, launchd plist |
 
 ## Root rules
 
