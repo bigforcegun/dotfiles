@@ -5,7 +5,8 @@
   "plugin": [
     "/Users/bigforcegun/.dotfiles/.config/opencode/plugins/oc-tmux-window-title/tui.js",
     "@slkiser/opencode-quota@latest",
-    "opencode-subagent-statusline"
+    "opencode-subagent-statusline",
+    "oh-my-openagent@latest"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",

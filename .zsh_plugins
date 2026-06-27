@@ -12,6 +12,7 @@ hlissner/zsh-autopair
 marzocchi/zsh-notify
 Tarrasch/zsh-bd
 zsh-users/zsh-syntax-highlighting
+zsh-users/zsh-history-substring-search
 
 zsh-users/zsh-autosuggestions
 zsh-users/zaw
