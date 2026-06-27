@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "plan",
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",
@@ -12,7 +11,7 @@
     ]
   },
   "server": {
-    "port": 4096,
+    "port": 8896,
     "hostname": "127.0.0.1",
     "mdns": false
   },
@@ -43,17 +42,6 @@
           "name": "qwen2.5-coder-7b-instruct"
         }
       }
-    }
-  },
-  "mcp": {
-    "tmux": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@fr1sk/tmux-mcp"
-      ],
-      "enabled": true
     }
   },
   "instructions": [
@@ -89,6 +77,8 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest"
+    "oh-my-openagent@latest",
+    "@slkiser/opencode-quota@latest",
+    "@ramtinj95/opencode-tokenscope@latest"
   ]
 }

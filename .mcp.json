@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mcpproxy-salotech": {
+      "type": "http",
+      "url": "http://127.0.0.1:9091/mcp/p/salotech"
+    }
+  }
+}

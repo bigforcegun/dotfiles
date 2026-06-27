@@ -1,0 +1,19 @@
+# Keep broad rg searches cheap by default. Use --no-ignore only for a narrowed,
+# intentional path such as ~/.cache/opencode/<specific subtree>.
+--max-filesize=1M
+--glob=!**/.cache/**
+--glob=!**/Cache/**
+--glob=!**/cache/**
+--glob=!**/.cached/**
+--glob=!**/.local/**
+--glob=!**/Library/Caches/**
+--glob=!**/.npm/**
+--glob=!**/.bun/**
+--glob=!**/.cargo/**
+--glob=!**/.rustup/**
+--glob=!**/.venv/**
+--glob=!**/node_modules/**
+--glob=!**/bower_components/**
+--glob=!**/dist/**
+--glob=!**/build/**
+--glob=!**/target/**

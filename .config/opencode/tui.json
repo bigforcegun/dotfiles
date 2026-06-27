@@ -1,20 +1,10 @@
 {
   "$schema": "https://opencode.ai/tui.json",
-  "theme": "tokyonight",
-  "leader_timeout": 2000,
-  "keybinds": {
-    "leader": "ctrl+x",
-    "command_list": "ctrl+p"
-  },
-  "scroll_speed": 4,
-  "scroll_acceleration": {
-    "enabled": true
-  },
+  "theme": "gruvbox",
   "diff_style": "auto",
-  "mouse": true,
-  "attention": {
-    "enabled": true,
-    "notifications": true,
-    "sound": false
-  }
+  "plugin": [
+    "/Users/bigforcegun/.dotfiles/.config/opencode/plugins/oc-tmux-window-title/tui.js",
+    "@slkiser/opencode-quota@latest",
+    "opencode-subagent-statusline"
+  ]
 }

@@ -16,9 +16,20 @@ __pycache__
 vendor/bundle
 .gitconfig-private/*
 !.gitconfig-private/.keep
+.claude/settings.local.json
 
-
-**/.claude/settings.local.json
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
 
 # nested git worktrees
 .git-worktrees/
+
+env
+.omo/
+
+.DS_Store
+*.bak
+*.bak-*
+token-usage-output.txt

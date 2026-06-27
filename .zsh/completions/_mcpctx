@@ -1,0 +1,7 @@
+#compdef mcpctx
+
+if (( CURRENT <= 2 )); then
+  compadd -- ${(f)"$(mcpctx complete-contexts 2>/dev/null)"}
+else
+  _files
+fi

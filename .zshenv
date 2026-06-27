@@ -13,6 +13,7 @@ export EDITOR='nvim'
 export VISUAL='nvim'
 export DIFFPROG='nvim -d'
 export TERMINAL='alacritty'
+export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/config"
 
 # export MANPAGER='kak-man-pager'
 export WORDCHARS='*?_.[]~&!#$%^(){}<>'
@@ -40,7 +41,12 @@ fi
 
 export HOST_OS HOST_TYPE
 
-export HISTFILE=~/.zsh_history
+export SHELL_SESSIONS_DISABLE=1
+export SHELL_SESSION_HISTORY=0
+
+export HISTFILE="$HOME/.zsh_history_bfpc"
+HISTSIZE=1000000000
+SAVEHIST=1000000000
 
 # My own binaries
 export PATH="$HOME/bin:$PATH"

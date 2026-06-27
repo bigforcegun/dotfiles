@@ -1,0 +1,2 @@
+github.com/TBXark/mcp-proxy@latest
+github.com/smart-mcp-proxy/mcpproxy-go/cmd/mcpproxy@v0.39.0-rc.9

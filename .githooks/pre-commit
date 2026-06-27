@@ -4,19 +4,24 @@ set -eu
 hook_name="$(basename "$0")"
 hook_script=".git/hooks/$hook_name"
 
-[ -e "$hook_script" ] && $hook_script
+if [ -x "$hook_script" ]; then
+    "$hook_script"
+fi
 
-gitleaksEnabled=$(git config --bool hooks.gitleaks)
-cmd="gitleaks --verbose --redact detect --no-git"
-# cmd="gitleaks --verbose --redact detect --log-opts='-1'"
-if [ ${gitleaksEnabled} = "true" ]; then
-    $cmd
-    if [ $? -eq 1 ]; then
-cat <<\EOF
-Error: gitleaks has detected sensitive information in your changes.
-If you know what you are doing you can disable this check using:
+gitleaks_enabled="$(git config --bool hooks.gitleaks || printf 'false')"
+
+if [ "$gitleaks_enabled" = "true" ]; then
+    if ! command -v gitleaks >/dev/null 2>&1; then
+        printf '%s\n' "Error: gitleaks is enabled but not installed or not in PATH." >&2
+        exit 1
+    fi
+
+    if ! gitleaks protect --staged --redact --verbose; then
+        cat <<\EOF >&2
+Error: gitleaks has detected sensitive information in your staged changes.
+If you know what you are doing, you can disable this check per repository using:
     git config hooks.gitleaks false
 EOF
-    exit 1
+        exit 1
     fi
 fi

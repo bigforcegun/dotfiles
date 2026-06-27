@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MCPD_LABEL="${MCPD_LABEL:-com.bigforcegun.mcpproxy}"
+MCPD_PLIST="${MCPD_PLIST:-$HOME/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist}"
+MCPD_CONFIG="${MCPD_CONFIG:-$HOME/.mcpproxy/mcp_config.json}"
+MCPD_DATA_CONFIG="${MCPD_DATA_CONFIG:-$HOME/.mcpproxy-data/mcp_config.json}"
+MCPD_VERBS=(status start stop restart reload logs health doctor profiles ps run help --help)
+
+usage() {
+  cat >&2 <<EOF
+mcpd <verb> — manage mcpproxy daemon ($MCPD_LABEL)
+  status            launchd job state
+  start|stop        bootstrap / bootout
+  restart           kickstart -k
+  reload            bootout + bootstrap, reload plist
+  logs [-f|-n N]    tail out/err logs
+  health            mcpproxy status
+  doctor            mcpproxy doctor
+  profiles          profiles and servers from config
+  ps                mcpproxy daemon and child MCP server RSS/CPU
+  run               foreground debug with --log-level debug
+
+Any other <verb> is passed to 'mcpproxy <verb> [args...]'.
+EOF
+}
+
+svc() {
+  printf 'gui/%s/%s' "$(id -u)" "$MCPD_LABEL"
+}
+
+mcpd_pid() {
+  launchctl print "$(svc)" 2>/dev/null | awk '/^[[:space:]]*pid = / { print $3; exit }' || true
+}
+
+ps_mcpd() {
+  local root_pid upstream_labels config_path
+  root_pid="$(mcpd_pid)"
+
+  if [[ -z "$root_pid" ]]; then
+    printf 'mcpd: %s is not running\n' "$MCPD_LABEL" >&2
+    return 1
+  fi
+
+  upstream_labels=""
+  if command -v jq >/dev/null; then
+    config_path="$MCPD_CONFIG"
+    if [[ -f "$MCPD_DATA_CONFIG" ]]; then
+      config_path="$MCPD_DATA_CONFIG"
+    fi
+
+    upstream_labels="$(jq -r '
+      .mcpServers[]?
+      | select(.protocol == "stdio" or (.command // "") != "")
+      | .name as $name
+      | ([.command, (.url // "")] + (.args // []))[]
+      | select(. != null and . != "")
+      | [$name, .]
+      | @tsv
+    ' "$config_path" 2>/dev/null || true)"
+  fi
+
+  export MCPD_UPSTREAM_LABELS="$upstream_labels"
+  ps -axo pid=,ppid=,pcpu=,pmem=,rss=,etime=,command= | awk -v root="$root_pid" '
+    BEGIN {
+      split(ENVIRON["MCPD_UPSTREAM_LABELS"], lines, "\n")
+      for (line_index in lines) {
+        if (lines[line_index] == "") continue
+        split(lines[line_index], fields, "\t")
+        label_count++
+        label_id[label_count] = fields[1]
+        label_needles[label_count] = fields[2]
+      }
+    }
+
+    function command_from_line(line,    i) {
+      for (i = 1; i <= 6; i++) {
+        sub(/^[[:space:]]*[^[:space:]]+[[:space:]]+/, "", line)
+      }
+      return line
+    }
+
+    function mib(kib) {
+      return sprintf("%.1fM", kib / 1024)
+    }
+
+    function basename(path,    n, parts) {
+      n = split(path, parts, "/")
+      return parts[n]
+    }
+
+    function strip_version(token) {
+      sub(/@[0-9][^[:space:]]*$/, "", token)
+      sub(/@latest$/, "", token)
+      return token
+    }
+
+    function useful_token(token,    base) {
+      base = basename(token)
+      return token != "" && token !~ /^-/ && token !~ /^[0-9]+([.][0-9]+)*$/ && token !~ /^(mcp|npx|uvx|uv|node|python|python3|run)$/ && !(token ~ /^\// && base ~ /^(npx|uvx|uv|node|python|python3)$/)
+    }
+
+    function add_match_score(command, token,    clean) {
+      clean = strip_version(token)
+      if (useful_token(clean) && index(command, clean) > 0) return length(clean)
+      return 0
+    }
+
+    function discovered_label(command,    best_label, best_score, i, raw_token, base_token, label, score) {
+      best_label = ""
+      best_score = 0
+      delete label_score
+
+      for (i = 1; i <= label_count; i++) {
+        label = label_id[i]
+        raw_token = label_needles[i]
+        base_token = basename(raw_token)
+
+        label_score[label] += add_match_score(command, raw_token)
+        if (base_token != raw_token) label_score[label] += add_match_score(command, base_token)
+      }
+
+      for (label in label_score) {
+        score = label_score[label]
+        if (score > best_score) {
+          best_score = score
+          best_label = label
+        }
+      }
+
+      return best_label
+    }
+
+    function label_for(pid, command,    first, label) {
+      if (pid == root) return "mcpproxy"
+
+      label = discovered_label(command)
+      if (label != "") return label
+
+      split(command, first, /[[:space:]]+/)
+      return basename(first[1])
+    }
+
+    {
+      pid = $1
+      parent = $2
+      pid_order[++pid_count] = pid
+      ppid[pid] = parent
+      cpu[pid] = $3 + 0
+      pmem[pid] = $4 + 0
+      rss[pid] = $5 + 0
+      etime[pid] = $6
+      command[pid] = command_from_line($0)
+    }
+
+    END {
+      if (!(root in command)) {
+        printf "mcpd: root pid %s was not found in ps output\n", root > "/dev/stderr"
+        exit 1
+      }
+
+      group_order[++group_count] = root
+      seen_group[root] = 1
+
+      for (i = 1; i <= pid_count; i++) {
+        pid = pid_order[i]
+        if (pid == root) {
+          group = root
+        } else {
+          group = ""
+          cursor = pid
+          while ((cursor in ppid) && ppid[cursor] != 0) {
+            if (ppid[cursor] == root) {
+              group = cursor
+              break
+            }
+            cursor = ppid[cursor]
+          }
+        }
+
+        if (group == "") continue
+
+        if (!(group in seen_group)) {
+          group_order[++group_count] = group
+          seen_group[group] = 1
+        }
+
+        group_rss[group] += rss[pid]
+        group_cpu[group] += cpu[pid]
+        group_pmem[group] += pmem[pid]
+        group_procs[group]++
+      }
+
+      printf "%-24s %7s %8s %7s %6s %10s  %s\n", "NAME", "PID", "RSS", "CPU%", "PROC", "ETIME", "COMMAND"
+      total_rss = total_cpu = total_procs = 0
+      for (i = 1; i <= group_count; i++) {
+        group = group_order[i]
+        total_rss += group_rss[group]
+        total_cpu += group_cpu[group]
+        total_procs += group_procs[group]
+        printf "%-24s %7s %8s %7.1f %6d %10s  %.96s\n", label_for(group, command[group]), group, mib(group_rss[group]), group_cpu[group], group_procs[group], etime[group], command[group]
+      }
+      printf "%-24s %7s %8s %7.1f %6d %10s  %s\n", "TOTAL", "-", mib(total_rss), total_cpu, total_procs, "-", "mcpproxy process tree"
+    }
+  '
+}
+
+verb="${1:-status}"
+if (($# > 0)); then
+  shift
+fi
+
+case "$verb" in
+  complete-verbs)
+    printf '%s\n' "${MCPD_VERBS[@]}"
+    ;;
+  status)
+    launchctl print "$(svc)"
+    ;;
+  start)
+    launchctl bootstrap "gui/$(id -u)" "$MCPD_PLIST"
+    printf 'mcpd: started\n'
+    ;;
+  stop)
+    launchctl bootout "$(svc)"
+    printf 'mcpd: stopped\n'
+    ;;
+  restart)
+    launchctl kickstart -k "$(svc)"
+    printf 'mcpd: restarted\n'
+    ;;
+  reload)
+    launchctl bootout "$(svc)" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$MCPD_PLIST"
+    printf 'mcpd: reloaded (plist loaded)\n'
+    ;;
+  logs)
+    if (($# > 0)); then
+      tail "$@" "/tmp/$MCPD_LABEL.out.log" "/tmp/$MCPD_LABEL.err.log"
+    else
+      tail -f "/tmp/$MCPD_LABEL.out.log" "/tmp/$MCPD_LABEL.err.log"
+    fi
+    ;;
+  health)
+    mcpproxy status
+    ;;
+  doctor)
+    mcpproxy doctor
+    ;;
+  profiles)
+    if command -v jq >/dev/null; then
+      jq -r '.profiles[] | "\(.name): \(.servers | join(", "))"' "$MCPD_CONFIG"
+    else
+      grep -A99 '"profiles"' "$MCPD_CONFIG"
+    fi
+    ;;
+  ps)
+    ps_mcpd
+    ;;
+  run)
+    exec mcpproxy serve --log-level debug
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    mcpproxy "$verb" "$@"
+    ;;
+esac

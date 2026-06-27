@@ -1,0 +1,378 @@
+#!/usr/bin/env zsh
+
+# OpenCode TUI client with project-root discovery and backend validation.
+
+emulate -LR zsh
+setopt pipefail
+set -u
+
+tmux_window_id=""
+tmux_window_name=""
+tmux_window_auto_rename=""
+
+diagnose() {
+  print -r -- "oc: $*" >&2
+}
+
+debug() {
+  [[ -n "${OC_DEBUG:-}" ]] || return 0
+  diagnose "debug: $*"
+}
+
+is_loopback_url() {
+  case "$1" in
+    http://127.0.0.1:*|http://localhost:*) return 0 ;;
+  esac
+
+  return 1
+}
+
+manual_attach_command() {
+  local url="$1"
+  print -r -- "opencode attach $url --dir $PWD"
+}
+
+canonical_path() {
+  print -r -- "${1:A}"
+}
+
+project_root() {
+  local path="$1"
+  local root="$path"
+
+  while [[ "$root" != "/" ]]; do
+    if [[ -e "$root/.git" ]]; then
+      canonical_path "$root"
+      return 0
+    fi
+    root="${root:h}"
+  done
+
+  canonical_path "$path"
+}
+
+restore_tmux_window_name() {
+  [[ -n "$tmux_window_id" && -n "$tmux_window_name" ]] || return 0
+
+  tmux rename-window -t "$tmux_window_id" "$tmux_window_name" >/dev/null 2>&1 || true
+  if [[ -n "$tmux_window_auto_rename" ]]; then
+    tmux set-window-option -t "$tmux_window_id" automatic-rename "$tmux_window_auto_rename" >/dev/null 2>&1 || true
+  fi
+}
+
+rename_tmux_window_for_oc() {
+  [[ -n "${TMUX:-}" ]] || return 0
+  command -v tmux >/dev/null 2>&1 || return 0
+
+  tmux_window_id="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
+  [[ -n "$tmux_window_id" ]] || return 0
+
+  tmux_window_name="$(tmux display-message -p '#{window_name}' 2>/dev/null || true)"
+  tmux_window_auto_rename="$(tmux show-window-options -v -t "$tmux_window_id" automatic-rename 2>/dev/null || true)"
+
+  tmux rename-window -t "$tmux_window_id" "oc:${PWD:t}" >/dev/null 2>&1 || true
+}
+
+discover_candidates() {
+  local line pid command
+
+  pgrep -f 'opencode' 2>/dev/null | while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    pid="${line%% *}"
+    [[ "$pid" =~ '^[0-9]+$' ]] || continue
+
+    if [[ "$line" == *' '* ]]; then
+      command="${line#* }"
+    else
+      command="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+    fi
+
+    [[ -n "$command" ]] || continue
+
+    case "$command" in
+      *"opencode attach"*) continue ;;
+      *"opencode --port "*|*"opencode serve"*|*"opencode web"*)
+        print -r -- "$pid $command"
+        ;;
+    esac
+  done
+}
+
+candidate_ports() {
+  local line current_pid
+
+  lsof -nP -iTCP -sTCP:LISTEN -Fpn 2>/dev/null | while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+
+    if [[ "$line" =~ '^([0-9]+)[[:space:]]+([0-9]+)$' ]]; then
+      print -r -- "$match[1] $match[2]"
+      continue
+    fi
+
+    if [[ "$line" =~ '^p([0-9]+)$' ]]; then
+      current_pid="$match[1]"
+    elif [[ "$line" =~ '^n.*:([0-9]+)$' ]]; then
+      if [[ -n "$current_pid" ]]; then
+        print -r -- "$current_pid $match[1]"
+      fi
+    fi
+  done
+}
+
+api_project_worktree() {
+  local url="$1"
+  local username="${OPENCODE_SERVER_USERNAME:-opencode}"
+  local password="${OPENCODE_SERVER_PASSWORD:-${OPENCODE_ATTACH_PASSWORD:-}}"
+  local -a curl_args
+  local http_code body
+
+  api_project_worktree_reason=""
+  api_project_worktree_worktree=""
+
+  curl_args=(--max-time 1 -sS)
+  if [[ -n "$password" ]]; then
+    curl_args+=(-u "$username:$password")
+  fi
+
+  http_code="$(curl "${curl_args[@]}" -o /dev/null -w '%{http_code}' "$url/project/current" 2>/dev/null || true)"
+  case "$http_code" in
+    401)
+      api_project_worktree_reason="backend at $url returned 401; set OPENCODE_SERVER_PASSWORD or OPENCODE_ATTACH_PASSWORD"
+      return 2
+      ;;
+    200)
+      ;;
+    *)
+      api_project_worktree_reason="backend at $url /project/current unavailable"
+      return 1
+      ;;
+  esac
+
+  body="$(curl "${curl_args[@]}" "$url/project/current" 2>/dev/null || true)"
+  if [[ "$body" =~ '"worktree"[[:space:]]*:[[:space:]]*"([^"]*)"' ]]; then
+    api_project_worktree_worktree="$match[1]"
+    return 0
+  fi
+
+  api_project_worktree_reason="backend at $url /project/current missing worktree"
+  return 1
+}
+
+attach_to() {
+  local url="$1"
+  shift
+
+  if [[ -n "${OPENCODE_SERVER_PASSWORD:-${OPENCODE_ATTACH_PASSWORD:-}}" ]]; then
+    OPENCODE_SERVER_USERNAME="${OPENCODE_SERVER_USERNAME:-opencode}" \
+      OPENCODE_SERVER_PASSWORD="${OPENCODE_SERVER_PASSWORD:-${OPENCODE_ATTACH_PASSWORD:-}}" \
+      command opencode attach "$url" --dir "$PWD" "$@"
+  else
+    command opencode attach "$url" --dir "$PWD" "$@"
+  fi
+}
+
+start_project_tui() {
+  local root="$1"
+  shift
+
+  if [[ -n "${OC_NO_START:-}" ]]; then
+    print -r -- "cd $root && opencode --port 0" >&2
+    return 1
+  fi
+
+  (cd "$root" && command opencode --port 0 "$@")
+}
+
+explicit_attach_url="${OPENCODE_ATTACH_URL:-}"
+allow_unverified_attach="${OC_ALLOW_UNVERIFIED_ATTACH:-}"
+
+if ! command -v opencode >/dev/null 2>&1; then
+  diagnose "opencode not found in PATH"
+  exit 127
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  diagnose "curl not found in PATH"
+  exit 127
+fi
+
+if ! command -v pgrep >/dev/null 2>&1; then
+  diagnose "pgrep not found in PATH"
+  exit 127
+fi
+
+if ! command -v lsof >/dev/null 2>&1; then
+  diagnose "lsof not found in PATH"
+  exit 127
+fi
+
+trap 'restore_tmux_window_name' EXIT
+
+current_path=""
+canonical_root=""
+current_path="$PWD"
+canonical_root="$(project_root "$current_path")"
+
+debug "project root: $canonical_root"
+
+rename_tmux_window_for_oc
+
+if [[ -n "$explicit_attach_url" ]]; then
+  debug "explicit attach url: $explicit_attach_url"
+  if ! is_loopback_url "$explicit_attach_url"; then
+    diagnose "explicit attach URL must be loopback: $explicit_attach_url"
+    restore_tmux_window_name
+    exit 1
+  fi
+
+  if [[ -n "$allow_unverified_attach" ]]; then
+    diagnose "warning: unverified attach for explicit URL $explicit_attach_url"
+    debug "selected action: attach explicit URL without validation"
+    attach_to "$explicit_attach_url" "$@"
+    rc=$?
+    restore_tmux_window_name
+    exit "$rc"
+  fi
+
+  api_project_worktree "$explicit_attach_url"
+  rc=$?
+  if (( rc == 0 )); then
+    worktree="$api_project_worktree_worktree"
+    if [[ "$(canonical_path "$worktree")" == "$canonical_root" ]]; then
+      debug "selected action: attach explicit URL after validation"
+      attach_to "$explicit_attach_url" "$@"
+      rc=$?
+      restore_tmux_window_name
+      exit "$rc"
+    fi
+
+    diagnose "explicit attach URL $explicit_attach_url is for $(canonical_path "$worktree"), not $canonical_root"
+    restore_tmux_window_name
+    exit 1
+  fi
+
+  diagnose "explicit attach URL $explicit_attach_url rejected: ${api_project_worktree_reason:-backend unavailable}"
+  restore_tmux_window_name
+  exit 1
+fi
+
+typeset -A ports_by_pid
+typeset -A valid_urls
+typeset -A valid_pid_by_url
+typeset -a discovered_candidates
+typeset -a rejected_candidate_lines
+candidate_line=""
+pid=""
+command=""
+port=""
+port_list=""
+worktree=""
+url=""
+validated_count=0
+
+while IFS= read -r candidate_line; do
+  [[ -n "$candidate_line" ]] || continue
+  pid="${candidate_line%% *}"
+  port="${candidate_line#* }"
+  [[ -n "$pid" && -n "$port" ]] || continue
+  ports_by_pid[$pid]="${ports_by_pid[$pid]:-} $port"
+done < <(candidate_ports)
+
+while IFS= read -r candidate_line; do
+  [[ -n "$candidate_line" ]] || continue
+  discovered_candidates+=("$candidate_line")
+done < <(discover_candidates)
+
+debug "candidate count: ${#discovered_candidates}"
+
+for candidate_line in "${discovered_candidates[@]}"; do
+  pid="${candidate_line%% *}"
+  command="${candidate_line#* }"
+  [[ -n "$pid" && -n "$command" ]] || continue
+
+  port_list="${ports_by_pid[$pid]:-}"
+  [[ -n "$port_list" ]] || continue
+
+  for port in ${(s: :)port_list}; do
+    [[ -n "$port" ]] || continue
+
+    url="http://127.0.0.1:$port"
+    debug "candidate pid=$pid url=$url command=$command"
+    worktree=""
+    api_project_worktree "$url"
+    case $? in
+      0)
+        worktree="$api_project_worktree_worktree"
+        if [[ "$(canonical_path "$worktree")" == "$canonical_root" ]]; then
+          valid_urls[$url]="$worktree"
+          valid_pid_by_url[$url]="$pid"
+          debug "candidate pid=$pid accepted"
+        else
+          rejected_candidate_lines+=("pid=$pid url=$url reason=project mismatch worktree=$(canonical_path "$worktree")")
+          debug "candidate pid=$pid rejected: project mismatch worktree=$(canonical_path "$worktree")"
+        fi
+        ;;
+      2)
+        rejected_candidate_lines+=("pid=$pid url=$url reason=${api_project_worktree_reason:-auth rejected}")
+        debug "candidate pid=$pid rejected: ${api_project_worktree_reason:-auth rejected}"
+        ;;
+      *)
+        rejected_candidate_lines+=("pid=$pid url=$url reason=${api_project_worktree_reason:-backend unavailable}")
+        debug "candidate pid=$pid rejected: ${api_project_worktree_reason:-backend unavailable}"
+        ;;
+    esac
+  done
+done
+
+validated_count="${#valid_urls}"
+  if (( validated_count == 1 )); then
+  for url in "${(@k)valid_urls}"; do
+    debug "selected action: attach discovered backend $url"
+    attach_to "$url" "$@"
+    rc=$?
+    restore_tmux_window_name
+    exit "$rc"
+  done
+fi
+
+if (( validated_count > 1 )); then
+  diagnose "multiple matching OpenCode backends found for $canonical_root"
+  diagnose "project root: $canonical_root"
+  diagnose "candidate count: ${#discovered_candidates}"
+  diagnose "matching candidates:"
+  for url in "${(@k)valid_urls}"; do
+    diagnose "  pid=${valid_pid_by_url[$url]:-?} url=$url"
+    diagnose "  manual: $(manual_attach_command "$url")"
+  done
+  debug "selected action: fail due to multiple matches"
+  restore_tmux_window_name
+  exit 1
+fi
+
+if (( ${#discovered_candidates} == 0 )); then
+  diagnose "no OpenCode backends found for $canonical_root"
+  diagnose "project root: $canonical_root"
+  diagnose "candidate count: 0"
+  diagnose "manual: cd $canonical_root && opencode --port 0"
+elif (( ${#rejected_candidate_lines} > 0 )); then
+  diagnose "no matching OpenCode backend found for $canonical_root"
+  diagnose "project root: $canonical_root"
+  diagnose "candidate count: ${#discovered_candidates}"
+  diagnose "rejected candidates:"
+  rejected_line=""
+  for rejected_line in "${rejected_candidate_lines[@]}"; do
+    diagnose "  $rejected_line"
+  done
+  diagnose "manual: cd $canonical_root && opencode --port 0"
+fi
+
+debug "selected action: start project backend"
+start_project_tui "$canonical_root" "$@"
+rc=$?
+if (( rc != 0 )); then
+  restore_tmux_window_name
+  exit "$rc"
+fi
+
+restore_tmux_window_name
+exit 0

@@ -2,7 +2,7 @@ tmux
 gpg
 git-xargs
 antigen
-exa
+eza
 reattach-to-user-namespace
 terminal-notifier
 tldr

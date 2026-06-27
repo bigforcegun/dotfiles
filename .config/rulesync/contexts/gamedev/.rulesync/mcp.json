@@ -1,0 +1,10 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "mcpproxy-gamedev": {
+      "type": "http",
+      "url": "http://localhost:9091/mcp/p/gamedev",
+      "env": {}
+    }
+  }
+}

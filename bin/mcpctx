@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MCP_CTX_ROOT="${MCP_CTX_ROOT:-$HOME/.config/rulesync/contexts}"
+
+usage() {
+  cat >&2 <<EOF
+usage: mcpctx <context> [output-roots]
+       mcpctx list
+
+Generate native MCP/rules configs from ~/.config/rulesync/contexts/<context>/.rulesync
+into the current project or comma-separated output roots.
+EOF
+}
+
+context_names() {
+  local root
+  shopt -s nullglob
+  for root in "$MCP_CTX_ROOT"/*/.rulesync; do
+    printf '%s\n' "$(basename "$(dirname "$root")")"
+  done
+}
+
+list_contexts() {
+  printf 'available contexts (%s):\n' "$MCP_CTX_ROOT"
+  local ctx
+  while IFS= read -r ctx; do
+    printf '  - %s\n' "$ctx"
+  done < <(context_names)
+}
+
+case "${1:-}" in
+  list|ls)
+    list_contexts
+    exit 0
+    ;;
+  complete-contexts)
+    context_names
+    printf '%s\n' list ls help --help
+    exit 0
+    ;;
+  help|-h|--help)
+    usage
+    exit 0
+    ;;
+  '')
+    usage
+    list_contexts
+    exit 2
+    ;;
+esac
+
+ctx="$1"
+out="${2:-.}"
+root="$MCP_CTX_ROOT/$ctx"
+
+if [[ ! -d "$root/.rulesync" ]]; then
+  printf "mcpctx: context '%s' not found (%s/.rulesync)\n" "$ctx" "$root" >&2
+  list_contexts
+  exit 1
+fi
+
+exec rulesync generate \
+  --input-root "$root" \
+  --output-roots "$out" \
+  --targets "*" \
+  --features "*"

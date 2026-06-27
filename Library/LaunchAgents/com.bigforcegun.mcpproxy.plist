@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.bigforcegun.mcpproxy</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/com.bigforcegun.mcpproxy.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/com.bigforcegun.mcpproxy.out.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+       <key>MCPPROXY_DAEMON</key>
+       <string>1</string>
+    </dict>
+    <key>ProgramArguments</key>
+    <array>
+       <string>/bin/zsh</string>
+       <string>-lc</string>
+       <string>set -a; [ -f ~/.mcpproxy/env ] &amp;&amp; . ~/.mcpproxy/env; set +a; exec mcpproxy serve</string>
+    </array>
+</dict>
+</plist>

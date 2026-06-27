@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 # echo "i am profile"
 
 if [[ $HOST_OS == 'mac' ]]; then
@@ -20,6 +19,10 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 export MANPATH="/opt/local/share/man:$MANPATH"
 # Finished adapting your MANPATH environment variable for use with MacPorts.
 
+
+if [[ ! -o interactive ]] && { [[ -n "$MCPPROXY_DAEMON" ]] || [[ "$(ps -p "$PPID" -o comm= 2>/dev/null)" == *mcpproxy* ]]; }; then
+    return
+fi
 
 export THEME_OS_MODE="$(/opt/homebrew/bin/dark-notify -e)"
 

@@ -1,0 +1,7 @@
+#compdef mcpd
+
+if (( CURRENT <= 2 )); then
+  compadd -- ${(f)"$(mcpd complete-verbs 2>/dev/null)"}
+else
+  _files
+fi
