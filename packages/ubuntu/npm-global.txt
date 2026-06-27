@@ -5,3 +5,5 @@ typescript-language-server
 yaml-language-server
 vscode-langservers-extracted
 @biomejs/biome
+@taplo/cli
+godot-lsp-stdio-bridge

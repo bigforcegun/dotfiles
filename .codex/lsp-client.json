@@ -1,0 +1,12 @@
+{
+  "lsp": {
+    "toml": {
+      "command": ["taplo", "lsp", "stdio"],
+      "extensions": [".toml"]
+    },
+    "gdscript": {
+      "command": ["godot-lsp-stdio-bridge"],
+      "extensions": [".gd"]
+    }
+  }
+}
