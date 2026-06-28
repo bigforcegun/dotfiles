@@ -25,6 +25,8 @@ vendor/bundle
 
 # nested git worktrees
 .git-worktrees/
+.git-worktrees/*
+.git-worktrees/**/*
 
 env
 .omo/
@@ -36,3 +38,4 @@ token-usage-output.txt
 
 .opencode/skills/
 .config/opencode/skills/
+node_modules/

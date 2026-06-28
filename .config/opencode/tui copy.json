@@ -2,9 +2,14 @@
   "$schema": "https://opencode.ai/tui.json",
   "theme": "gruvbox",
   "diff_style": "auto",
+  "plugin_old": [
+    "/Users/bigforcegun/.dotfiles/.config/opencode/plugins/oc-tmux-window-title/tui.js",
+    "@slkiser/opencode-quota@latest",
+    "opencode-subagent-statusline",
+    "oh-my-openagent@latest"
+  ],
   "plugin": [
-    "oh-my-openagent@latest",
-    "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js"
+    "oh-my-openagent@latest"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",
