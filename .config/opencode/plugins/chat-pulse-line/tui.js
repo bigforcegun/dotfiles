@@ -1,12 +1,14 @@
 import { createComponent, createElement, insert, setProp } from "@opentui/solid"
-import { createRoot } from "solid-js"
+import { createEffect, createRoot, createSignal } from "solid-js"
 import { buildPulseLine, buildPulseView } from "./pulse-line.js"
 
 const DEFAULT_WIDTH = 48
 const SLOT_ORDER = 100_000
 const PULSE_ROW_LAYOUT = "wide"
+const PULSE_ROW_LAYOUTS = ["wide", "left", "center"]
 const PULSE_ROW_LEFT_PADDING = 5
-const PULSE_ROW_PADDING_BOTTOM = 1
+const PULSE_ROW_PADDING_BOTTOM = 0
+const CYCLE_LAYOUT_COMMAND = "chat_pulse_line.layout_cycle"
 const RENDER_EVENTS = [
   "message.removed",
   "message.updated",
@@ -18,10 +20,12 @@ const RENDER_EVENTS = [
   "session.updated",
 ]
 
+const [pulseRowLayout, setPulseRowLayout] = createSignal(PULSE_ROW_LAYOUTS.includes(PULSE_ROW_LAYOUT) ? PULSE_ROW_LAYOUT : PULSE_ROW_LAYOUTS[0])
+
 function rendererWidth(api) {
   const width = api.renderer?.width
   if (!Number.isFinite(width)) return DEFAULT_WIDTH
-  return PULSE_ROW_LAYOUT === "wide" ? Math.max(0, Math.floor(width)) : Math.max(0, Math.floor(width / 2))
+  return pulseRowLayout() === "wide" ? Math.max(0, Math.floor(width)) : Math.max(0, Math.floor(width / 2))
 }
 
 function requestRender(api) {
@@ -101,11 +105,20 @@ function PulseRow(props) {
   const element = createElement("box")
   setProp(element, "width", "100%")
   setProp(element, "flexDirection", "row")
-  setProp(element, "justifyContent", PULSE_ROW_LAYOUT === "center" ? "center" : "flex-start")
-  setProp(element, "paddingLeft", PULSE_ROW_LAYOUT === "left" ? PULSE_ROW_LEFT_PADDING : 0)
   setProp(element, "paddingBottom", PULSE_ROW_PADDING_BOTTOM)
+  createEffect(() => {
+    const layout = pulseRowLayout()
+    setProp(element, "justifyContent", layout === "center" ? "center" : "flex-start")
+    setProp(element, "paddingLeft", layout === "left" ? PULSE_ROW_LEFT_PADDING : 0)
+  })
   insert(element, createComponent(PulseText, props))
   return element
+}
+
+function cyclePulseRowLayout(api) {
+  const index = PULSE_ROW_LAYOUTS.indexOf(pulseRowLayout())
+  setPulseRowLayout(PULSE_ROW_LAYOUTS[(index + 1) % PULSE_ROW_LAYOUTS.length])
+  requestRender(api)
 }
 
 function appendText(element, value, color) {
@@ -119,6 +132,25 @@ function appendText(element, value, color) {
 function initializeTui(api, disposeRoot) {
   let tick = 0
   let pulseInterval
+
+  api.keymap.registerLayer({
+    priority: 1_000,
+    commands: [
+      {
+        name: CYCLE_LAYOUT_COMMAND,
+        title: "Cycle chat pulse line layout",
+        category: "Plugin",
+        namespace: "palette",
+        run() {
+          cyclePulseRowLayout(api)
+        },
+      },
+    ],
+    bindings: [
+      { key: "ctrl+g", cmd: CYCLE_LAYOUT_COMMAND, desc: "Cycle pulse layout" },
+      { key: "alt+g", cmd: CYCLE_LAYOUT_COMMAND, desc: "Cycle pulse layout" },
+    ],
+  })
 
   function stopPulseTimer() {
     if (!pulseInterval) return

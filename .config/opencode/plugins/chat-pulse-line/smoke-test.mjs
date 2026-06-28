@@ -24,6 +24,7 @@ const parts = new Map([
 const disposeEvents = []
 const lifecycleDisposers = []
 const registered = []
+const keymapLayers = []
 const intervals = []
 let renderRequests = 0
 
@@ -75,6 +76,12 @@ const api = {
       return "slot-smoke"
     },
   },
+  keymap: {
+    registerLayer(layer) {
+      keymapLayers.push(layer)
+      return () => {}
+    },
+  },
   event: {
     on(eventName, handler) {
       disposeEvents.push({ eventName, handler, disposed: false })
@@ -97,6 +104,13 @@ await plugin.tui(api)
 assert.equal(registered.length, 1)
 assert.equal(registered[0].order, 100_000)
 assert.equal(typeof registered[0].slots.app_bottom, "function")
+assert.equal(keymapLayers.length, 1)
+assert.equal(keymapLayers[0].priority, 1_000)
+assert.deepEqual(keymapLayers[0].bindings, [
+  { key: "ctrl+g", cmd: "chat_pulse_line.layout_cycle", desc: "Cycle pulse layout" },
+  { key: "alt+g", cmd: "chat_pulse_line.layout_cycle", desc: "Cycle pulse layout" },
+])
+assert.equal(keymapLayers[0].commands[0].name, "chat_pulse_line.layout_cycle")
 assert.equal(disposeEvents.length, 8)
 assert.ok(disposeEvents.some((event) => event.eventName === "message.removed"))
 
@@ -187,6 +201,49 @@ assert.equal(renderRequests, 0)
 
 disposeEvents[0].handler({ type: disposeEvents[0].eventName, properties: { sessionID } })
 assert.equal(renderRequests, 1)
+
+const manyParts = Array.from({ length: 24 }, (_, index) => ({
+  id: `layout_${index}`,
+  sessionID,
+  messageID: assistantID,
+  type: index % 2 === 0 ? "reasoning" : "tool",
+  text: "x",
+  tool: index % 2 === 0 ? undefined : "read",
+  state: index % 2 === 0 ? undefined : { status: "completed", output: "x" },
+}))
+const narrowApi = {
+  ...api,
+  renderer: { ...api.renderer, width: 20 },
+  state: {
+    ...api.state,
+    session: {
+      ...api.state.session,
+      get() {
+        return { id: sessionID }
+      },
+      messages() {
+        return [{ id: assistantID, sessionID, role: "assistant" }]
+      },
+      status() {
+        return { type: "idle" }
+      },
+    },
+    part() {
+      return manyParts
+    },
+  },
+}
+const layoutCommand = keymapLayers[0].commands[0]
+assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 20)
+layoutCommand.run()
+assert.equal(renderRequests, 2)
+assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 10)
+layoutCommand.run()
+assert.equal(renderRequests, 3)
+assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 10)
+layoutCommand.run()
+assert.equal(renderRequests, 4)
+assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 20)
 
 for (const dispose of lifecycleDisposers) dispose()
 assert.equal(disposeEvents.every((event) => event.disposed), true)
