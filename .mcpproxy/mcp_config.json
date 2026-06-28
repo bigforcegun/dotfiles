@@ -284,6 +284,56 @@
         "createConfluenceFooterComment",
         "createConfluenceInlineComment"
       ]
+    },
+    {
+      "name": "salotech-grafana",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-grafana"
+      ],
+      "env": {
+        "GRAFANA_URL": "${env:SALOTECH_GRAFANA_URL}",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${env:SALOTECH_GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+      },
+      "enabled": true,
+      "quarantined": false,
+      "disabled_tools": []
+    },
+    {
+      "name": "salotech-trino",
+      "protocol": "stdio",
+      "command": "mcp-trino",
+      "args": [
+        "mcp-trino"
+      ],
+      "env": {
+        "TRINO_USER": "${env:SALOTECH_TRINO_USER}",
+        "TRINO_HOST": "${env:SALOTECH_TRINO_HOST}",
+        "MCP_TRANSPORT": "http",
+        "OAUTH_ENABLED": "true"
+      },
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": []
+    },
+    {
+      "name": "salotech-opensearch",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "opensearch-mcp-server-py"
+      ],
+      "env": {
+        "OPENSEARCH_URL": "${env:SALOTECH_OPENSEARCH_URL}",
+        "OPENSEARCH_NO_AUTH": "${env:SALOTECH_OPENSEARCH_NO_AUTH}",
+        "OPENSEARCH_SETTINGS_ALLOW_WRITE": "${env:SALOTECH_OPENSEARCH_SETTINGS_ALLOW_WRITE}",
+        "OPENSEARCH_ENABLED_TOOLS": "${env:SALOTECH_OPENSEARCH_ENABLED_TOOLS}",
+        "OPENSEARCH_MAX_RESPONSE_SIZE": "${env:SALOTECH_OPENSEARCH_MAX_RESPONSE_SIZE}"
+      },
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": []
     }
   ],
   "observability": {
@@ -311,12 +361,15 @@
       "name": "salotech",
       "servers": [
         "playwright",
+        "semble",
+        "context7",
         "salotech-slack",
         "salotech-atlassian",
         "salotech-freshdesk",
         "salotech-mongodb-sisa",
-        "semble",
-        "context7"
+        "salotech-grafana",
+        "salotech-trino",
+        "salotech-opensearch"
       ]
     },
     {
