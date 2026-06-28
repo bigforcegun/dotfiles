@@ -18,6 +18,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/domovoi-dotfiles-caretaker/` | concept/design | `contexts/domovoi-dotfiles-caretaker/README.md` | chat discussion |
 | `contexts/agent-todo-txt-bridge/` | research/design | `contexts/agent-todo-txt-bridge/README.md` | chat research, todo.txt/Taskwarrior/Org/agent-memory references |
 | `contexts/mcpd-envless-start/` | decision/design | `contexts/mcpd-envless-start/README.md` | chat discussion, `.mcpproxy/mcp_config.json`, `bin/mcpd`, launchd plist |
+| `contexts/opencode-speed-improvements/` | research | `contexts/opencode-speed-improvements/README.md` | chat research, OpenCode/Codex GitHub issues |
 
 ## Root rules
 
