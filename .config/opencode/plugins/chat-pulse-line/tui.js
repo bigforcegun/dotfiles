@@ -87,6 +87,10 @@ function renderViewForSession(api, sessionID, tick) {
   })
 }
 
+function themeTextColor(api) {
+  return api.theme?.current?.text
+}
+
 function PulseText(props) {
   const element = createElement("text")
   setProp(element, "selectable", false)
@@ -95,8 +99,8 @@ function PulseText(props) {
     appendText(element, block.glyph, block.color)
   }
 
-  if (props.view.blocks.length > 0 && props.view.tokenText) appendText(element, "  ")
-  appendText(element, props.view.tokenText)
+  if (props.view.blocks.length > 0 && props.view.tokenText) appendText(element, "  ", props.textColor)
+  appendText(element, props.view.tokenText, props.textColor)
 
   return element
 }
@@ -181,7 +185,7 @@ function initializeTui(api, disposeRoot) {
         const sessionID = currentSessionID(api)
         if (!sessionID) return undefined
         syncPulseTimer()
-        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick) })
+        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick), textColor: themeTextColor(api) })
       },
     },
   })
