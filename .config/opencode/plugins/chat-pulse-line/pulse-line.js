@@ -1,6 +1,7 @@
 const MAX_BLOCKS = 36
 const MIN_BLOCK_WIDTH = 8
 const APPROX_CHARS_PER_TOKEN = 4
+const STATUS_SEPARATOR = " / "
 
 const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
 const WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
@@ -16,6 +17,47 @@ const COLOR_BY_KIND = {
   success: { ansi: "\u001b[38;5;114m", tui: "#b8bb26" },
   other: { ansi: "\u001b[38;5;240m", tui: "#665c54" },
 }
+const STATUS_WIDGETS = [
+  {
+    id: "input",
+    label: "in",
+    value(totals) {
+      return totals.input
+    },
+    visible(totals) {
+      return totals.input > 0 || totals.output > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "output",
+    label: "out",
+    value(totals) {
+      return totals.output
+    },
+    visible(totals) {
+      return totals.input > 0 || totals.output > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "cache",
+    label: "cache",
+    value(totals) {
+      return totals.cache
+    },
+    visible(totals) {
+      return totals.cache > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+]
 const RESET_COLOR = "\u001b[0m"
 
 function normalizeToolName(value) {
@@ -192,29 +234,47 @@ function tokenTotals(messages, session) {
   return totals
 }
 
-function renderTokens(messages, session) {
-  const totals = tokenTotals(messages, session)
-  const input = formatNumber(totals.input)
-  const output = formatNumber(totals.output)
-  const cache = formatNumber(totals.cache)
+function statusWidget(config, totals) {
+  if (!config.visible(totals)) return undefined
+  const value = config.value(totals)
+  const formattedValue = config.format(value)
+  return {
+    id: config.id,
+    label: config.label,
+    value,
+    formattedValue,
+    text: `${config.label} ${formattedValue}`,
+  }
+}
 
-  const chunks = []
-  if (input || output) chunks.push(`in ${input ?? "0"} / out ${output ?? "0"}`)
-  if (cache) chunks.push(`cache ${cache}`)
+function composeStatusWidgets(widgets) {
+  return widgets.map((widget) => widget.text).join(STATUS_SEPARATOR)
+}
 
-  return chunks.join(" / ")
+function buildStatusView(input) {
+  const totals = tokenTotals(input.messages, input.session)
+  const widgets = STATUS_WIDGETS.map((config) => statusWidget(config, totals)).filter(Boolean)
+  if (widgets.length > 0) return { widgets, text: composeStatusWidgets(widgets) }
+
+  if (input.busyFallback !== false && isBusy(input.status)) {
+    const busyWidget = { id: "busy", label: "busy", value: true, formattedValue: "", text: "busy" }
+    return { widgets: [busyWidget], text: busyWidget.text }
+  }
+
+  return { widgets: [], text: "" }
 }
 
 function visibleLength(value) {
   return value.replace(/\u001b\[[0-9;]*m/g, "").length
 }
 
-function pulseView(pulseBlocks, statusText, color) {
+function pulseView(pulseBlocks, statusView, color) {
   return {
     pulseBlocks,
-    statusText,
+    statusWidgets: statusView.widgets,
+    statusText: statusView.text,
     blocks: pulseBlocks,
-    tokenText: statusText,
+    tokenText: statusView.text,
     color,
   }
 }
@@ -236,30 +296,30 @@ export function buildPulseView(input) {
   const busy = isBusy(input.status)
   const color = input.color !== false
   const totals = tokenTotals(input.messages, input.session)
+  const statusView = buildStatusView({ ...input, busyFallback: blocks.length === 0 })
 
   if (blocks.length === 0) {
     const tokens = totals.output || totals.input || totals.cache
     if (tokens > 0) {
-      const statusText = renderTokens(input.messages, input.session)
       const pulseWidth = Number.isFinite(input.pulseWidth) ? Math.max(0, Math.floor(input.pulseWidth)) : Math.max(input.width, MIN_BLOCK_WIDTH)
       const pulseBlocks = renderBlockSegments([{ kind: "success", height: heightIndex(tokens) }], busy, input.tick, pulseWidth)
-      return pulseView(pulseBlocks, statusText, color)
+      return pulseView(pulseBlocks, statusView, color)
     }
 
-    return pulseView(busy ? [{ kind: "other", glyph: "●", color: COLOR_BY_KIND.other.tui }] : [], busy ? "busy" : "", color)
+    return pulseView(busy ? [{ kind: "other", glyph: "●", color: COLOR_BY_KIND.other.tui }] : [], statusView, color)
   }
 
-  const statusText = renderTokens(input.messages, input.session)
   const availableWidth = Number.isFinite(input.pulseWidth)
     ? Math.max(0, Math.floor(input.pulseWidth))
-    : Math.max(0, input.width - (statusText ? statusText.length + 2 : 0))
+    : Math.max(0, input.width - (statusView.text ? statusView.text.length + 2 : 0))
   const pulseBlocks = renderBlockSegments(blocks, busy, input.tick, availableWidth)
 
-  return pulseView(pulseBlocks, statusText, color)
+  return pulseView(pulseBlocks, statusView, color)
 }
 
 export const __testing = {
   collectAssistantParts,
+  buildStatusView,
   formatNumber,
   heightIndex,
   partKind,

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { buildPulseView } from "./pulse-line.js"
+import { __testing as pulseTesting, buildPulseView } from "./pulse-line.js"
 import plugin, { __testing as tuiTesting, renderForSession } from "./tui.js"
 
 const sessionID = "ses_smoke"
@@ -36,6 +36,19 @@ function stripAnsi(value) {
 function assertSplitViewAliases(view) {
   assert.equal(view.pulseBlocks, view.blocks)
   assert.equal(view.statusText, view.tokenText)
+}
+
+function assertStatusWidgetTexts(view, expected) {
+  assert.deepEqual(view.statusWidgets.map((widget) => widget.text), expected)
+  assert.equal(view.statusText, expected.join(" / "))
+}
+
+function buildStatusViewForApi(targetApi) {
+  return pulseTesting.buildStatusView({
+    messages: targetApi.state.session.messages(sessionID),
+    session: targetApi.state.session.get(sessionID),
+    status: targetApi.state.session.status(sessionID),
+  })
 }
 
 function assertStatusRightPinned(line, statusText, workWidth) {
@@ -157,6 +170,13 @@ assertSplitViewAliases(normalView)
 assert.equal(normalView.pulseBlocks.length, 4)
 assert.match(normalView.statusText, /in 18k \/ out 2\.1k/)
 assert.match(normalView.statusText, /cache 9\.1k/)
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["in", "out", "cache"])
+assertStatusWidgetTexts(normalView, ["in 18k", "out 2.1k", "cache 9.1k"])
+assert.deepEqual(buildStatusViewForApi(api), {
+  widgets: normalView.statusWidgets,
+  text: normalView.statusText,
+})
 
 const wideMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: normalView.statusText })
 assert.equal(wideMetrics.workWidth, 120)
@@ -272,6 +292,69 @@ const sessionTokenOnlyView = buildViewForApi(sessionTokenOnlyApi)
 assertSplitViewAliases(sessionTokenOnlyView)
 assert.equal(sessionTokenOnlyView.pulseBlocks.length, 1)
 assert.match(sessionTokenOnlyView.statusText, /in 18k \/ out 2\.1k/)
+
+const outputOnlyApi = {
+  ...api,
+  state: {
+    ...api.state,
+    session: {
+      ...api.state.session,
+      get() {
+        return { id: sessionID, tokens: { output: 2_140 } }
+      },
+      messages() {
+        return []
+      },
+      status() {
+        return { type: "idle" }
+      },
+    },
+  },
+}
+const outputOnlyView = buildViewForApi(outputOnlyApi)
+assertStatusWidgetTexts(outputOnlyView, ["in 0", "out 2.1k"])
+
+const cacheOnlyApi = {
+  ...api,
+  state: {
+    ...api.state,
+    session: {
+      ...api.state.session,
+      get() {
+        return { id: sessionID, tokens: { cache: { read: 9_100, write: 0 } } }
+      },
+      messages() {
+        return []
+      },
+      status() {
+        return { type: "idle" }
+      },
+    },
+  },
+}
+const cacheOnlyView = buildViewForApi(cacheOnlyApi)
+assertStatusWidgetTexts(cacheOnlyView, ["cache 9.1k"])
+
+const busyOnlyApi = {
+  ...api,
+  state: {
+    ...api.state,
+    session: {
+      ...api.state.session,
+      get() {
+        return { id: sessionID }
+      },
+      messages() {
+        return []
+      },
+      status() {
+        return { type: "busy" }
+      },
+    },
+  },
+}
+const busyOnlyView = buildViewForApi(busyOnlyApi)
+assertStatusWidgetTexts(busyOnlyView, ["busy"])
 
 const narrowStatusApi = { ...api, renderer: { ...api.renderer, width: 10 } }
 const narrowStatusView = buildViewForApi(narrowStatusApi, 10)
