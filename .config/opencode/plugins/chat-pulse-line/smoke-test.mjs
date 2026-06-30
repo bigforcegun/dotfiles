@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
-import plugin, { renderForSession } from "./tui.js"
+import { buildPulseView } from "./pulse-line.js"
+import plugin, { __testing as tuiTesting, renderForSession } from "./tui.js"
 
 const sessionID = "ses_smoke"
 const assistantID = "msg_assistant"
@@ -30,6 +31,17 @@ let renderRequests = 0
 
 function stripAnsi(value) {
   return value.replace(/\u001b\[[0-9;]*m/g, "")
+}
+
+function assertSplitViewAliases(view) {
+  assert.equal(view.pulseBlocks, view.blocks)
+  assert.equal(view.statusText, view.tokenText)
+}
+
+function assertStatusRightPinned(line, statusText, workWidth) {
+  assert.equal(line.length, workWidth)
+  const visibleStatus = statusText.slice(Math.max(0, statusText.length - workWidth))
+  assert.equal(line.indexOf(visibleStatus), workWidth - visibleStatus.length)
 }
 
 const originalSetInterval = globalThis.setInterval
@@ -99,6 +111,19 @@ const api = {
   },
 }
 
+function buildViewForApi(targetApi, width = targetApi.renderer.width) {
+  return buildPulseView({
+    messages: targetApi.state.session.messages(sessionID),
+    session: targetApi.state.session.get(sessionID),
+    status: targetApi.state.session.status(sessionID),
+    tick: 0,
+    width,
+    partForMessage(messageID) {
+      return targetApi.state.part(messageID)
+    },
+  })
+}
+
 await plugin.tui(api)
 
 assert.equal(registered.length, 1)
@@ -126,6 +151,51 @@ assert.equal(intervals.length, 0)
 
 const directOutput = renderForSession(api, sessionID, 0)
 assert.equal(directOutput, slotOutput)
+
+const normalView = buildViewForApi(api)
+assertSplitViewAliases(normalView)
+assert.equal(normalView.pulseBlocks.length, 4)
+assert.match(normalView.statusText, /in 18k \/ out 2\.1k/)
+assert.match(normalView.statusText, /cache 9\.1k/)
+
+const wideMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: normalView.statusText })
+assert.equal(wideMetrics.workWidth, 120)
+assert.equal(wideMetrics.statusWidth, normalView.statusText.length)
+assert.equal(wideMetrics.gapWidth, 2)
+assert.equal(wideMetrics.pulseWidth, 120 - normalView.statusText.length - 2)
+assert.equal(wideMetrics.justifyContent, "flex-start")
+assert.equal(wideMetrics.paddingLeft, 0)
+assertStatusRightPinned(tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: wideMetrics }), normalView.statusText, wideMetrics.workWidth)
+
+const leftMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "left", statusText: normalView.statusText })
+assert.equal(leftMetrics.workWidth, 60)
+assert.equal(leftMetrics.pulseWidth, 60 - normalView.statusText.length - 2)
+assert.equal(leftMetrics.justifyContent, "flex-start")
+assert.equal(leftMetrics.paddingLeft, 5)
+assertStatusRightPinned(tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: leftMetrics }), normalView.statusText, leftMetrics.workWidth)
+
+const centerMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "center", statusText: normalView.statusText })
+assert.equal(centerMetrics.workWidth, 60)
+assert.equal(centerMetrics.pulseWidth, 60 - normalView.statusText.length - 2)
+assert.equal(centerMetrics.justifyContent, "center")
+assert.equal(centerMetrics.paddingLeft, 0)
+
+const splitLine = tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: centerMetrics })
+assertStatusRightPinned(splitLine, normalView.statusText, centerMetrics.workWidth)
+
+const narrowMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: normalView.statusText.length + 1, layout: "wide", statusText: normalView.statusText })
+assert.equal(narrowMetrics.pulseWidth, 0)
+assert.equal(narrowMetrics.statusWidth, normalView.statusText.length)
+const crampedLine = tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: narrowMetrics })
+assert.equal(crampedLine.length, narrowMetrics.workWidth)
+assertStatusRightPinned(crampedLine, normalView.statusText, narrowMetrics.workWidth)
+assert.equal(tuiTesting.computeSplitSegments({ pulseText: "abcd", statusText: normalView.statusText, metrics: narrowMetrics }).pulseText, "")
+
+const clippedMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 12, layout: "wide", statusText: normalView.statusText })
+const clippedLine = tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: clippedMetrics })
+assert.equal(clippedLine.length, clippedMetrics.workWidth)
+assert.equal(clippedLine, normalView.statusText.slice(-clippedMetrics.workWidth))
+assert.equal(tuiTesting.computeSplitSegments({ pulseText: "abcd", statusText: normalView.statusText, metrics: clippedMetrics }).pulseText, "")
 
 const exportShapeMessages = [
   { info: { id: "msg_user_export", sessionID, role: "user" }, parts: [] },
@@ -174,6 +244,11 @@ const tokenOnlyOutput = renderForSession(tokenOnlyApi, sessionID, 0)
 assert.match(tokenOnlyOutput, /in 18k \/ out 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(tokenOnlyOutput)), true)
 
+const tokenOnlyView = buildViewForApi(tokenOnlyApi)
+assertSplitViewAliases(tokenOnlyView)
+assert.equal(tokenOnlyView.pulseBlocks.length, 1)
+assert.match(tokenOnlyView.statusText, /in 18k \/ out 2\.1k/)
+
 const sessionTokenOnlyApi = {
   ...api,
   state: {
@@ -192,6 +267,17 @@ const sessionTokenOnlyApi = {
 const sessionTokenOnlyOutput = renderForSession(sessionTokenOnlyApi, sessionID, 0)
 assert.match(sessionTokenOnlyOutput, /in 18k \/ out 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(sessionTokenOnlyOutput)), true)
+
+const sessionTokenOnlyView = buildViewForApi(sessionTokenOnlyApi)
+assertSplitViewAliases(sessionTokenOnlyView)
+assert.equal(sessionTokenOnlyView.pulseBlocks.length, 1)
+assert.match(sessionTokenOnlyView.statusText, /in 18k \/ out 2\.1k/)
+
+const narrowStatusApi = { ...api, renderer: { ...api.renderer, width: 10 } }
+const narrowStatusView = buildViewForApi(narrowStatusApi, 10)
+assertSplitViewAliases(narrowStatusView)
+assert.equal(narrowStatusView.pulseBlocks.length, 1)
+assert.match(narrowStatusView.statusText, /in 18k \/ out 2\.1k/)
 
 disposeEvents[0].handler({ type: disposeEvents[0].eventName, properties: { sessionID: "ses_other" } })
 assert.equal(renderRequests, 0)
@@ -234,16 +320,20 @@ const narrowApi = {
   },
 }
 const layoutCommand = keymapLayers[0].commands[0]
-assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 20)
+assert.equal(tuiTesting.currentLayout(), "wide")
+assert.equal(tuiTesting.computeCurrentPulseLayoutMetrics({ viewportWidth: 20, statusText: "" }).workWidth, 20)
 layoutCommand.run()
 assert.equal(renderRequests, 2)
-assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 10)
+assert.equal(tuiTesting.currentLayout(), "left")
+assert.equal(tuiTesting.computeCurrentPulseLayoutMetrics({ viewportWidth: 20, statusText: "" }).workWidth, 10)
 layoutCommand.run()
 assert.equal(renderRequests, 3)
-assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 10)
+assert.equal(tuiTesting.currentLayout(), "center")
+assert.equal(tuiTesting.computeCurrentPulseLayoutMetrics({ viewportWidth: 20, statusText: "" }).workWidth, 10)
 layoutCommand.run()
 assert.equal(renderRequests, 4)
-assert.equal(stripAnsi(renderForSession(narrowApi, sessionID, 0)).length, 20)
+assert.equal(tuiTesting.currentLayout(), "wide")
+assert.equal(tuiTesting.computeCurrentPulseLayoutMetrics({ viewportWidth: 20, statusText: "" }).workWidth, 20)
 
 for (const dispose of lifecycleDisposers) dispose()
 assert.equal(disposeEvents.every((event) => event.disposed), true)

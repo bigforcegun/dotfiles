@@ -209,14 +209,26 @@ function visibleLength(value) {
   return value.replace(/\u001b\[[0-9;]*m/g, "").length
 }
 
+function pulseView(pulseBlocks, statusText, color) {
+  return {
+    pulseBlocks,
+    statusText,
+    blocks: pulseBlocks,
+    tokenText: statusText,
+    color,
+  }
+}
+
 export function buildPulseLine(input) {
   const view = buildPulseView(input)
-  const blockText = view.blocks.map((block) => colorize(block.glyph, block.kind, view.color)).join("")
+  const pulseBlocks = view.pulseBlocks ?? view.blocks
+  const statusText = view.statusText ?? view.tokenText
+  const blockText = pulseBlocks.map((block) => colorize(block.glyph, block.kind, view.color)).join("")
 
-  if (!blockText) return view.tokenText
-  if (!view.tokenText || input.width < view.blocks.length + view.tokenText.length + 2) return blockText
+  if (!blockText) return statusText
+  if (!statusText || input.width < pulseBlocks.length + statusText.length + 2) return blockText
 
-  return `${blockText}  ${view.tokenText}`
+  return `${blockText}  ${statusText}`
 }
 
 export function buildPulseView(input) {
@@ -228,26 +240,22 @@ export function buildPulseView(input) {
   if (blocks.length === 0) {
     const tokens = totals.output || totals.input || totals.cache
     if (tokens > 0) {
-      const tokenText = renderTokens(input.messages, input.session)
-      return {
-        blocks: renderBlockSegments([{ kind: "success", height: heightIndex(tokens) }], busy, input.tick, Math.max(input.width, MIN_BLOCK_WIDTH)),
-        tokenText,
-        color,
-      }
+      const statusText = renderTokens(input.messages, input.session)
+      const pulseWidth = Number.isFinite(input.pulseWidth) ? Math.max(0, Math.floor(input.pulseWidth)) : Math.max(input.width, MIN_BLOCK_WIDTH)
+      const pulseBlocks = renderBlockSegments([{ kind: "success", height: heightIndex(tokens) }], busy, input.tick, pulseWidth)
+      return pulseView(pulseBlocks, statusText, color)
     }
 
-    return {
-      blocks: busy ? [{ kind: "other", glyph: "●", color: COLOR_BY_KIND.other.tui }] : [],
-      tokenText: busy ? "busy" : "",
-      color,
-    }
+    return pulseView(busy ? [{ kind: "other", glyph: "●", color: COLOR_BY_KIND.other.tui }] : [], busy ? "busy" : "", color)
   }
 
-  const tokenText = renderTokens(input.messages, input.session)
-  const availableWidth = Math.max(0, input.width - (tokenText ? tokenText.length + 2 : 0))
+  const statusText = renderTokens(input.messages, input.session)
+  const availableWidth = Number.isFinite(input.pulseWidth)
+    ? Math.max(0, Math.floor(input.pulseWidth))
+    : Math.max(0, input.width - (statusText ? statusText.length + 2 : 0))
   const pulseBlocks = renderBlockSegments(blocks, busy, input.tick, availableWidth)
 
-  return { blocks: pulseBlocks, tokenText, color }
+  return pulseView(pulseBlocks, statusText, color)
 }
 
 export const __testing = {

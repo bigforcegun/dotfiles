@@ -1,5 +1,5 @@
 import { createComponent, createElement, insert, setProp } from "@opentui/solid"
-import { createEffect, createRoot, createSignal } from "solid-js"
+import { createRoot, createSignal } from "solid-js"
 import { buildPulseLine, buildPulseView } from "./pulse-line.js"
 
 const DEFAULT_WIDTH = 48
@@ -26,6 +26,59 @@ function rendererWidth(api) {
   const width = api.renderer?.width
   if (!Number.isFinite(width)) return DEFAULT_WIDTH
   return pulseRowLayout() === "wide" ? Math.max(0, Math.floor(width)) : Math.max(0, Math.floor(width / 2))
+}
+
+function viewportWidth(api) {
+  const width = api.renderer?.width
+  return Number.isFinite(width) ? Math.max(0, Math.floor(width)) : DEFAULT_WIDTH
+}
+
+function computePulseLayoutMetrics(input) {
+  const viewportWidth = Number.isFinite(input.viewportWidth) ? Math.max(0, Math.floor(input.viewportWidth)) : DEFAULT_WIDTH
+  const layout = PULSE_ROW_LAYOUTS.includes(input.layout) ? input.layout : PULSE_ROW_LAYOUT
+  const workWidth = layout === "wide" ? viewportWidth : Math.floor(viewportWidth / 2)
+  const statusWidth = Math.min(String(input.statusText ?? "").length, workWidth)
+  const gapCapacity = Math.max(0, workWidth - statusWidth)
+  const gapWidth = statusWidth > 0 ? Math.min(2, gapCapacity) : 0
+
+  return {
+    layout,
+    viewportWidth,
+    workWidth,
+    statusWidth,
+    gapWidth,
+    pulseWidth: Math.max(0, workWidth - statusWidth - gapWidth),
+    justifyContent: layout === "center" ? "center" : "flex-start",
+    paddingLeft: layout === "left" ? PULSE_ROW_LEFT_PADDING : 0,
+  }
+}
+
+function computeSplitSegments(input) {
+  const pulseText = String(input.pulseText ?? "").slice(0, input.metrics.pulseWidth)
+  const rawStatusText = String(input.statusText ?? "")
+  const statusText = rawStatusText.slice(Math.max(0, rawStatusText.length - input.metrics.statusWidth))
+  const prefixWidth = Math.max(0, input.metrics.workWidth - statusText.length)
+  const pulseSlotWidth = Math.max(0, prefixWidth - input.metrics.gapWidth)
+  const visiblePulseText = pulseText.slice(0, pulseSlotWidth)
+
+  return {
+    pulseText: visiblePulseText,
+    pulsePadding: " ".repeat(Math.max(0, prefixWidth - visiblePulseText.length)),
+    statusText,
+  }
+}
+
+function renderSplitLine(input) {
+  const segments = computeSplitSegments(input)
+  return `${segments.pulseText}${segments.pulsePadding}${segments.statusText}`
+}
+
+function currentLayout() {
+  return pulseRowLayout()
+}
+
+function computeCurrentPulseLayoutMetrics(input) {
+  return computePulseLayoutMetrics({ ...input, layout: pulseRowLayout() })
 }
 
 function requestRender(api) {
@@ -74,35 +127,77 @@ function renderForSession(api, sessionID, tick) {
   })
 }
 
-function renderViewForSession(api, sessionID, tick) {
-  return buildPulseView({
+function pulseViewInput(api, sessionID, tick, width, pulseWidth) {
+  return {
     messages: api.state.session.messages(sessionID),
     session: api.state.session.get(sessionID),
     status: api.state.session.status(sessionID),
     tick,
-    width: rendererWidth(api),
+    width,
+    pulseWidth,
     partForMessage(messageID) {
       return api.state.part(messageID)
     },
-  })
+  }
+}
+
+function renderViewForSession(api, sessionID, tick) {
+  const layout = pulseRowLayout()
+  const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api)))
+  const metrics = computePulseLayoutMetrics({ viewportWidth: viewportWidth(api), layout, statusText: baseView.statusText })
+  const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth))
+
+  return { ...view, metrics }
+}
+
+function PulseLine(props) {
+  const element = createElement("text")
+  setProp(element, "selectable", false)
+  setProp(element, "width", props.metrics.pulseWidth)
+  setProp(element, "flexGrow", 0)
+  setProp(element, "flexShrink", 0)
+  const blocks = props.view.pulseBlocks.slice(0, props.metrics.pulseWidth)
+
+  for (const block of blocks) {
+    appendText(element, block.glyph, block.color)
+  }
+
+  return element
+}
+
+function GapLine(props) {
+  const element = createElement("text")
+  setProp(element, "selectable", false)
+  setProp(element, "width", props.metrics.gapWidth)
+  setProp(element, "flexGrow", 0)
+  setProp(element, "flexShrink", 0)
+  insert(element, " ".repeat(props.metrics.gapWidth))
+  return element
+}
+
+function StatusLine(props) {
+  const element = createElement("text")
+  setProp(element, "selectable", false)
+  setProp(element, "width", props.metrics.statusWidth)
+  setProp(element, "flexGrow", 0)
+  setProp(element, "flexShrink", 0)
+  const segments = computeSplitSegments({ pulseText: "", statusText: props.view.statusText, metrics: props.metrics })
+  appendText(element, segments.statusText, props.textColor)
+  return element
+}
+
+function SplitText(props) {
+  const element = createElement("box")
+  setProp(element, "width", props.view.metrics.workWidth)
+  setProp(element, "flexDirection", "row")
+  insert(element, createComponent(PulseLine, { view: props.view, metrics: props.view.metrics }))
+  insert(element, createComponent(GapLine, { metrics: props.view.metrics }))
+  insert(element, createComponent(StatusLine, { view: props.view, metrics: props.view.metrics, textColor: props.textColor }))
+  return element
 }
 
 function themeTextColor(api) {
   return api.theme?.current?.text
-}
-
-function PulseText(props) {
-  const element = createElement("text")
-  setProp(element, "selectable", false)
-
-  for (const block of props.view.blocks) {
-    appendText(element, block.glyph, block.color)
-  }
-
-  if (props.view.blocks.length > 0 && props.view.tokenText) appendText(element, "  ", props.textColor)
-  appendText(element, props.view.tokenText, props.textColor)
-
-  return element
 }
 
 function PulseRow(props) {
@@ -110,12 +205,9 @@ function PulseRow(props) {
   setProp(element, "width", "100%")
   setProp(element, "flexDirection", "row")
   setProp(element, "paddingBottom", PULSE_ROW_PADDING_BOTTOM)
-  createEffect(() => {
-    const layout = pulseRowLayout()
-    setProp(element, "justifyContent", layout === "center" ? "center" : "flex-start")
-    setProp(element, "paddingLeft", layout === "left" ? PULSE_ROW_LEFT_PADDING : 0)
-  })
-  insert(element, createComponent(PulseText, props))
+  setProp(element, "justifyContent", props.view.metrics.justifyContent)
+  setProp(element, "paddingLeft", props.view.metrics.paddingLeft)
+  insert(element, createComponent(SplitText, props))
   return element
 }
 
@@ -211,4 +303,5 @@ const plugin = {
 }
 
 export default plugin
+export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, currentLayout, renderSplitLine }
 export { renderForSession }
