@@ -1,6 +1,5 @@
 const MAX_BLOCKS = 36
 const MIN_BLOCK_WIDTH = 8
-const APPROX_CHARS_PER_TOKEN = 4
 const STATUS_SEPARATOR = " / "
 
 const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
@@ -20,12 +19,12 @@ const COLOR_BY_KIND = {
 const STATUS_WIDGETS = [
   {
     id: "input",
-    label: "in",
-    value(totals) {
-      return totals.input
+    label: "↓",
+    value(metrics) {
+      return metrics.exact.input
     },
-    visible(totals) {
-      return totals.input > 0 || totals.output > 0
+    visible(metrics) {
+      return metrics.exact.input > 0 || metrics.exact.output > 0
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -33,12 +32,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "output",
-    label: "out",
-    value(totals) {
-      return totals.output
+    label: "↑",
+    value(metrics) {
+      return metrics.exact.output
     },
-    visible(totals) {
-      return totals.input > 0 || totals.output > 0
+    visible(metrics) {
+      return metrics.exact.input > 0 || metrics.exact.output > 0
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -46,12 +45,155 @@ const STATUS_WIDGETS = [
   },
   {
     id: "cache",
-    label: "cache",
-    value(totals) {
-      return totals.cache
+    label: "◇",
+    value(metrics) {
+      return metrics.exact.cache
     },
-    visible(totals) {
-      return totals.cache > 0
+    visible(metrics) {
+      return metrics.exact.cache > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "tps",
+    label: "⚡",
+    value(metrics) {
+      return metrics.exact.tps
+    },
+    visible(metrics) {
+      return Number.isFinite(metrics.exact.tps) && metrics.exact.tps > 0
+    },
+    format(value) {
+      return formatDecimal(value)
+    },
+  },
+  {
+    id: "toolCount",
+    label: "🔧",
+    value(metrics) {
+      return metrics.tools.count
+    },
+    visible(metrics) {
+      return metrics.tools.count > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "toolAverage",
+    label: "⏱",
+    value(metrics) {
+      return metrics.tools.averageMs
+    },
+    visible(metrics) {
+      return metrics.tools.count > 0 && Number.isFinite(metrics.tools.averageMs)
+    },
+    format(value) {
+      return formatDuration(value)
+    },
+  },
+  {
+    id: "toolTotal",
+    label: "⌛",
+    value(metrics) {
+      return metrics.tools.totalMs
+    },
+    visible(metrics) {
+      return metrics.tools.totalMs > 0
+    },
+    format(value) {
+      return formatDuration(value)
+    },
+  },
+  {
+    id: "system",
+    label: "⚙",
+    value(metrics) {
+      return metrics.categories.system
+    },
+    visible(metrics) {
+      return metrics.categories.system > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "user",
+    label: "👤",
+    value(metrics) {
+      return metrics.categories.user
+    },
+    visible(metrics) {
+      return metrics.categories.user > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "context",
+    label: "📚",
+    value(metrics) {
+      return metrics.categories.context
+    },
+    visible(metrics) {
+      return metrics.categories.context > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "schema",
+    label: "📐",
+    value(metrics) {
+      return metrics.categories.schema
+    },
+    visible(metrics) {
+      return metrics.categories.schema > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "toolResults",
+    label: "📦",
+    value(metrics) {
+      return metrics.categories.toolResults
+    },
+    visible(metrics) {
+      return metrics.categories.toolResults > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "thinking",
+    label: "🧠",
+    value(metrics) {
+      return metrics.categories.thinking
+    },
+    visible(metrics) {
+      return metrics.categories.thinking > 0
+    },
+    format(value) {
+      return formatNumber(value) ?? "0"
+    },
+  },
+  {
+    id: "answer",
+    label: "💬",
+    value(metrics) {
+      return metrics.categories.answer
+    },
+    visible(metrics) {
+      return metrics.categories.answer > 0
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -101,17 +243,28 @@ function partKind(part) {
 }
 
 function approximateTokens(text) {
-  return Math.max(1, Math.ceil(String(text ?? "").length / APPROX_CHARS_PER_TOKEN))
+  if (typeof text !== "string" || text.length === 0) return 0
+  let ascii = 0
+  let nonAscii = 0
+  for (const char of text) {
+    if (char.codePointAt(0) <= 0x7f) ascii += 1
+    else nonAscii += 1
+  }
+  return Math.ceil(ascii / 4 + nonAscii / 2)
+}
+
+function positiveTokenEstimate(text) {
+  return Math.max(1, approximateTokens(text))
 }
 
 function toolTokenEstimate(part) {
   const state = part.state
   if (!state) return 1
 
-  if (typeof state.output === "string") return approximateTokens(state.output)
-  if (typeof state.error === "string") return approximateTokens(state.error)
-  if (typeof state.raw === "string") return approximateTokens(state.raw)
-  if (typeof state.title === "string") return approximateTokens(state.title)
+  if (typeof state.output === "string") return positiveTokenEstimate(state.output)
+  if (typeof state.error === "string") return positiveTokenEstimate(state.error)
+  if (typeof state.raw === "string") return positiveTokenEstimate(state.raw)
+  if (typeof state.title === "string") return positiveTokenEstimate(state.title)
 
   return 1
 }
@@ -120,7 +273,7 @@ function partTokenEstimate(part) {
   switch (part.type) {
     case "text":
     case "reasoning":
-      return approximateTokens(part.text)
+      return positiveTokenEstimate(part.text)
     case "tool":
       return toolTokenEstimate(part)
     case "step-finish":
@@ -128,7 +281,7 @@ function partTokenEstimate(part) {
     case "patch":
       return Math.max(1, (part.files?.length ?? 1) * 20)
     case "retry":
-      return approximateTokens(part.error?.data?.message)
+      return positiveTokenEstimate(part.error?.data?.message)
     case "file":
     case "subtask":
     case "agent":
@@ -214,6 +367,18 @@ function formatNumber(value) {
   return String(value)
 }
 
+function formatDecimal(value) {
+  if (!Number.isFinite(value) || value <= 0) return undefined
+  if (value >= 100) return String(Math.round(value))
+  return value.toFixed(value >= 10 ? 1 : 2).replace(/\.0+$/, "")
+}
+
+function formatDuration(value) {
+  if (!Number.isFinite(value) || value <= 0) return "0ms"
+  if (value >= 1000) return `${formatDecimal(value / 1000)}s`
+  return `${Math.round(value)}ms`
+}
+
 function tokenTotals(messages, session) {
   const totals = {
     input: session?.tokens?.input ?? 0,
@@ -234,9 +399,132 @@ function tokenTotals(messages, session) {
   return totals
 }
 
-function statusWidget(config, totals) {
-  if (!config.visible(totals)) return undefined
-  const value = config.value(totals)
+function messageInfo(message) {
+  return message?.info ?? message
+}
+
+function messageParts(message, partForMessage) {
+  const info = messageInfo(message)
+  if (Array.isArray(message?.parts)) return message.parts
+  if (!info?.id || typeof partForMessage !== "function") return []
+  return partForMessage(info.id) ?? []
+}
+
+function latestAssistantMessage(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = messageInfo(messages[index])
+    if (info?.role === "assistant") return { message: messages[index], index, info }
+  }
+  return undefined
+}
+
+function finiteNonNegative(value) {
+  return Number.isFinite(value) && value >= 0 ? value : undefined
+}
+
+function exactMetrics(messages, session) {
+  const latest = latestAssistantMessage(messages)
+  const tokens = latest?.info?.tokens ?? session?.tokens
+  const cacheRead = finiteNonNegative(tokens?.cache?.read) ?? 0
+  const cacheWrite = finiteNonNegative(tokens?.cache?.write) ?? 0
+  const input = finiteNonNegative(tokens?.input) ?? 0
+  const output = finiteNonNegative(tokens?.output) ?? 0
+  const reasoning = finiteNonNegative(tokens?.reasoning) ?? 0
+  const created = latest?.info?.time?.created
+  const completed = latest?.info?.time?.completed
+  const seconds = Number.isFinite(created) && Number.isFinite(completed) ? (completed - created) / 1000 : 0
+
+  return {
+    input,
+    output,
+    cache: cacheRead + cacheWrite,
+    cacheRead,
+    cacheWrite,
+    reasoning,
+    tps: output > 0 && seconds > 0 ? output / seconds : undefined,
+  }
+}
+
+function toolDurationMs(part, status, now) {
+  const start = part.state?.time?.start
+  const end = part.state?.time?.end
+  if (!Number.isFinite(start)) return 0
+  if (Number.isFinite(end)) return Math.max(0, end - start)
+  if (part.state?.status === "running" && isBusy(status) && Number.isFinite(now)) return Math.max(0, now - start)
+  return 0
+}
+
+function textPartTokens(parts, type) {
+  return parts.reduce((total, part) => total + (part.type === type ? approximateTokens(part.text) : 0), 0)
+}
+
+function toolResultTokens(parts) {
+  return parts.reduce((total, part) => {
+    if (part.type !== "tool") return total
+    const state = part.state
+    if (!state || (state.status !== "completed" && state.status !== "error")) return total
+    if (typeof state.output === "string") return total + approximateTokens(state.output)
+    if (typeof state.error === "string") return total + approximateTokens(state.error)
+    return total
+  }, 0)
+}
+
+function visibleContextTokens(messages, latestIndex, partForMessage) {
+  let total = 0
+  for (let index = 0; index < latestIndex; index += 1) {
+    const message = messages[index]
+    const info = messageInfo(message)
+    if (typeof info?.system === "string") total += approximateTokens(info.system)
+    for (const part of messageParts(message, partForMessage)) {
+      if (part.type === "text" || part.type === "reasoning") total += approximateTokens(part.text)
+      if (part.type === "file" && typeof part.source?.text?.value === "string") total += approximateTokens(part.source.text.value)
+      if (part.type === "tool") total += toolResultTokens([part])
+    }
+  }
+  return total
+}
+
+export function buildPulseMetrics(input) {
+  const messages = input.messages ?? []
+  const latest = latestAssistantMessage(messages)
+  const exact = exactMetrics(messages, input.session)
+  const parts = latest ? messageParts(latest.message, input.partForMessage) : []
+  const tools = parts.filter((part) => part.type === "tool")
+  const totalMs = tools.reduce((total, part) => total + toolDurationMs(part, input.status, input.now), 0)
+  const previousMessage = latest ? messages[latest.index - 1] : undefined
+  const previousInfo = messageInfo(previousMessage)
+  const previousParts = previousMessage ? messageParts(previousMessage, input.partForMessage) : []
+  const system = typeof previousInfo?.system === "string" ? approximateTokens(previousInfo.system) : 0
+  const user = previousInfo?.role === "user" ? textPartTokens(previousParts, "text") : 0
+  const thinking = exact.reasoning || textPartTokens(parts, "reasoning")
+  const answer = exact.output || textPartTokens(parts, "text")
+
+  return {
+    exact,
+    tools: {
+      count: tools.length,
+      totalMs,
+      averageMs: tools.length > 0 ? totalMs / tools.length : undefined,
+    },
+    categories: {
+      system,
+      user,
+      context: latest ? visibleContextTokens(messages, latest.index, input.partForMessage) : 0,
+      schema: 0,
+      toolResults: toolResultTokens(parts),
+      thinking,
+      answer,
+    },
+  }
+}
+
+function statusMetrics(input) {
+  return input.metrics ?? buildPulseMetrics(input)
+}
+
+function statusWidget(config, metrics) {
+  if (!config.visible(metrics)) return undefined
+  const value = config.value(metrics)
   const formattedValue = config.format(value)
   return {
     id: config.id,
@@ -252,16 +540,16 @@ function composeStatusWidgets(widgets) {
 }
 
 function buildStatusView(input) {
-  const totals = tokenTotals(input.messages, input.session)
-  const widgets = STATUS_WIDGETS.map((config) => statusWidget(config, totals)).filter(Boolean)
-  if (widgets.length > 0) return { widgets, text: composeStatusWidgets(widgets) }
+  const metrics = statusMetrics(input)
+  const widgets = STATUS_WIDGETS.map((config) => statusWidget(config, metrics)).filter(Boolean)
+  if (widgets.length > 0) return { metrics, widgets, text: composeStatusWidgets(widgets) }
 
   if (input.busyFallback !== false && isBusy(input.status)) {
     const busyWidget = { id: "busy", label: "busy", value: true, formattedValue: "", text: "busy" }
-    return { widgets: [busyWidget], text: busyWidget.text }
+    return { metrics, widgets: [busyWidget], text: busyWidget.text }
   }
 
-  return { widgets: [], text: "" }
+  return { metrics, widgets: [], text: "" }
 }
 
 function visibleLength(value) {
@@ -271,6 +559,7 @@ function visibleLength(value) {
 function pulseView(pulseBlocks, statusView, color) {
   return {
     pulseBlocks,
+    metricSnapshot: statusView.metrics,
     statusWidgets: statusView.widgets,
     statusText: statusView.text,
     blocks: pulseBlocks,
@@ -318,8 +607,11 @@ export function buildPulseView(input) {
 }
 
 export const __testing = {
+  approximateTokens,
+  buildPulseMetrics,
   collectAssistantParts,
   buildStatusView,
+  formatDuration,
   formatNumber,
   heightIndex,
   partKind,

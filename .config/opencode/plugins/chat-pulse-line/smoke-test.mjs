@@ -48,6 +48,9 @@ function buildStatusViewForApi(targetApi) {
     messages: targetApi.state.session.messages(sessionID),
     session: targetApi.state.session.get(sessionID),
     status: targetApi.state.session.status(sessionID),
+    partForMessage(messageID) {
+      return targetApi.state.part(messageID)
+    },
   })
 }
 
@@ -153,8 +156,8 @@ assert.equal(disposeEvents.length, 8)
 assert.ok(disposeEvents.some((event) => event.eventName === "message.removed"))
 
 const slotOutput = renderForSession(api, sessionID, 0)
-assert.match(slotOutput, /in 18k \/ out 2\.1k/)
-assert.match(slotOutput, /cache 9\.1k/)
+assert.match(slotOutput, /↓ 18k \/ ↑ 2\.1k/)
+assert.match(slotOutput, /◇ 9\.1k/)
 assert.match(slotOutput, /\u001b\[38;5;141m▁\u001b\[0m/)
 assert.match(slotOutput, /\u001b\[38;5;75m▄\u001b\[0m/)
 assert.match(slotOutput, /\u001b\[38;5;214m▁\u001b\[0m/)
@@ -168,15 +171,62 @@ assert.equal(directOutput, slotOutput)
 const normalView = buildViewForApi(api)
 assertSplitViewAliases(normalView)
 assert.equal(normalView.pulseBlocks.length, 4)
-assert.match(normalView.statusText, /in 18k \/ out 2\.1k/)
-assert.match(normalView.statusText, /cache 9\.1k/)
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache"])
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["in", "out", "cache"])
-assertStatusWidgetTexts(normalView, ["in 18k", "out 2.1k", "cache 9.1k"])
-assert.deepEqual(buildStatusViewForApi(api), {
-  widgets: normalView.statusWidgets,
-  text: normalView.statusText,
+assert.match(normalView.statusText, /↓ 18k \/ ↑ 2\.1k/)
+assert.match(normalView.statusText, /◇ 9\.1k/)
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "toolCount", "toolAverage", "toolTotal", "toolResults", "thinking", "answer"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓", "↑", "◇", "🔧", "⏱", "⌛", "📦", "🧠", "💬"])
+assertStatusWidgetTexts(normalView, ["↓ 18k", "↑ 2.1k", "◇ 9.1k", "🔧 2", "⏱ 1ms", "⌛ 1ms", "📦 225", "🧠 300", "💬 2.1k"])
+assert.equal(normalView.metricSnapshot.exact.output, 2_140)
+assert.equal(normalView.metricSnapshot.tools.count, 2)
+const statusViewForApi = buildStatusViewForApi(api)
+assert.deepEqual(statusViewForApi.widgets, normalView.statusWidgets)
+assert.equal(statusViewForApi.text, normalView.statusText)
+
+assert.equal(pulseTesting.approximateTokens("abcdé"), 2)
+assert.equal(pulseTesting.approximateTokens(""), 0)
+
+const metricFixtureMessages = [
+  {
+    info: { id: "metric_user", sessionID, role: "user", system: "abcd" },
+    parts: [{ id: "metric_user_text", sessionID, messageID: "metric_user", type: "text", text: "abcdefgh" }],
+  },
+  {
+    info: {
+      id: "metric_assistant",
+      sessionID,
+      role: "assistant",
+      time: { created: 1_000, completed: 3_000 },
+      tokens: { input: 40, output: 100, reasoning: 7, cache: { read: 5, write: 3 } },
+    },
+    parts: [
+      { id: "metric_reason", sessionID, messageID: "metric_assistant", type: "reasoning", text: "hidden" },
+      { id: "metric_text", sessionID, messageID: "metric_assistant", type: "text", text: "visible answer" },
+      { id: "metric_tool_done", sessionID, messageID: "metric_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "abcdefgh", time: { start: 1_000, end: 2_000 } } },
+      { id: "metric_tool_running", sessionID, messageID: "metric_assistant", type: "tool", tool: "write", state: { status: "running", input: {}, time: { start: 2_000 } } },
+      { id: "metric_tool_bad", sessionID, messageID: "metric_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "", time: { start: 5, end: 1 } } },
+    ],
+  },
+]
+const metricSnapshot = pulseTesting.buildPulseMetrics({
+  messages: metricFixtureMessages,
+  status: { type: "busy" },
+  now: 2_500,
+  partForMessage() {
+    return []
+  },
 })
+assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50 })
+assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
+assert.deepEqual(metricSnapshot.categories, { system: 1, user: 2, context: 3, schema: 0, toolResults: 2, thinking: 7, answer: 100 })
+
+const noTpsSnapshot = pulseTesting.buildPulseMetrics({
+  messages: [{ id: "bad_time", sessionID, role: "assistant", time: { created: 3_000, completed: 1_000 }, tokens: { output: 100, cache: {} } }],
+  status: { type: "idle" },
+  partForMessage() {
+    return []
+  },
+})
+assert.equal(noTpsSnapshot.exact.tps, undefined)
 
 const wideMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: normalView.statusText })
 assert.equal(wideMetrics.workWidth, 120)
@@ -189,14 +239,14 @@ assertStatusRightPinned(tuiTesting.renderSplitLine({ pulseText: "abcd", statusTe
 
 const leftMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "left", statusText: normalView.statusText })
 assert.equal(leftMetrics.workWidth, 60)
-assert.equal(leftMetrics.pulseWidth, 60 - normalView.statusText.length - 2)
+assert.equal(leftMetrics.pulseWidth, Math.max(0, 60 - normalView.statusText.length - 2))
 assert.equal(leftMetrics.justifyContent, "flex-start")
 assert.equal(leftMetrics.paddingLeft, 5)
 assertStatusRightPinned(tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: normalView.statusText, metrics: leftMetrics }), normalView.statusText, leftMetrics.workWidth)
 
 const centerMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "center", statusText: normalView.statusText })
 assert.equal(centerMetrics.workWidth, 60)
-assert.equal(centerMetrics.pulseWidth, 60 - normalView.statusText.length - 2)
+assert.equal(centerMetrics.pulseWidth, Math.max(0, 60 - normalView.statusText.length - 2))
 assert.equal(centerMetrics.justifyContent, "center")
 assert.equal(centerMetrics.paddingLeft, 0)
 
@@ -242,7 +292,7 @@ const exportShapeApi = {
   },
 }
 const exportShapeOutput = renderForSession(exportShapeApi, sessionID, 0)
-assert.match(exportShapeOutput, /in 18k \/ out 2\.1k/)
+assert.match(exportShapeOutput, /↓ 18k \/ ↑ 2\.1k/)
 assert.equal(stripAnsi(exportShapeOutput).startsWith("▁▄▁▇"), true)
 
 const tokenOnlyApi = {
@@ -261,13 +311,13 @@ const tokenOnlyApi = {
   },
 }
 const tokenOnlyOutput = renderForSession(tokenOnlyApi, sessionID, 0)
-assert.match(tokenOnlyOutput, /in 18k \/ out 2\.1k/)
+assert.match(tokenOnlyOutput, /↓ 18k \/ ↑ 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(tokenOnlyOutput)), true)
 
 const tokenOnlyView = buildViewForApi(tokenOnlyApi)
 assertSplitViewAliases(tokenOnlyView)
 assert.equal(tokenOnlyView.pulseBlocks.length, 1)
-assert.match(tokenOnlyView.statusText, /in 18k \/ out 2\.1k/)
+assert.match(tokenOnlyView.statusText, /↓ 18k \/ ↑ 2\.1k/)
 
 const sessionTokenOnlyApi = {
   ...api,
@@ -285,13 +335,13 @@ const sessionTokenOnlyApi = {
   },
 }
 const sessionTokenOnlyOutput = renderForSession(sessionTokenOnlyApi, sessionID, 0)
-assert.match(sessionTokenOnlyOutput, /in 18k \/ out 2\.1k/)
+assert.match(sessionTokenOnlyOutput, /↓ 18k \/ ↑ 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(sessionTokenOnlyOutput)), true)
 
 const sessionTokenOnlyView = buildViewForApi(sessionTokenOnlyApi)
 assertSplitViewAliases(sessionTokenOnlyView)
 assert.equal(sessionTokenOnlyView.pulseBlocks.length, 1)
-assert.match(sessionTokenOnlyView.statusText, /in 18k \/ out 2\.1k/)
+assert.match(sessionTokenOnlyView.statusText, /↓ 18k \/ ↑ 2\.1k/)
 
 const outputOnlyApi = {
   ...api,
@@ -312,7 +362,7 @@ const outputOnlyApi = {
   },
 }
 const outputOnlyView = buildViewForApi(outputOnlyApi)
-assertStatusWidgetTexts(outputOnlyView, ["in 0", "out 2.1k"])
+assertStatusWidgetTexts(outputOnlyView, ["↓ 0", "↑ 2.1k", "💬 2.1k"])
 
 const cacheOnlyApi = {
   ...api,
@@ -333,7 +383,7 @@ const cacheOnlyApi = {
   },
 }
 const cacheOnlyView = buildViewForApi(cacheOnlyApi)
-assertStatusWidgetTexts(cacheOnlyView, ["cache 9.1k"])
+assertStatusWidgetTexts(cacheOnlyView, ["◇ 9.1k"])
 
 const busyOnlyApi = {
   ...api,
@@ -360,7 +410,7 @@ const narrowStatusApi = { ...api, renderer: { ...api.renderer, width: 10 } }
 const narrowStatusView = buildViewForApi(narrowStatusApi, 10)
 assertSplitViewAliases(narrowStatusView)
 assert.equal(narrowStatusView.pulseBlocks.length, 1)
-assert.match(narrowStatusView.statusText, /in 18k \/ out 2\.1k/)
+assert.match(narrowStatusView.statusText, /↓ 18k \/ ↑ 2\.1k/)
 
 disposeEvents[0].handler({ type: disposeEvents[0].eventName, properties: { sessionID: "ses_other" } })
 assert.equal(renderRequests, 0)
@@ -417,6 +467,22 @@ layoutCommand.run()
 assert.equal(renderRequests, 4)
 assert.equal(tuiTesting.currentLayout(), "wide")
 assert.equal(tuiTesting.computeCurrentPulseLayoutMetrics({ viewportWidth: 20, statusText: "" }).workWidth, 20)
+
+let metricCacheRenderRequests = 0
+const metricCache = tuiTesting.createMetricCache(api, () => {
+  metricCacheRenderRequests += 1
+})
+const cachedSnapshot = metricCache.snapshot(sessionID)
+assert.equal(cachedSnapshot.exact.input, 18_120)
+assert.equal(cachedSnapshot.tools.count, 2)
+assert.equal(metricCache.sessionMetricCache.has(sessionID), true)
+metricCache.markDirty(sessionID)
+assert.equal(metricCache.dirtySessions.has(sessionID), true)
+metricCache.removeSession(sessionID)
+assert.equal(metricCache.sessionMetricCache.has(sessionID), false)
+assert.equal(metricCache.dirtySessions.has(sessionID), false)
+metricCache.dispose()
+assert.equal(metricCacheRenderRequests, 0)
 
 for (const dispose of lifecycleDisposers) dispose()
 assert.equal(disposeEvents.every((event) => event.disposed), true)

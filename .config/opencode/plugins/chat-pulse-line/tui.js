@@ -1,6 +1,6 @@
 import { createComponent, createElement, insert, setProp } from "@opentui/solid"
 import { createRoot, createSignal } from "solid-js"
-import { buildPulseLine, buildPulseView } from "./pulse-line.js"
+import { buildPulseLine, buildPulseMetrics, buildPulseView } from "./pulse-line.js"
 
 const DEFAULT_WIDTH = 48
 const SLOT_ORDER = 100_000
@@ -9,6 +9,9 @@ const PULSE_ROW_LAYOUTS = ["wide", "left", "center"]
 const PULSE_ROW_LEFT_PADDING = 5
 const PULSE_ROW_PADDING_BOTTOM = 0
 const CYCLE_LAYOUT_COMMAND = "chat_pulse_line.layout_cycle"
+const METRIC_DEBOUNCE_MS = 50
+const METRIC_BATCH_SIZE = 8
+const RENDER_THROTTLE_MS = 250
 const RENDER_EVENTS = [
   "message.removed",
   "message.updated",
@@ -114,6 +117,85 @@ function sessionIsPulsing(api) {
   return status?.type === "busy" || status?.type === "retry"
 }
 
+function createMetricCache(api, requestRenderFn = requestRender) {
+  const sessionMetricCache = new Map()
+  const dirtySessions = new Set()
+  let processTimer
+  let renderTimer
+  let disposed = false
+
+  function metricInput(sessionID) {
+    return {
+      messages: api.state.session.messages(sessionID),
+      session: api.state.session.get(sessionID),
+      status: api.state.session.status(sessionID),
+      now: Date.now(),
+      partForMessage(messageID) {
+        return api.state.part(messageID)
+      },
+    }
+  }
+
+  function rebuildSession(sessionID) {
+    if (!sessionID || disposed) return undefined
+    const metrics = buildPulseMetrics(metricInput(sessionID))
+    sessionMetricCache.set(sessionID, metrics)
+    return metrics
+  }
+
+  function throttledRender() {
+    if (disposed || renderTimer) return
+    renderTimer = setTimeout(() => {
+      renderTimer = undefined
+      if (!disposed) requestRenderFn(api)
+    }, RENDER_THROTTLE_MS)
+  }
+
+  function processDirty() {
+    processTimer = undefined
+    if (disposed) return
+    const batch = Array.from(dirtySessions).slice(0, METRIC_BATCH_SIZE)
+    for (const sessionID of batch) {
+      dirtySessions.delete(sessionID)
+      rebuildSession(sessionID)
+    }
+    if (batch.length > 0) throttledRender()
+    if (dirtySessions.size > 0) schedule()
+  }
+
+  function schedule() {
+    if (disposed || processTimer) return
+    processTimer = setTimeout(processDirty, METRIC_DEBOUNCE_MS)
+  }
+
+  function markDirty(sessionID) {
+    if (!sessionID || disposed) return
+    dirtySessions.add(sessionID)
+    schedule()
+  }
+
+  function removeSession(sessionID) {
+    if (!sessionID) return
+    dirtySessions.delete(sessionID)
+    sessionMetricCache.delete(sessionID)
+  }
+
+  function snapshot(sessionID) {
+    if (!sessionID) return undefined
+    return sessionMetricCache.get(sessionID) ?? rebuildSession(sessionID)
+  }
+
+  function dispose() {
+    disposed = true
+    if (processTimer) clearTimeout(processTimer)
+    if (renderTimer) clearTimeout(renderTimer)
+    dirtySessions.clear()
+    sessionMetricCache.clear()
+  }
+
+  return { markDirty, removeSession, snapshot, dispose, rebuildSession, dirtySessions, sessionMetricCache }
+}
+
 function renderForSession(api, sessionID, tick) {
   return buildPulseLine({
     messages: api.state.session.messages(sessionID),
@@ -127,11 +209,12 @@ function renderForSession(api, sessionID, tick) {
   })
 }
 
-function pulseViewInput(api, sessionID, tick, width, pulseWidth) {
+function pulseViewInput(api, sessionID, tick, width, pulseWidth, metrics) {
   return {
     messages: api.state.session.messages(sessionID),
     session: api.state.session.get(sessionID),
     status: api.state.session.status(sessionID),
+    metrics,
     tick,
     width,
     pulseWidth,
@@ -141,11 +224,12 @@ function pulseViewInput(api, sessionID, tick, width, pulseWidth) {
   }
 }
 
-function renderViewForSession(api, sessionID, tick) {
+function renderViewForSession(api, sessionID, tick, metricCache) {
   const layout = pulseRowLayout()
-  const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api)))
+  const metricsSnapshot = metricCache?.snapshot(sessionID)
+  const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api), undefined, metricsSnapshot))
   const metrics = computePulseLayoutMetrics({ viewportWidth: viewportWidth(api), layout, statusText: baseView.statusText })
-  const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth))
+  const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth, metricsSnapshot))
 
   return { ...view, metrics }
 }
@@ -228,6 +312,7 @@ function appendText(element, value, color) {
 function initializeTui(api, disposeRoot) {
   let tick = 0
   let pulseInterval
+  const metricCache = createMetricCache(api)
 
   api.keymap.registerLayer({
     priority: 1_000,
@@ -277,19 +362,23 @@ function initializeTui(api, disposeRoot) {
         const sessionID = currentSessionID(api)
         if (!sessionID) return undefined
         syncPulseTimer()
-        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick), textColor: themeTextColor(api) })
+        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick, metricCache), textColor: themeTextColor(api) })
       },
     },
   })
 
   const disposers = RENDER_EVENTS.map((eventName) => api.event.on(eventName, (event) => {
     if (!isEventForCurrentSession(api, event)) return
+    const sessionID = eventSessionID(event)
+    if (eventName === "message.removed") metricCache.removeSession(sessionID)
+    else metricCache.markDirty(sessionID)
     syncPulseTimer()
     requestRender(api)
   }))
 
   api.lifecycle.onDispose(() => {
     stopPulseTimer()
+    metricCache.dispose()
     for (const dispose of disposers) dispose()
     disposeRoot()
   })
@@ -303,5 +392,5 @@ const plugin = {
 }
 
 export default plugin
-export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, currentLayout, renderSplitLine }
+export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, createMetricCache, currentLayout, renderSplitLine }
 export { renderForSession }
