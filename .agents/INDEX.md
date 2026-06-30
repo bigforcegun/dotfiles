@@ -19,6 +19,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/agent-todo-txt-bridge/` | research/design | `contexts/agent-todo-txt-bridge/README.md` | chat research, todo.txt/Taskwarrior/Org/agent-memory references |
 | `contexts/mcpd-envless-start/` | decision/design | `contexts/mcpd-envless-start/README.md` | chat discussion, `.mcpproxy/mcp_config.json`, `bin/mcpd`, launchd plist |
 | `contexts/opencode-speed-improvements/` | research | `contexts/opencode-speed-improvements/README.md` | chat research, OpenCode/Codex GitHub issues |
+| `contexts/mcpproxy-sort-key-reordering/` | finding/gotcha | `contexts/mcpproxy-sort-key-reordering/README.md` | mcpproxy-go + mongodb-mcp-server source, live MongoDB explain |
 
 ## Root rules
 
