@@ -1,5 +1,6 @@
 const MAX_BLOCKS = 36
 const MIN_BLOCK_WIDTH = 8
+const MAX_ESTIMATE_CHARS = 20_000
 const STATUS_SEPARATOR = " / "
 
 const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
@@ -19,41 +20,41 @@ const COLOR_BY_KIND = {
 const STATUS_WIDGETS = [
   {
     id: "input",
-    label: "↓",
+    label: "↓ ",
     value(metrics) {
       return metrics.exact.input
     },
     visible(metrics) {
-      return metrics.exact.input > 0 || metrics.exact.output > 0
+      return metrics.hasData
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatNumber(value) ?? "?"
     },
   },
   {
     id: "output",
-    label: "↑",
+    label: "↑ ",
     value(metrics) {
       return metrics.exact.output
     },
     visible(metrics) {
-      return metrics.exact.input > 0 || metrics.exact.output > 0
+      return metrics.hasData
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatNumber(value) ?? "?"
     },
   },
   {
     id: "cache",
-    label: "◇",
+    label: "◇ ",
     value(metrics) {
       return metrics.exact.cache
     },
     visible(metrics) {
-      return metrics.exact.cache > 0
+      return metrics.hasData
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatNumber(value) ?? "?"
     },
   },
   {
@@ -63,10 +64,11 @@ const STATUS_WIDGETS = [
       return metrics.exact.tps
     },
     visible(metrics) {
-      return Number.isFinite(metrics.exact.tps) && metrics.exact.tps > 0
+      return metrics.hasData || metrics.exact.tpsLoading
     },
-    format(value) {
-      return formatDecimal(value)
+    format(value, metrics) {
+      if (metrics.exact.tpsLoading) return "⋯"
+      return formatDecimal(value) ?? "?"
     },
   },
   {
@@ -75,8 +77,8 @@ const STATUS_WIDGETS = [
     value(metrics) {
       return metrics.tools.count
     },
-    visible(metrics) {
-      return metrics.tools.count > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -84,25 +86,25 @@ const STATUS_WIDGETS = [
   },
   {
     id: "toolAverage",
-    label: "⏱",
+    label: "⏱TAV",
     value(metrics) {
       return metrics.tools.averageMs
     },
-    visible(metrics) {
-      return metrics.tools.count > 0 && Number.isFinite(metrics.tools.averageMs)
+    visible() {
+      return false
     },
     format(value) {
-      return formatDuration(value)
+      return Number.isFinite(value) ? formatDuration(value) : "?"
     },
   },
   {
     id: "toolTotal",
-    label: "⌛",
+    label: "⌛TTM",
     value(metrics) {
       return metrics.tools.totalMs
     },
-    visible(metrics) {
-      return metrics.tools.totalMs > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatDuration(value)
@@ -110,25 +112,25 @@ const STATUS_WIDGETS = [
   },
   {
     id: "system",
-    label: "⚙",
+    label: "⚙SYS",
     value(metrics) {
       return metrics.categories.system
     },
-    visible(metrics) {
-      return metrics.categories.system > 0
+    visible() {
+      return false
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatNumber(value) ?? "?"
     },
   },
   {
     id: "user",
-    label: "👤",
+    label: "👤USR",
     value(metrics) {
       return metrics.categories.user
     },
-    visible(metrics) {
-      return metrics.categories.user > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -136,12 +138,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "context",
-    label: "📚",
+    label: "📚CTX",
     value(metrics) {
       return metrics.categories.context
     },
-    visible(metrics) {
-      return metrics.categories.context > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -149,25 +151,25 @@ const STATUS_WIDGETS = [
   },
   {
     id: "schema",
-    label: "📐",
+    label: "📐SCH",
     value(metrics) {
       return metrics.categories.schema
     },
-    visible(metrics) {
-      return metrics.categories.schema > 0
+    visible() {
+      return false
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatNumber(value) ?? "?"
     },
   },
   {
     id: "toolResults",
-    label: "📦",
+    label: "📦RES",
     value(metrics) {
       return metrics.categories.toolResults
     },
-    visible(metrics) {
-      return metrics.categories.toolResults > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -175,12 +177,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "thinking",
-    label: "🧠",
+    label: "🧠THK",
     value(metrics) {
       return metrics.categories.thinking
     },
-    visible(metrics) {
-      return metrics.categories.thinking > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -188,12 +190,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "answer",
-    label: "💬",
+    label: "💬ANS",
     value(metrics) {
       return metrics.categories.answer
     },
-    visible(metrics) {
-      return metrics.categories.answer > 0
+    visible() {
+      return false
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -244,9 +246,10 @@ function partKind(part) {
 
 function approximateTokens(text) {
   if (typeof text !== "string" || text.length === 0) return 0
+  const value = text.length > MAX_ESTIMATE_CHARS ? text.slice(0, MAX_ESTIMATE_CHARS) : text
   let ascii = 0
   let nonAscii = 0
-  for (const char of text) {
+  for (const char of value) {
     if (char.codePointAt(0) <= 0x7f) ascii += 1
     else nonAscii += 1
   }
@@ -328,6 +331,10 @@ function collectAssistantParts(messages, partForMessage) {
   return blocks
 }
 
+export function buildPulseBlocks(input) {
+  return collectAssistantParts(input.messages ?? [], input.partForMessage)
+}
+
 function isBusy(status) {
   return status?.type === "busy" || status?.type === "retry"
 }
@@ -374,7 +381,8 @@ function formatDecimal(value) {
 }
 
 function formatDuration(value) {
-  if (!Number.isFinite(value) || value <= 0) return "0ms"
+  if (value === 0) return "0ms"
+  if (!Number.isFinite(value) || value < 0) return "?"
   if (value >= 1000) return `${formatDecimal(value / 1000)}s`
   return `${Math.round(value)}ms`
 }
@@ -424,33 +432,77 @@ function finiteNonNegative(value) {
 
 function exactMetrics(messages, session) {
   const latest = latestAssistantMessage(messages)
-  const tokens = latest?.info?.tokens ?? session?.tokens
-  const cacheRead = finiteNonNegative(tokens?.cache?.read) ?? 0
-  const cacheWrite = finiteNonNegative(tokens?.cache?.write) ?? 0
-  const input = finiteNonNegative(tokens?.input) ?? 0
-  const output = finiteNonNegative(tokens?.output) ?? 0
-  const reasoning = finiteNonNegative(tokens?.reasoning) ?? 0
+  let cacheRead = 0
+  let cacheWrite = 0
+  let input = 0
+  let output = 0
+  let reasoning = 0
+  let hasInput = false
+  let hasOutput = false
+  let hasCacheRead = false
+  let hasCacheWrite = false
+  let hasReasoning = false
+
+  for (const message of messages) {
+    const info = messageInfo(message)
+    if (info?.role !== "assistant") continue
+    const tokens = info.tokens
+    const messageInput = finiteNonNegative(tokens?.input)
+    const messageOutput = finiteNonNegative(tokens?.output)
+    const messageCacheRead = finiteNonNegative(tokens?.cache?.read)
+    const messageCacheWrite = finiteNonNegative(tokens?.cache?.write)
+    const messageReasoning = finiteNonNegative(tokens?.reasoning)
+    if (Number.isFinite(messageInput)) {
+      input += messageInput
+      hasInput = true
+    }
+    if (Number.isFinite(messageOutput)) {
+      output += messageOutput
+      hasOutput = true
+    }
+    if (Number.isFinite(messageCacheRead)) {
+      cacheRead += messageCacheRead
+      hasCacheRead = true
+    }
+    if (Number.isFinite(messageCacheWrite)) {
+      cacheWrite += messageCacheWrite
+      hasCacheWrite = true
+    }
+    if (Number.isFinite(messageReasoning)) {
+      reasoning += messageReasoning
+      hasReasoning = true
+    }
+  }
+
+  if (!hasInput) input = finiteNonNegative(session?.tokens?.input)
+  if (!hasOutput) output = finiteNonNegative(session?.tokens?.output)
+  if (!hasCacheRead) cacheRead = finiteNonNegative(session?.tokens?.cache?.read)
+  if (!hasCacheWrite) cacheWrite = finiteNonNegative(session?.tokens?.cache?.write)
+  if (!hasReasoning) reasoning = finiteNonNegative(session?.tokens?.reasoning)
+
   const created = latest?.info?.time?.created
   const completed = latest?.info?.time?.completed
   const seconds = Number.isFinite(created) && Number.isFinite(completed) ? (completed - created) / 1000 : 0
 
   return {
-    input,
-    output,
-    cache: cacheRead + cacheWrite,
+    input: hasInput ? input : finiteNonNegative(input),
+    output: hasOutput ? output : finiteNonNegative(output),
+    cache: Number.isFinite(cacheRead) || Number.isFinite(cacheWrite) ? (cacheRead ?? 0) + (cacheWrite ?? 0) : undefined,
     cacheRead,
     cacheWrite,
-    reasoning,
-    tps: output > 0 && seconds > 0 ? output / seconds : undefined,
+    reasoning: hasReasoning ? reasoning : finiteNonNegative(reasoning),
+    tps: Number.isFinite(latest?.info?.tokens?.output) && latest.info.tokens.output > 0 && seconds > 0 ? latest.info.tokens.output / seconds : undefined,
+    tpsLoading: false,
   }
 }
 
 function toolDurationMs(part, status, now) {
+  const toolStatus = part.state?.status
   const start = part.state?.time?.start
   const end = part.state?.time?.end
   if (!Number.isFinite(start)) return 0
-  if (Number.isFinite(end)) return Math.max(0, end - start)
-  if (part.state?.status === "running" && isBusy(status) && Number.isFinite(now)) return Math.max(0, now - start)
+  if ((toolStatus === "completed" || toolStatus === "error") && Number.isFinite(end)) return Math.max(0, end - start)
+  if (toolStatus === "running" && isBusy(status) && Number.isFinite(now)) return Math.max(0, now - start)
   return 0
 }
 
@@ -469,15 +521,39 @@ function toolResultTokens(parts) {
   }, 0)
 }
 
+function partStartTime(part) {
+  const direct = part.time?.start
+  if (Number.isFinite(direct)) return direct
+  const state = part.state?.time?.start
+  return Number.isFinite(state) ? state : undefined
+}
+
+function livePartTokens(parts) {
+  return parts.reduce((total, part) => total + partTokenEstimate(part), 0)
+}
+
+function liveStartTime(latest, parts) {
+  const created = latest?.info?.time?.created
+  if (Number.isFinite(created)) return created
+  let start
+  for (const part of parts) {
+    const candidate = partStartTime(part)
+    if (Number.isFinite(candidate) && (!Number.isFinite(start) || candidate < start)) start = candidate
+  }
+  return start
+}
+
 function visibleContextTokens(messages, latestIndex, partForMessage) {
   let total = 0
-  for (let index = 0; index < latestIndex; index += 1) {
+  const currentPromptIndex = latestIndex - 1
+  for (let index = 0; index < currentPromptIndex; index += 1) {
     const message = messages[index]
     const info = messageInfo(message)
     if (typeof info?.system === "string") total += approximateTokens(info.system)
     for (const part of messageParts(message, partForMessage)) {
       if (part.type === "text" || part.type === "reasoning") total += approximateTokens(part.text)
       if (part.type === "file" && typeof part.source?.text?.value === "string") total += approximateTokens(part.source.text.value)
+      if (part.type === "symbol" && typeof part.source?.text?.value === "string") total += approximateTokens(part.source.text.value)
       if (part.type === "tool") total += toolResultTokens([part])
     }
   }
@@ -487,6 +563,7 @@ function visibleContextTokens(messages, latestIndex, partForMessage) {
 export function buildPulseMetrics(input) {
   const messages = input.messages ?? []
   const latest = latestAssistantMessage(messages)
+  const lastInfo = messageInfo(messages[messages.length - 1])
   const exact = exactMetrics(messages, input.session)
   const parts = latest ? messageParts(latest.message, input.partForMessage) : []
   const tools = parts.filter((part) => part.type === "tool")
@@ -496,10 +573,20 @@ export function buildPulseMetrics(input) {
   const previousParts = previousMessage ? messageParts(previousMessage, input.partForMessage) : []
   const system = typeof previousInfo?.system === "string" ? approximateTokens(previousInfo.system) : 0
   const user = previousInfo?.role === "user" ? textPartTokens(previousParts, "text") : 0
-  const thinking = exact.reasoning || textPartTokens(parts, "reasoning")
-  const answer = exact.output || textPartTokens(parts, "text")
+  const thinking = Number.isFinite(exact.reasoning) ? exact.reasoning : textPartTokens(parts, "reasoning")
+  const answer = Number.isFinite(exact.output) ? exact.output : textPartTokens(parts, "text")
+  const latestStarted = liveStartTime(latest, parts)
+  if (isBusy(input.status) && lastInfo?.role === "user") {
+    exact.tps = undefined
+    exact.tpsLoading = true
+  } else if (!Number.isFinite(exact.tps) && latest && isBusy(input.status) && Number.isFinite(latestStarted) && Number.isFinite(input.now)) {
+    const liveTokens = livePartTokens(parts)
+    const elapsedSeconds = (input.now - latestStarted) / 1000
+    if (liveTokens > 0 && elapsedSeconds > 0) exact.tps = liveTokens / elapsedSeconds
+    else exact.tpsLoading = true
+  }
 
-  return {
+  const metrics = {
     exact,
     tools: {
       count: tools.length,
@@ -510,12 +597,14 @@ export function buildPulseMetrics(input) {
       system,
       user,
       context: latest ? visibleContextTokens(messages, latest.index, input.partForMessage) : 0,
-      schema: 0,
+      schema: undefined,
       toolResults: toolResultTokens(parts),
       thinking,
       answer,
     },
   }
+  metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.categories).some((value) => value > 0)
+  return metrics
 }
 
 function statusMetrics(input) {
@@ -525,7 +614,7 @@ function statusMetrics(input) {
 function statusWidget(config, metrics) {
   if (!config.visible(metrics)) return undefined
   const value = config.value(metrics)
-  const formattedValue = config.format(value)
+  const formattedValue = config.format(value, metrics)
   return {
     id: config.id,
     label: config.label,
@@ -581,10 +670,12 @@ export function buildPulseLine(input) {
 }
 
 export function buildPulseView(input) {
-  const blocks = collectAssistantParts(input.messages, input.partForMessage)
+  const blocks = input.pulseBlocks ?? buildPulseBlocks(input)
   const busy = isBusy(input.status)
   const color = input.color !== false
-  const totals = tokenTotals(input.messages, input.session)
+  const totals = input.metrics
+    ? { input: input.metrics.exact.input ?? 0, output: input.metrics.exact.output ?? 0, cache: input.metrics.exact.cache ?? 0 }
+    : tokenTotals(input.messages, input.session)
   const statusView = buildStatusView({ ...input, busyFallback: blocks.length === 0 })
 
   if (blocks.length === 0) {
@@ -609,10 +700,12 @@ export function buildPulseView(input) {
 export const __testing = {
   approximateTokens,
   buildPulseMetrics,
+  buildPulseBlocks,
   collectAssistantParts,
   buildStatusView,
   formatDuration,
   formatNumber,
+  MAX_ESTIMATE_CHARS,
   heightIndex,
   partKind,
   partTokenEstimate,
