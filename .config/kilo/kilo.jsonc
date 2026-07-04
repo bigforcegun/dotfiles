@@ -1,0 +1,43 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "layout": "stretch",
+  "permission": {
+    "bash": "allow",
+    "controolloop-mcp-bridge_game_status": {
+      "*": "allow"
+    },
+    "godot_get_debug_output": {
+      "*": "allow"
+    }
+  },
+  "mcp": {
+    "semble": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "semble[mcp]",
+        "semble"
+      ],
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "experimental": {
+    "batch_tool": true,
+    "codebase_search": true,
+    "semantic_indexing": true,
+    "openTelemetry": true
+  }
+}
