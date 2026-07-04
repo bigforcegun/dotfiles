@@ -124,6 +124,32 @@ const STATUS_WIDGETS = [
     },
   },
   {
+    id: "turnTotal",
+    label: "◷",
+    value(metrics) {
+      return metrics.turn.totalMs
+    },
+    visible(metrics) {
+      return metrics.hasData
+    },
+    format(value) {
+      return formatDuration(value)
+    },
+  },
+  {
+    id: "chatTotal",
+    label: "Σ",
+    value(metrics) {
+      return metrics.chat.totalMs
+    },
+    visible(metrics) {
+      return metrics.hasData
+    },
+    format(value) {
+      return formatDuration(value)
+    },
+  },
+  {
     id: "system",
     label: "⚙",
     value(metrics) {
@@ -478,6 +504,70 @@ function latestAssistantMessage(messages) {
   return undefined
 }
 
+function latestUserBefore(messages, index) {
+  for (let current = index - 1; current >= 0; current -= 1) {
+    const info = messageInfo(messages[current])
+    if (info?.role === "user") return { message: messages[current], index: current, info }
+  }
+  return undefined
+}
+
+function messageStartMs(entry, parts) {
+  const info = entry?.info ?? entry
+  if (Number.isFinite(info?.time?.created)) return info.time.created
+  if (Number.isFinite(info?.time_created)) return info.time_created
+  let start
+  for (const part of parts ?? []) {
+    const candidate = partStartTime(part)
+    if (Number.isFinite(candidate) && (!Number.isFinite(start) || candidate < start)) start = candidate
+  }
+  return start
+}
+
+function messageEndMs(entry, parts, now) {
+  const info = entry?.info ?? entry
+  if (Number.isFinite(info?.time?.completed)) return info.time.completed
+  if (Number.isFinite(info?.time_updated)) return info.time_updated
+  let end
+  for (const part of parts ?? []) {
+    const candidate = partEndTime(part, now)
+    if (Number.isFinite(candidate) && (!Number.isFinite(end) || candidate > end)) end = candidate
+  }
+  return Number.isFinite(end) ? end : now
+}
+
+function turnTotalMs(latest, latestParts, previousUser, previousUserParts, now) {
+  const start = messageStartMs(previousUser?.message ?? previousUser?.info, previousUserParts)
+  const fallbackStart = messageStartMs(latest?.message ?? latest?.info, latestParts)
+  const end = messageEndMs(latest?.message ?? latest?.info, latestParts, now)
+  const actualStart = Number.isFinite(start) ? start : fallbackStart
+  if (!Number.isFinite(actualStart) || !Number.isFinite(end) || end < actualStart) return undefined
+  return end - actualStart
+}
+
+function chatSpentTotalMs(messages, partForMessage, now) {
+  let total = 0
+  for (let index = 0; index < messages.length; index += 1) {
+    const userInfo = messageInfo(messages[index])
+    if (userInfo?.role !== "user") continue
+    const userParts = messageParts(messages[index], partForMessage)
+    const start = messageStartMs(messages[index], userParts)
+    if (!Number.isFinite(start)) continue
+
+    let end
+    for (let next = index + 1; next < messages.length; next += 1) {
+      const nextInfo = messageInfo(messages[next])
+      if (nextInfo?.role === "user") break
+      if (nextInfo?.role !== "assistant") continue
+      const assistantParts = messageParts(messages[next], partForMessage)
+      const assistantEnd = messageEndMs(messages[next], assistantParts, now)
+      if (Number.isFinite(assistantEnd) && (!Number.isFinite(end) || assistantEnd > end)) end = assistantEnd
+    }
+    if (Number.isFinite(end) && end >= start) total += end - start
+  }
+  return total
+}
+
 function finiteNonNegative(value) {
   return Number.isFinite(value) && value >= 0 ? value : undefined
 }
@@ -747,6 +837,8 @@ export function buildPulseMetrics(input) {
   const previousMessage = latest ? messages[latest.index - 1] : undefined
   const previousInfo = messageInfo(previousMessage)
   const previousParts = previousMessage ? messageParts(previousMessage, input.partForMessage) : []
+  const previousUser = latest ? latestUserBefore(messages, latest.index) : undefined
+  const previousUserParts = previousUser ? messageParts(previousUser.message, input.partForMessage) : []
   const system = typeof previousInfo?.system === "string" ? approximateTokens(previousInfo.system) : 0
   const user = previousInfo?.role === "user" ? textPartTokens(previousParts, "text") : 0
   const thinking = Number.isFinite(exact.reasoning) ? exact.reasoning : textPartTokens(parts, "reasoning")
@@ -770,6 +862,12 @@ export function buildPulseMetrics(input) {
       count: tools.length,
       totalMs,
       averageMs: tools.length > 0 ? totalMs / tools.length : undefined,
+    },
+    turn: {
+      totalMs: latest ? turnTotalMs(latest, parts, previousUser, previousUserParts, input.now) : undefined,
+    },
+    chat: {
+      totalMs: chatSpentTotalMs(messages, input.partForMessage, input.now),
     },
     contextInput,
     categories: {

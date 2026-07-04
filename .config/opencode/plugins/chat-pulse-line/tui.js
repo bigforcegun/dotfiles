@@ -339,6 +339,62 @@ function cacheTextPartTokens(parts) {
   return (parts ?? []).reduce((total, part) => total + (part.type === "text" ? cacheApproximateTokens(part.text) : 0), 0)
 }
 
+function cacheMessageStartMs(entry, parts) {
+  const info = cacheMessageInfo(entry)
+  if (Number.isFinite(info?.time?.created)) return info.time.created
+  if (Number.isFinite(info?.time_created)) return info.time_created
+  let start
+  for (const part of parts ?? []) {
+    const candidate = cachePartStartTime(part)
+    if (Number.isFinite(candidate) && (!Number.isFinite(start) || candidate < start)) start = candidate
+  }
+  return start
+}
+
+function cacheMessageEndMs(entry, parts, now) {
+  const info = cacheMessageInfo(entry)
+  if (Number.isFinite(info?.time?.completed)) return info.time.completed
+  if (Number.isFinite(info?.time_updated)) return info.time_updated
+  let end
+  for (const part of parts ?? []) {
+    const candidate = cachePartEndTime(part, now)
+    if (Number.isFinite(candidate) && (!Number.isFinite(end) || candidate > end)) end = candidate
+  }
+  return Number.isFinite(end) ? end : now
+}
+
+function cacheTurnTotalMs(latest, latestParts, previousUser, previousUserParts, now) {
+  const start = cacheMessageStartMs(previousUser, previousUserParts)
+  const fallbackStart = cacheMessageStartMs(latest, latestParts)
+  const end = cacheMessageEndMs(latest, latestParts, now)
+  const actualStart = Number.isFinite(start) ? start : fallbackStart
+  if (!Number.isFinite(actualStart) || !Number.isFinite(end) || end < actualStart) return undefined
+  return end - actualStart
+}
+
+function cacheChatSpentTotalMs(messages, partsForMessage, now) {
+  let total = 0
+  for (let index = 0; index < messages.length; index += 1) {
+    const userInfo = cacheMessageInfo(messages[index])
+    if (userInfo?.role !== "user") continue
+    const userParts = partsForMessage(messages[index])
+    const start = cacheMessageStartMs(messages[index], userParts)
+    if (!Number.isFinite(start)) continue
+
+    let end
+    for (let next = index + 1; next < messages.length; next += 1) {
+      const nextInfo = cacheMessageInfo(messages[next])
+      if (nextInfo?.role === "user") break
+      if (nextInfo?.role !== "assistant") continue
+      const assistantParts = partsForMessage(messages[next])
+      const assistantEnd = cacheMessageEndMs(messages[next], assistantParts, now)
+      if (Number.isFinite(assistantEnd) && (!Number.isFinite(end) || assistantEnd > end)) end = assistantEnd
+    }
+    if (Number.isFinite(end) && end >= start) total += end - start
+  }
+  return total
+}
+
 function cacheExactMetrics(latestMessage, session, parts, now) {
   const info = cacheMessageInfo(latestMessage)
   const tokens = info?.tokens ?? session?.tokens
@@ -416,6 +472,8 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     pulseBlocks: [],
     exact: { input: undefined, output: undefined, cache: undefined, cacheRead: undefined, cacheWrite: undefined, reasoning: undefined, tps: undefined, streamTps: undefined },
     tools: { count: 0, totalMs: 0, averageMs: undefined },
+    turn: { totalMs: undefined },
+    chat: { totalMs: undefined },
     categories: { system: 0, user: 0, context: 0, schema: undefined, toolResults: 0, thinking: 0, answer: 0 },
   }
 
@@ -468,6 +526,13 @@ function createMetricCache(api, requestRenderFn = requestRender) {
   function latestAssistantIndex(messages) {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       if (cacheMessageInfo(messages[index])?.role === "assistant") return index
+    }
+    return -1
+  }
+
+  function latestUserIndexBefore(messages, index) {
+    for (let current = index - 1; current >= 0; current -= 1) {
+      if (cacheMessageInfo(messages[current])?.role === "user") return current
     }
     return -1
   }
@@ -546,6 +611,9 @@ function createMetricCache(api, requestRenderFn = requestRender) {
 
   function publishRebuild(job) {
     const latestMessage = job.messages[job.latestIndex]
+    const previousUserIndex = latestUserIndexBefore(job.messages, job.latestIndex)
+    const previousUser = previousUserIndex >= 0 ? job.messages[previousUserIndex] : undefined
+    const previousUserParts = previousUser ? messagePartsFor(previousUser) : []
     const exact = cacheExactMetrics(latestMessage, job.session, job.latestParts, job.now)
     const liveStreamTps = streamTpsForMessage(cacheMessageInfo(latestMessage)?.id)
     if (Number.isFinite(liveStreamTps)) exact.streamTps = liveStreamTps
@@ -555,6 +623,12 @@ function createMetricCache(api, requestRenderFn = requestRender) {
         count: job.latestToolCount,
         totalMs: job.latestToolTotalMs,
         averageMs: job.latestToolCount > 0 ? job.latestToolTotalMs / job.latestToolCount : undefined,
+      },
+      turn: {
+        totalMs: cacheTurnTotalMs(latestMessage, job.latestParts, previousUser, previousUserParts, job.now),
+      },
+      chat: {
+        totalMs: cacheChatSpentTotalMs(job.messages, messagePartsFor, job.now),
       },
       categories: {
         system: job.previousSystem,
