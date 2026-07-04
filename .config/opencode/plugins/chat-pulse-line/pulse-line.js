@@ -3,6 +3,7 @@ const MIN_BLOCK_WIDTH = 8
 const MAX_ESTIMATE_CHARS = 20_000
 const MIN_STREAM_SECONDS = 0.5
 const STATUS_SEPARATOR = " | "
+const STATUS_GROUP_SEPARATOR = " ▌ "
 
 const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
 const WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
@@ -21,6 +22,7 @@ const COLOR_BY_KIND = {
 const STATUS_WIDGETS = [
   {
     id: "input",
+    group: "chat_base",
     label: "↓",
     value(metrics) {
       return metrics.exact.input
@@ -34,6 +36,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "output",
+    group: "chat_base",
     label: "↑",
     value(metrics) {
       return metrics.exact.output
@@ -47,6 +50,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "cache",
+    group: "chat_base",
     label: "◇",
     value(metrics) {
       return metrics.exact.cache
@@ -60,6 +64,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "tps",
+    group: "timing",
     label: "⚡",
     value(metrics) {
       return metrics.exact.tps
@@ -73,6 +78,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "streamTps",
+    group: "timing",
     label: "↯",
     value(metrics) {
       return metrics.exact.streamTps
@@ -85,7 +91,38 @@ const STATUS_WIDGETS = [
     },
   },
   {
+    id: "turnTotal",
+    group: "timing",
+    value(metrics) {
+      return metrics.turn.totalMs
+    },
+    visible(metrics) {
+      return metrics.hasData
+    },
+    format(value) {
+      return formatClockDuration(value)
+    },
+    label(metrics) {
+      return metrics.turn.active ? "🖨️" : "🏁"
+    },
+  },
+  {
+    id: "chatTotal",
+    group: "timing",
+    label: "Σ",
+    value(metrics) {
+      return metrics.chat.totalMs
+    },
+    visible(metrics) {
+      return metrics.hasData
+    },
+    format(value) {
+      return formatClockDuration(value)
+    },
+  },
+  {
     id: "toolCount",
+    group: "tools",
     label: "🔧",
     value(metrics) {
       return metrics.tools.count
@@ -99,6 +136,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "toolAverage",
+    group: "tools",
     label: "⏱",
     value(metrics) {
       return metrics.tools.averageMs
@@ -107,11 +145,12 @@ const STATUS_WIDGETS = [
       return metrics.hasData
     },
     format(value) {
-      return Number.isFinite(value) ? formatDuration(value) : "?"
+      return formatFixedSeconds(value)
     },
   },
   {
     id: "toolTotal",
+    group: "tools",
     label: "⌛",
     value(metrics) {
       return metrics.tools.totalMs
@@ -120,43 +159,18 @@ const STATUS_WIDGETS = [
       return metrics.hasData
     },
     format(value) {
-      return formatDuration(value)
-    },
-  },
-  {
-    id: "turnTotal",
-    label: "◷",
-    value(metrics) {
-      return metrics.turn.totalMs
-    },
-    visible(metrics) {
-      return metrics.hasData
-    },
-    format(value) {
-      return formatDuration(value)
-    },
-  },
-  {
-    id: "chatTotal",
-    label: "Σ",
-    value(metrics) {
-      return metrics.chat.totalMs
-    },
-    visible(metrics) {
-      return metrics.hasData
-    },
-    format(value) {
-      return formatDuration(value)
+      return formatClockDuration(value)
     },
   },
   {
     id: "system",
+    group: "chat_segments",
     label: "⚙",
     value(metrics) {
       return metrics.categories.system
     },
     visible(metrics) {
-      return hasContextBreakdown(metrics)
+      return hasContextBreakdown(metrics) && metrics.hasSystemPrompt
     },
     format(value) {
       return formatContextNumber(value)
@@ -164,6 +178,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "user",
+    group: "chat_segments",
     label: "👤",
     value(metrics) {
       return metrics.categories.user
@@ -177,7 +192,8 @@ const STATUS_WIDGETS = [
   },
   {
     id: "assistant",
-    label: "🖨️",
+    group: "chat_segments",
+    label: "🖨️ ",
     value(metrics) {
       return metrics.categories.assistant
     },
@@ -190,6 +206,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "toolResults",
+    group: "chat_segments",
     label: "🧰",
     value(metrics) {
       return metrics.categories.toolResults
@@ -203,6 +220,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "other",
+    group: "chat_segments",
     label: "…",
     value(metrics) {
       return metrics.categories.other
@@ -216,6 +234,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "context",
+    group: "chat_segments",
     label: "📚 ",
     value(metrics) {
       return metrics.categories.context
@@ -229,6 +248,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "schema",
+    group: "chat_segments",
     label: "📐 ",
     value(metrics) {
       return metrics.categories.schema
@@ -242,6 +262,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "thinking",
+    group: "chat_segments",
     label: "🧠 ",
     value(metrics) {
       return metrics.categories.thinking
@@ -255,6 +276,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "answer",
+    group: "chat_segments",
     label: "💬ANS",
     value(metrics) {
       return metrics.categories.answer
@@ -454,6 +476,19 @@ function formatMetricRate(value) {
   return value.toFixed(2).padStart(5, "0")
 }
 
+function formatClockDuration(value) {
+  if (!Number.isFinite(value) || value < 0) return "?"
+  const totalSeconds = Math.floor(value / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+}
+
+function formatFixedSeconds(value) {
+  if (!Number.isFinite(value) || value < 0) return "?"
+  return `${(value / 1000).toFixed(2).padStart(5, "0")}s`
+}
+
 function formatDuration(value) {
   if (value === 0) return "0ms"
   if (!Number.isFinite(value) || value < 0) return "?"
@@ -545,8 +580,25 @@ function turnTotalMs(latest, latestParts, previousUser, previousUserParts, now) 
   return end - actualStart
 }
 
-function chatSpentTotalMs(messages, partForMessage, now) {
+function liveTurnTotalMs(messages, latest, latestParts, partForMessage, now) {
+  if (!Number.isFinite(now)) return undefined
+  let currentUser
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = messageInfo(messages[index])
+    if (info?.role === "user") {
+      currentUser = { message: messages[index], info }
+      break
+    }
+  }
+  const userParts = currentUser ? messageParts(currentUser.message, partForMessage) : []
+  const start = messageStartMs(currentUser?.message ?? currentUser?.info, userParts) ?? liveStartTime(latest, latestParts)
+  if (!Number.isFinite(start) || now < start) return undefined
+  return now - start
+}
+
+function chatSpentTotalMs(messages, partForMessage, now, status) {
   let total = 0
+  const active = isBusy(status) && Number.isFinite(now)
   for (let index = 0; index < messages.length; index += 1) {
     const userInfo = messageInfo(messages[index])
     if (userInfo?.role !== "user") continue
@@ -563,6 +615,7 @@ function chatSpentTotalMs(messages, partForMessage, now) {
       const assistantEnd = messageEndMs(messages[next], assistantParts, now)
       if (Number.isFinite(assistantEnd) && (!Number.isFinite(end) || assistantEnd > end)) end = assistantEnd
     }
+    if (active && !messages.slice(index + 1).some((message) => messageInfo(message)?.role === "user")) end = now
     if (Number.isFinite(end) && end >= start) total += end - start
   }
   return total
@@ -706,7 +759,7 @@ function latestSystemPrompt(messages) {
     const info = messageInfo(messages[index])
     if (info?.role === "user" && typeof info.system === "string" && info.system.trim()) return info.system.trim()
   }
-  return ""
+  return undefined
 }
 
 function latestContextInput(messages) {
@@ -740,7 +793,9 @@ function scaleContextBreakdown(tokens, input) {
 }
 
 function contextBreakdown(messages, partForMessage, input) {
-  if (!input) return { system: 0, user: 0, assistant: 0, tool: 0, other: 0 }
+  if (!input) return { system: 0, user: 0, assistant: 0, tool: 0, other: 0, hasSystemPrompt: false }
+
+  const systemPrompt = latestSystemPrompt(messages)
 
   const chars = messages.reduce((acc, message) => {
     const info = messageInfo(message)
@@ -753,7 +808,7 @@ function contextBreakdown(messages, partForMessage, input) {
       return { assistant: sum.assistant + partChars.assistant, tool: sum.tool + partChars.tool }
     }, { assistant: 0, tool: 0 })
     return { ...acc, assistant: acc.assistant + next.assistant, tool: acc.tool + next.tool }
-  }, { system: latestSystemPrompt(messages).length, user: 0, assistant: 0, tool: 0 })
+  }, { system: systemPrompt?.length ?? 0, user: 0, assistant: 0, tool: 0 })
 
   const tokens = {
     system: contextEstimateTokens(chars.system),
@@ -761,7 +816,7 @@ function contextBreakdown(messages, partForMessage, input) {
     assistant: contextEstimateTokens(chars.assistant),
     tool: contextEstimateTokens(chars.tool),
   }
-  return scaleContextBreakdown(tokens, input)
+  return { ...scaleContextBreakdown(tokens, input), hasSystemPrompt: Boolean(systemPrompt) }
 }
 
 function assistantToolParts(messages, partForMessage) {
@@ -846,6 +901,7 @@ export function buildPulseMetrics(input) {
   const contextInput = latestContextInput(messages)
   const breakdown = contextBreakdown(messages, input.partForMessage, contextInput)
   const latestStarted = liveStartTime(latest, parts)
+  const activeTurn = isBusy(input.status)
   if (isBusy(input.status) && lastInfo?.role === "user") {
     exact.tps = undefined
     exact.tpsLoading = true
@@ -864,12 +920,14 @@ export function buildPulseMetrics(input) {
       averageMs: tools.length > 0 ? totalMs / tools.length : undefined,
     },
     turn: {
-      totalMs: latest ? turnTotalMs(latest, parts, previousUser, previousUserParts, input.now) : undefined,
+      active: activeTurn,
+      totalMs: activeTurn ? liveTurnTotalMs(messages, latest, parts, input.partForMessage, input.now) : latest ? turnTotalMs(latest, parts, previousUser, previousUserParts, input.now) : undefined,
     },
     chat: {
-      totalMs: chatSpentTotalMs(messages, input.partForMessage, input.now),
+      totalMs: chatSpentTotalMs(messages, input.partForMessage, input.now, input.status),
     },
     contextInput,
+    hasSystemPrompt: breakdown.hasSystemPrompt,
     categories: {
       system: breakdown.system,
       user: breakdown.user,
@@ -897,17 +955,30 @@ function statusWidget(config, metrics) {
   if (!config.visible(metrics)) return undefined
   const value = config.value(metrics)
   const formattedValue = config.format(value, metrics)
+  const label = typeof config.label === "function" ? config.label(metrics) : config.label
   return {
     id: config.id,
-    label: config.label,
+    group: config.group,
+    label,
     value,
     formattedValue,
-    text: `${config.label} ${formattedValue}`,
+    text: `${label} ${formattedValue}`,
   }
 }
 
 function composeStatusWidgets(widgets) {
-  return widgets.map((widget) => widget.text).join(STATUS_SEPARATOR)
+  const groups = []
+  let currentGroup
+
+  for (const widget of widgets) {
+    if (!currentGroup || currentGroup.name !== widget.group) {
+      currentGroup = { name: widget.group, widgets: [] }
+      groups.push(currentGroup)
+    }
+    currentGroup.widgets.push(widget)
+  }
+
+  return groups.map((group) => group.widgets.map((widget) => widget.text).join(STATUS_SEPARATOR)).join(STATUS_GROUP_SEPARATOR)
 }
 
 function buildStatusView(input) {

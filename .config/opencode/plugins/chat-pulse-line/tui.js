@@ -474,6 +474,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     tools: { count: 0, totalMs: 0, averageMs: undefined },
     turn: { totalMs: undefined },
     chat: { totalMs: undefined },
+    hasSystemPrompt: false,
     categories: { system: 0, user: 0, context: 0, schema: undefined, toolResults: 0, thinking: 0, answer: 0 },
   }
 
@@ -630,6 +631,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       chat: {
         totalMs: cacheChatSpentTotalMs(job.messages, messagePartsFor, job.now),
       },
+      hasSystemPrompt: job.previousSystem > 0,
       categories: {
         system: job.previousSystem,
         user: job.previousUser,
