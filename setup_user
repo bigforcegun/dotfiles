@@ -83,6 +83,10 @@ link ".config/opencode/tools"
 link ".config/opencode/plugins"
 link ".config/opencode/opencode-quota"
 
+## Kilo Section
+
+link ".config/kilo"
+
 
 link ".config/rofi/config.rasi"
 link ".config/systemd/user/urlwatch.service"

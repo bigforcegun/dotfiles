@@ -77,6 +77,10 @@ link ".config/opencode/skills"
 link ".config/opencode/tools"
 link ".config/opencode/opencode-quota"
 
+## Kilo Section
+
+link ".config/kilo"
+
 ## mcpproxy
 
 link ".mcpproxy"
