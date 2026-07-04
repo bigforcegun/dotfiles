@@ -173,9 +173,9 @@ assertSplitViewAliases(normalView)
 assert.equal(normalView.pulseBlocks.length, 4)
 assert.match(normalView.statusText, /↓  18k \/ ↑  2\.1k/)
 assert.match(normalView.statusText, /◇  9\.1k/)
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps"])
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓ ", "↑ ", "◇ ", "⚡"])
-assertStatusWidgetTexts(normalView, ["↓  18k", "↑  2.1k", "◇  9.1k", "⚡ ?"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps", "streamTps", "toolCount", "toolAverage", "toolTotal", "system", "user", "assistant", "toolResults", "other"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓ ", "↑ ", "◇ ", "⚡", "↯", "🔧", "⏱ ", "⌛", "⚙ ", "👤 ", "🤖 ", "🧰 ", "… "])
+assertStatusWidgetTexts(normalView, ["↓  18k", "↑  2.1k", "◇  9.1k", "⚡ 00.00", "↯ 00.00", "🔧 2", "⏱  1ms", "⌛ 1ms", "⚙  0", "👤  0", "🤖  2", "🧰  225", "…  29k"])
 assert.equal(normalView.metricSnapshot.exact.output, 2_140)
 assert.equal(normalView.metricSnapshot.tools.count, 2)
 const statusViewForApi = buildStatusViewForApi(api)
@@ -200,7 +200,7 @@ const metricFixtureMessages = [
     },
     parts: [
       { id: "metric_reason", sessionID, messageID: "metric_assistant", type: "reasoning", text: "hidden" },
-      { id: "metric_text", sessionID, messageID: "metric_assistant", type: "text", text: "visible answer" },
+      { id: "metric_text", sessionID, messageID: "metric_assistant", type: "text", text: "visible answer", time: { start: 1_000, end: 2_000 } },
       { id: "metric_tool_done", sessionID, messageID: "metric_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "abcdefgh", time: { start: 1_000, end: 2_000 } } },
       { id: "metric_tool_running", sessionID, messageID: "metric_assistant", type: "tool", tool: "write", state: { status: "running", input: {}, time: { start: 2_000 } } },
       { id: "metric_tool_bad", sessionID, messageID: "metric_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "", time: { start: 5, end: 1 } } },
@@ -215,9 +215,40 @@ const metricSnapshot = pulseTesting.buildPulseMetrics({
     return []
   },
 })
-assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false })
+assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 4 })
 assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
-assert.deepEqual(metricSnapshot.categories, { system: 1, user: 2, context: 0, schema: undefined, toolResults: 2, thinking: 7, answer: 100 })
+assert.deepEqual(metricSnapshot.categories, { system: 1, user: 2, assistant: 5, context: 0, schema: undefined, toolResults: 2, thinking: 7, answer: 100, other: 145, latestSystem: 1, latestUser: 2, latestToolResults: 2 })
+const streamStatus = pulseTesting.buildStatusView({ messages: metricFixtureMessages, status: { type: "idle" }, now: 2_500, partForMessage() { return [] } })
+assert.ok(streamStatus.text.includes("⚡ 50.00"))
+assert.ok(streamStatus.text.includes("↯ 04.00"))
+
+const lifetimeToolSnapshot = pulseTesting.buildPulseMetrics({
+  messages: [
+    {
+      id: "first_tool_assistant",
+      sessionID,
+      role: "assistant",
+      parts: [{ id: "first_tool", sessionID, messageID: "first_tool_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "a", time: { start: 1, end: 2 } } }],
+    },
+    {
+      id: "second_tool_assistant",
+      sessionID,
+      role: "assistant",
+      parts: [
+        { id: "second_tool", sessionID, messageID: "second_tool_assistant", type: "tool", tool: "write", state: { status: "completed", input: {}, output: "b", time: { start: 3, end: 4 } } },
+        { id: "live_tool", sessionID, messageID: "second_tool_assistant", type: "tool", tool: "bash", state: { status: "running", input: {}, time: { start: 10 } } },
+      ],
+    },
+  ],
+  status: { type: "busy" },
+  now: 15,
+  partForMessage() {
+    return []
+  },
+})
+assert.equal(lifetimeToolSnapshot.tools.count, 3)
+assert.equal(lifetimeToolSnapshot.tools.totalMs, 7)
+assert.equal(lifetimeToolSnapshot.tools.averageMs, 7 / 3)
 
 const pendingDurationSnapshot = pulseTesting.buildPulseMetrics({
   messages: [{
@@ -317,7 +348,7 @@ assert.equal(tuiTesting.terminalWidth(clippedLine), clippedMetrics.workWidth)
 assertStatusRightPinned(clippedLine, normalView.statusText, clippedMetrics.workWidth)
 assert.equal(tuiTesting.computeSplitSegments({ pulseText: "abcd", statusText: normalView.statusText, metrics: clippedMetrics }).pulseText, "")
 
-const restoredLongStatus = "↓  907k / ↑  63k / ◇  25.4m / ⚡ ?"
+const restoredLongStatus = "↓  907k / ↑  63k / ◇  25.4m / ⚡ 00.00 / ↯ 00.00"
 const restoredPulseMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: restoredLongStatus, hasPulse: true })
 assert.equal(restoredPulseMetrics.workWidth, 120)
 assert.equal(restoredPulseMetrics.pulseWidth > 0, true)
@@ -421,7 +452,7 @@ const outputOnlyApi = {
   },
 }
 const outputOnlyView = buildViewForApi(outputOnlyApi)
-assertStatusWidgetTexts(outputOnlyView, ["↓  ?", "↑  2.1k", "◇  ?", "⚡ ?"])
+assertStatusWidgetTexts(outputOnlyView, ["↓  ?", "↑  2.1k", "◇  ?", "⚡ 00.00", "↯ 00.00", "🔧 0", "⏱  ?", "⌛ 0ms"])
 
 const cacheOnlyApi = {
   ...api,
@@ -442,7 +473,7 @@ const cacheOnlyApi = {
   },
 }
 const cacheOnlyView = buildViewForApi(cacheOnlyApi)
-assertStatusWidgetTexts(cacheOnlyView, ["↓  ?", "↑  ?", "◇  9.1k", "⚡ ?"])
+assertStatusWidgetTexts(cacheOnlyView, ["↓  ?", "↑  ?", "◇  9.1k", "⚡ 00.00", "↯ 00.00", "🔧 0", "⏱  ?", "⌛ 0ms"])
 
 const busyOnlyApi = {
   ...api,
@@ -463,7 +494,7 @@ const busyOnlyApi = {
   },
 }
 const busyOnlyView = buildViewForApi(busyOnlyApi)
-assertStatusWidgetTexts(busyOnlyView, ["busy"])
+assertStatusWidgetTexts(busyOnlyView, ["⚡ 00.00", "↯ 00.00"])
 
 const narrowStatusApi = { ...api, renderer: { ...api.renderer, width: 10 } }
 const narrowStatusView = buildViewForApi(narrowStatusApi, 10)

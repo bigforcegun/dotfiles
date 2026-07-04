@@ -1,7 +1,8 @@
 const MAX_BLOCKS = 36
 const MIN_BLOCK_WIDTH = 8
 const MAX_ESTIMATE_CHARS = 20_000
-const STATUS_SEPARATOR = " / "
+const MIN_STREAM_SECONDS = 0.5
+const STATUS_SEPARATOR = " | "
 
 const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
 const WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
@@ -20,7 +21,7 @@ const COLOR_BY_KIND = {
 const STATUS_WIDGETS = [
   {
     id: "input",
-    label: "↓ ",
+    label: "↓",
     value(metrics) {
       return metrics.exact.input
     },
@@ -33,7 +34,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "output",
-    label: "↑ ",
+    label: "↑",
     value(metrics) {
       return metrics.exact.output
     },
@@ -46,7 +47,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "cache",
-    label: "◇ ",
+    label: "◇",
     value(metrics) {
       return metrics.exact.cache
     },
@@ -63,12 +64,24 @@ const STATUS_WIDGETS = [
     value(metrics) {
       return metrics.exact.tps
     },
-    visible(metrics) {
-      return metrics.hasData || metrics.exact.tpsLoading
+    visible() {
+      return true
     },
-    format(value, metrics) {
-      if (metrics.exact.tpsLoading) return "⋯"
-      return formatDecimal(value) ?? "?"
+    format(value) {
+      return formatMetricRate(value)
+    },
+  },
+  {
+    id: "streamTps",
+    label: "↯",
+    value(metrics) {
+      return metrics.exact.streamTps
+    },
+    visible() {
+      return true
+    },
+    format(value) {
+      return formatMetricRate(value)
     },
   },
   {
@@ -77,8 +90,8 @@ const STATUS_WIDGETS = [
     value(metrics) {
       return metrics.tools.count
     },
-    visible() {
-      return false
+    visible(metrics) {
+      return metrics.hasData
     },
     format(value) {
       return formatNumber(value) ?? "0"
@@ -86,12 +99,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "toolAverage",
-    label: "⏱TAV",
+    label: "⏱",
     value(metrics) {
       return metrics.tools.averageMs
     },
-    visible() {
-      return false
+    visible(metrics) {
+      return metrics.hasData
     },
     format(value) {
       return Number.isFinite(value) ? formatDuration(value) : "?"
@@ -99,12 +112,12 @@ const STATUS_WIDGETS = [
   },
   {
     id: "toolTotal",
-    label: "⌛TTM",
+    label: "⌛",
     value(metrics) {
       return metrics.tools.totalMs
     },
-    visible() {
-      return false
+    visible(metrics) {
+      return metrics.hasData
     },
     format(value) {
       return formatDuration(value)
@@ -112,33 +125,72 @@ const STATUS_WIDGETS = [
   },
   {
     id: "system",
-    label: "⚙SYS",
+    label: "⚙",
     value(metrics) {
       return metrics.categories.system
     },
-    visible() {
-      return false
+    visible(metrics) {
+      return hasContextBreakdown(metrics)
     },
     format(value) {
-      return formatNumber(value) ?? "?"
+      return formatContextNumber(value)
     },
   },
   {
     id: "user",
-    label: "👤USR",
+    label: "👤",
     value(metrics) {
       return metrics.categories.user
     },
-    visible() {
-      return false
+    visible(metrics) {
+      return hasContextBreakdown(metrics)
     },
     format(value) {
-      return formatNumber(value) ?? "0"
+      return formatContextNumber(value)
+    },
+  },
+  {
+    id: "assistant",
+    label: "🖨️",
+    value(metrics) {
+      return metrics.categories.assistant
+    },
+    visible(metrics) {
+      return hasContextBreakdown(metrics)
+    },
+    format(value) {
+      return formatContextNumber(value)
+    },
+  },
+  {
+    id: "toolResults",
+    label: "🧰",
+    value(metrics) {
+      return metrics.categories.toolResults
+    },
+    visible(metrics) {
+      return hasContextBreakdown(metrics)
+    },
+    format(value) {
+      return formatContextNumber(value)
+    },
+  },
+  {
+    id: "other",
+    label: "…",
+    value(metrics) {
+      return metrics.categories.other
+    },
+    visible(metrics) {
+      return hasContextBreakdown(metrics)
+    },
+    format(value) {
+      return formatContextNumber(value)
     },
   },
   {
     id: "context",
-    label: "📚CTX",
+    label: "📚 ",
     value(metrics) {
       return metrics.categories.context
     },
@@ -151,7 +203,7 @@ const STATUS_WIDGETS = [
   },
   {
     id: "schema",
-    label: "📐SCH",
+    label: "📐 ",
     value(metrics) {
       return metrics.categories.schema
     },
@@ -163,21 +215,8 @@ const STATUS_WIDGETS = [
     },
   },
   {
-    id: "toolResults",
-    label: "📦RES",
-    value(metrics) {
-      return metrics.categories.toolResults
-    },
-    visible() {
-      return false
-    },
-    format(value) {
-      return formatNumber(value) ?? "0"
-    },
-  },
-  {
     id: "thinking",
-    label: "🧠THK",
+    label: "🧠 ",
     value(metrics) {
       return metrics.categories.thinking
     },
@@ -203,6 +242,10 @@ const STATUS_WIDGETS = [
   },
 ]
 const RESET_COLOR = "\u001b[0m"
+
+function hasContextBreakdown(metrics) {
+  return (metrics.contextInput ?? 0) > 0
+}
 
 function normalizeToolName(value) {
   return typeof value === "string" ? value.toLowerCase().replace(/^[^:]+:/, "") : ""
@@ -380,11 +423,20 @@ function formatDecimal(value) {
   return value.toFixed(value >= 10 ? 1 : 2).replace(/\.0+$/, "")
 }
 
+function formatMetricRate(value) {
+  if (!Number.isFinite(value) || value <= 0) return "00.00"
+  return value.toFixed(2).padStart(5, "0")
+}
+
 function formatDuration(value) {
   if (value === 0) return "0ms"
   if (!Number.isFinite(value) || value < 0) return "?"
   if (value >= 1000) return `${formatDecimal(value / 1000)}s`
   return `${Math.round(value)}ms`
+}
+
+function formatContextNumber(value) {
+  return formatNumber(value) ?? (Number.isFinite(value) ? "0" : "?")
 }
 
 function tokenTotals(messages, session) {
@@ -506,6 +558,22 @@ function toolDurationMs(part, status, now) {
   return 0
 }
 
+function textStreamDurationSeconds(parts, now) {
+  let start
+  let end
+  for (const part of parts) {
+    if (part.type !== "text") continue
+    const partStart = partStartTime(part)
+    if (!Number.isFinite(partStart)) continue
+    const partEnd = partEndTime(part, now)
+    if (!Number.isFinite(start) || partStart < start) start = partStart
+    if (Number.isFinite(partEnd) && (!Number.isFinite(end) || partEnd > end)) end = partEnd
+  }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return undefined
+  const seconds = (end - start) / 1000
+  return seconds >= MIN_STREAM_SECONDS ? seconds : undefined
+}
+
 function textPartTokens(parts, type) {
   return parts.reduce((total, part) => total + (part.type === type ? approximateTokens(part.text) : 0), 0)
 }
@@ -521,11 +589,116 @@ function toolResultTokens(parts) {
   }, 0)
 }
 
+function contextEstimateTokens(chars) {
+  return Math.ceil(Math.max(0, chars) / 4)
+}
+
+function userPartChars(part) {
+  if (part.type === "text") return part.text.length
+  if (part.type === "file" || part.type === "symbol") return part.source?.text?.value?.length ?? 0
+  if (part.type === "agent") return part.source?.value?.length ?? 0
+  return 0
+}
+
+function assistantPartChars(part) {
+  if (part.type === "text" || part.type === "reasoning") return { assistant: part.text.length, tool: 0 }
+  if (part.type !== "tool") return { assistant: 0, tool: 0 }
+
+  const input = Object.keys(part.state?.input ?? {}).length * 16
+  if (part.state?.status === "pending") return { assistant: 0, tool: input + (part.state.raw?.length ?? 0) }
+  if (part.state?.status === "completed") return { assistant: 0, tool: input + part.state.output.length }
+  if (part.state?.status === "error") return { assistant: 0, tool: input + part.state.error.length }
+  return { assistant: 0, tool: input }
+}
+
+function latestSystemPrompt(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = messageInfo(messages[index])
+    if (info?.role === "user" && typeof info.system === "string" && info.system.trim()) return info.system.trim()
+  }
+  return ""
+}
+
+function latestContextInput(messages) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = messageInfo(messages[index])
+    if (info?.role !== "assistant") continue
+    const input = finiteNonNegative(info.tokens?.input) ?? 0
+    const output = finiteNonNegative(info.tokens?.output) ?? 0
+    if (output <= 0) continue
+    const reasoning = finiteNonNegative(info.tokens?.reasoning) ?? 0
+    const cacheRead = finiteNonNegative(info.tokens?.cache?.read) ?? 0
+    const cacheWrite = finiteNonNegative(info.tokens?.cache?.write) ?? 0
+    return input + output + reasoning + cacheRead + cacheWrite
+  }
+  return 0
+}
+
+function scaleContextBreakdown(tokens, input) {
+  const estimated = tokens.system + tokens.user + tokens.assistant + tokens.tool
+  if (estimated <= input) return { ...tokens, other: input - estimated }
+
+  const scale = input / estimated
+  const scaled = {
+    system: Math.floor(tokens.system * scale),
+    user: Math.floor(tokens.user * scale),
+    assistant: Math.floor(tokens.assistant * scale),
+    tool: Math.floor(tokens.tool * scale),
+  }
+  const total = scaled.system + scaled.user + scaled.assistant + scaled.tool
+  return { ...scaled, other: Math.max(0, input - total) }
+}
+
+function contextBreakdown(messages, partForMessage, input) {
+  if (!input) return { system: 0, user: 0, assistant: 0, tool: 0, other: 0 }
+
+  const chars = messages.reduce((acc, message) => {
+    const info = messageInfo(message)
+    const parts = messageParts(message, partForMessage)
+    if (info?.role === "user") return { ...acc, user: acc.user + parts.reduce((sum, part) => sum + userPartChars(part), 0) }
+    if (info?.role !== "assistant") return acc
+
+    const next = parts.reduce((sum, part) => {
+      const partChars = assistantPartChars(part)
+      return { assistant: sum.assistant + partChars.assistant, tool: sum.tool + partChars.tool }
+    }, { assistant: 0, tool: 0 })
+    return { ...acc, assistant: acc.assistant + next.assistant, tool: acc.tool + next.tool }
+  }, { system: latestSystemPrompt(messages).length, user: 0, assistant: 0, tool: 0 })
+
+  const tokens = {
+    system: contextEstimateTokens(chars.system),
+    user: contextEstimateTokens(chars.user),
+    assistant: contextEstimateTokens(chars.assistant),
+    tool: contextEstimateTokens(chars.tool),
+  }
+  return scaleContextBreakdown(tokens, input)
+}
+
+function assistantToolParts(messages, partForMessage) {
+  const tools = []
+  for (const message of messages) {
+    const info = messageInfo(message)
+    if (info?.role !== "assistant") continue
+    for (const part of messageParts(message, partForMessage)) {
+      if (part.type === "tool") tools.push(part)
+    }
+  }
+  return tools
+}
+
 function partStartTime(part) {
   const direct = part.time?.start
   if (Number.isFinite(direct)) return direct
   const state = part.state?.time?.start
   return Number.isFinite(state) ? state : undefined
+}
+
+function partEndTime(part, now) {
+  const direct = part.time?.end
+  if (Number.isFinite(direct)) return direct
+  const state = part.state?.time?.end
+  if (Number.isFinite(state)) return state
+  return Number.isFinite(now) ? now : undefined
 }
 
 function livePartTokens(parts) {
@@ -566,7 +739,10 @@ export function buildPulseMetrics(input) {
   const lastInfo = messageInfo(messages[messages.length - 1])
   const exact = exactMetrics(messages, input.session)
   const parts = latest ? messageParts(latest.message, input.partForMessage) : []
-  const tools = parts.filter((part) => part.type === "tool")
+  const streamTokens = textPartTokens(parts, "text")
+  const streamSeconds = textStreamDurationSeconds(parts, input.now)
+  exact.streamTps = streamTokens > 0 && streamSeconds > 0 ? streamTokens / streamSeconds : undefined
+  const tools = assistantToolParts(messages, input.partForMessage)
   const totalMs = tools.reduce((total, part) => total + toolDurationMs(part, input.status, input.now), 0)
   const previousMessage = latest ? messages[latest.index - 1] : undefined
   const previousInfo = messageInfo(previousMessage)
@@ -575,6 +751,8 @@ export function buildPulseMetrics(input) {
   const user = previousInfo?.role === "user" ? textPartTokens(previousParts, "text") : 0
   const thinking = Number.isFinite(exact.reasoning) ? exact.reasoning : textPartTokens(parts, "reasoning")
   const answer = Number.isFinite(exact.output) ? exact.output : textPartTokens(parts, "text")
+  const contextInput = latestContextInput(messages)
+  const breakdown = contextBreakdown(messages, input.partForMessage, contextInput)
   const latestStarted = liveStartTime(latest, parts)
   if (isBusy(input.status) && lastInfo?.role === "user") {
     exact.tps = undefined
@@ -593,14 +771,20 @@ export function buildPulseMetrics(input) {
       totalMs,
       averageMs: tools.length > 0 ? totalMs / tools.length : undefined,
     },
+    contextInput,
     categories: {
-      system,
-      user,
+      system: breakdown.system,
+      user: breakdown.user,
+      assistant: breakdown.assistant,
       context: latest ? visibleContextTokens(messages, latest.index, input.partForMessage) : 0,
       schema: undefined,
-      toolResults: toolResultTokens(parts),
+      toolResults: breakdown.tool,
       thinking,
       answer,
+      other: breakdown.other,
+      latestSystem: system,
+      latestUser: user,
+      latestToolResults: toolResultTokens(parts),
     },
   }
   metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.categories).some((value) => value > 0)

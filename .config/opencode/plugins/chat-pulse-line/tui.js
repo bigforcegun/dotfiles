@@ -16,6 +16,7 @@ const METRIC_DEBOUNCE_MS = 50
 const METRIC_BATCH_SIZE = 8
 const METRIC_CPU_BUDGET_MS = 8
 const CACHE_MAX_ESTIMATE_CHARS = 20_000
+const MIN_STREAM_SECONDS = 0.5
 const RENDER_THROTTLE_MS = 250
 const CACHE_READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
 const CACHE_WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
@@ -303,7 +304,42 @@ function cacheFiniteNonNegative(value) {
   return Number.isFinite(value) && value >= 0 ? value : undefined
 }
 
-function cacheExactMetrics(latestMessage, session) {
+function cachePartStartTime(part) {
+  const direct = part.time?.start
+  if (Number.isFinite(direct)) return direct
+  const state = part.state?.time?.start
+  return Number.isFinite(state) ? state : undefined
+}
+
+function cachePartEndTime(part, now) {
+  const direct = part.time?.end
+  if (Number.isFinite(direct)) return direct
+  const state = part.state?.time?.end
+  if (Number.isFinite(state)) return state
+  return Number.isFinite(now) ? now : undefined
+}
+
+function cacheTextStreamDurationSeconds(parts, now) {
+  let start
+  let end
+  for (const part of parts ?? []) {
+    if (part.type !== "text") continue
+    const partStart = cachePartStartTime(part)
+    if (!Number.isFinite(partStart)) continue
+    const partEnd = cachePartEndTime(part, now)
+    if (!Number.isFinite(start) || partStart < start) start = partStart
+    if (Number.isFinite(partEnd) && (!Number.isFinite(end) || partEnd > end)) end = partEnd
+  }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return undefined
+  const seconds = (end - start) / 1000
+  return seconds >= MIN_STREAM_SECONDS ? seconds : undefined
+}
+
+function cacheTextPartTokens(parts) {
+  return (parts ?? []).reduce((total, part) => total + (part.type === "text" ? cacheApproximateTokens(part.text) : 0), 0)
+}
+
+function cacheExactMetrics(latestMessage, session, parts, now) {
   const info = cacheMessageInfo(latestMessage)
   const tokens = info?.tokens ?? session?.tokens
   const cacheRead = cacheFiniteNonNegative(tokens?.cache?.read)
@@ -314,6 +350,8 @@ function cacheExactMetrics(latestMessage, session) {
   const created = info?.time?.created
   const completed = info?.time?.completed
   const seconds = Number.isFinite(created) && Number.isFinite(completed) ? (completed - created) / 1000 : 0
+  const streamTokens = cacheTextPartTokens(parts)
+  const streamSeconds = cacheTextStreamDurationSeconds(parts, now)
   return {
     input,
     output,
@@ -322,6 +360,7 @@ function cacheExactMetrics(latestMessage, session) {
     cacheWrite,
     reasoning,
     tps: Number.isFinite(output) && output > 0 && seconds > 0 ? output / seconds : undefined,
+    streamTps: streamTokens > 0 && streamSeconds > 0 ? streamTokens / streamSeconds : undefined,
   }
 }
 
@@ -362,6 +401,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
   const partTokenCache = new Map()
   const messageMetricCache = new Map()
   const sessionMetricCache = new Map()
+  const streamMetricCache = new Map()
   const dirtySessions = new Set()
   const renderSessions = new Set()
   const dirtyMessages = new Set()
@@ -374,7 +414,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
   const emptySnapshot = {
     hasData: false,
     pulseBlocks: [],
-    exact: { input: undefined, output: undefined, cache: undefined, cacheRead: undefined, cacheWrite: undefined, reasoning: undefined, tps: undefined },
+    exact: { input: undefined, output: undefined, cache: undefined, cacheRead: undefined, cacheWrite: undefined, reasoning: undefined, tps: undefined, streamTps: undefined },
     tools: { count: 0, totalMs: 0, averageMs: undefined },
     categories: { system: 0, user: 0, context: 0, schema: undefined, toolResults: 0, thinking: 0, answer: 0 },
   }
@@ -432,6 +472,45 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     return -1
   }
 
+  function streamPartText(event, part, messageID, partID) {
+    const stream = streamMetricCache.get(messageID)
+    if (typeof part?.text === "string") return part.text
+    const properties = event?.properties ?? {}
+    const delta = properties.delta ?? properties.text ?? properties.content ?? properties.value ?? part?.delta
+    if (typeof delta === "string") return `${stream?.parts.get(partID) ?? ""}${delta}`
+    if (typeof delta?.text === "string") return `${stream?.parts.get(partID) ?? ""}${delta.text}`
+    return undefined
+  }
+
+  function markStreamDelta(event) {
+    const properties = event?.properties ?? {}
+    const part = properties.part
+    const type = part?.type ?? properties.type
+    if (type !== "text") return
+    const messageID = part?.messageID ?? properties.messageID ?? properties.message?.id ?? properties.info?.id
+    if (!messageID) return
+    const partID = part?.id ?? properties.partID ?? messageID
+    const text = streamPartText(event, part, messageID, partID)
+    if (typeof text !== "string") return
+    const now = Date.now()
+    const stream = streamMetricCache.get(messageID) ?? { sessionID: eventSessionID(event), started: now, ended: now, parts: new Map() }
+    stream.sessionID = stream.sessionID ?? eventSessionID(event)
+    stream.started = Math.min(stream.started, now)
+    stream.ended = Math.max(stream.ended, now)
+    stream.parts.set(partID, text)
+    streamMetricCache.set(messageID, stream)
+  }
+
+  function streamTpsForMessage(messageID) {
+    const stream = streamMetricCache.get(messageID)
+    if (!stream) return undefined
+    const seconds = (stream.ended - stream.started) / 1000
+    if (seconds < MIN_STREAM_SECONDS) return undefined
+    const text = Array.from(stream.parts.values()).join("")
+    const tokens = cacheApproximateTokens(text)
+    return tokens > 0 ? tokens / seconds : undefined
+  }
+
   function startRebuild(sessionID) {
     if (!sessionID || disposed) return undefined
     const messages = sessionMessages(sessionID)
@@ -467,7 +546,9 @@ function createMetricCache(api, requestRenderFn = requestRender) {
 
   function publishRebuild(job) {
     const latestMessage = job.messages[job.latestIndex]
-    const exact = cacheExactMetrics(latestMessage, job.session)
+    const exact = cacheExactMetrics(latestMessage, job.session, job.latestParts, job.now)
+    const liveStreamTps = streamTpsForMessage(cacheMessageInfo(latestMessage)?.id)
+    if (Number.isFinite(liveStreamTps)) exact.streamTps = liveStreamTps
     const metrics = {
       exact,
       tools: {
@@ -581,7 +662,8 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     schedule()
   }
 
-  function markEvent(event, render = true) {
+  function markEvent(event, render = true, eventName) {
+    if (eventName === "message.part.delta") markStreamDelta(event)
     const sessionID = eventSessionID(event)
     const part = event?.properties?.part
     const message = event?.properties?.message ?? event?.properties?.info
@@ -602,6 +684,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
   function removeMessage(sessionID, messageID, render = true) {
     if (!sessionID) return
     if (messageID) messageMetricCache.delete(messageID)
+    if (messageID) streamMetricCache.delete(messageID)
     for (const [partID, part] of partTokenCache) {
       if (part.messageID === messageID || (!messageID && part.sessionID === sessionID)) partTokenCache.delete(partID)
     }
@@ -619,6 +702,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     for (const [messageID, messageMetrics] of messageMetricCache) {
       if (messageMetrics.sessionID === sessionID || messageMetrics.metrics === removedMetrics) messageMetricCache.delete(messageID)
     }
+    for (const [messageID, stream] of streamMetricCache) if (stream.sessionID === sessionID) streamMetricCache.delete(messageID)
     for (const [partID, part] of partTokenCache) {
       if (part.sessionID === sessionID) partTokenCache.delete(partID)
     }
@@ -647,9 +731,63 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     partTokenCache.clear()
     messageMetricCache.clear()
     sessionMetricCache.clear()
+    streamMetricCache.clear()
   }
 
   return { markDirty, markEvent, removeMessage, removePart, removeSession, snapshot, dispose, rebuildSession, dirtyParts, dirtyMessages, dirtySessions, renderSessions, rebuildJobs, partTokenCache, messageMetricCache, sessionMetricCache }
+}
+
+function createStreamTracker() {
+  // Keep this isolated from createMetricCache: the general metric cache is known
+  // to break TUI status rendering in real sessions. Only ↯ uses this live state.
+  const streams = new Map()
+
+  function textDelta(event, part, messageID, partID) {
+    if (typeof part?.text === "string") return { text: part.text, mode: "replace" }
+    const properties = event?.properties ?? {}
+    const delta = properties.delta ?? properties.text ?? properties.content ?? properties.value ?? part?.delta
+    if (typeof delta === "string") return { text: `${streams.get(messageID)?.parts.get(partID) ?? ""}${delta}`, mode: "append" }
+    if (typeof delta?.text === "string") return { text: `${streams.get(messageID)?.parts.get(partID) ?? ""}${delta.text}`, mode: "append" }
+    return undefined
+  }
+
+  function mark(event) {
+    const properties = event?.properties ?? {}
+    const part = properties.part
+    const type = part?.type ?? properties.type
+    if (type !== "text") return
+    const messageID = part?.messageID ?? properties.messageID ?? properties.message?.id ?? properties.info?.id
+    if (!messageID) return
+    const partID = part?.id ?? properties.partID ?? messageID
+    const delta = textDelta(event, part, messageID, partID)
+    if (!delta) return
+    const now = Date.now()
+    const stream = streams.get(messageID) ?? { sessionID: eventSessionID(event), started: now, ended: now, parts: new Map() }
+    stream.sessionID = stream.sessionID ?? eventSessionID(event)
+    stream.started = Math.min(stream.started, now)
+    stream.ended = Math.max(stream.ended, now)
+    stream.parts.set(partID, delta.text)
+    streams.set(messageID, stream)
+  }
+
+  function streamTps(sessionID) {
+    let latest
+    for (const stream of streams.values()) {
+      if (stream.sessionID !== sessionID) continue
+      if (!latest || stream.ended > latest.ended) latest = stream
+    }
+    if (!latest) return undefined
+    const seconds = (latest.ended - latest.started) / 1000
+    if (seconds < MIN_STREAM_SECONDS) return undefined
+    const tokens = cacheApproximateTokens(Array.from(latest.parts.values()).join(""))
+    return tokens > 0 ? tokens / seconds : undefined
+  }
+
+  function dispose() {
+    streams.clear()
+  }
+
+  return { mark, streamTps, dispose }
 }
 
 function renderForSession(api, sessionID, tick) {
@@ -665,7 +803,7 @@ function renderForSession(api, sessionID, tick) {
   })
 }
 
-function pulseViewInput(api, sessionID, tick, width, pulseWidth, metrics) {
+function pulseViewInput(api, sessionID, tick, width, pulseWidth, metrics, streamTps) {
   return {
     messages: api.state.session.messages(sessionID),
     session: api.state.session.get(sessionID),
@@ -675,18 +813,19 @@ function pulseViewInput(api, sessionID, tick, width, pulseWidth, metrics) {
     tick,
     width,
     pulseWidth,
+    streamTps,
     partForMessage(messageID) {
       return api.state.part(messageID)
     },
   }
 }
 
-function renderViewForSession(api, sessionID, tick, metricCache) {
+function renderViewForSession(api, sessionID, tick, streamTracker) {
   const layout = pulseRowLayout()
-  const metricsSnapshot = metricCache?.snapshot(sessionID)
-  const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api), undefined, metricsSnapshot))
+  const streamTps = streamTracker?.streamTps(sessionID)
+  const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api), undefined, undefined, streamTps))
   const metrics = computePulseLayoutMetrics({ viewportWidth: viewportWidth(api), layout, statusText: baseView.statusText, hasPulse: baseView.pulseBlocks.length > 0 })
-  const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth, metricsSnapshot))
+  const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth, undefined, streamTps))
 
   return { ...view, metrics }
 }
@@ -771,6 +910,7 @@ function appendText(element, value, color) {
 function initializeTui(api, disposeRoot) {
   let tick = 0
   let pulseInterval
+  const streamTracker = createStreamTracker()
 
   api.keymap.registerLayer({
     priority: 1_000,
@@ -820,7 +960,7 @@ function initializeTui(api, disposeRoot) {
         const sessionID = currentSessionID(api)
         if (!sessionID) return undefined
         syncPulseTimer()
-        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick), textColor: themeTextColor(api) })
+        return createComponent(PulseRow, { view: renderViewForSession(api, sessionID, tick, streamTracker), textColor: themeTextColor(api) })
       },
     },
   })
@@ -829,11 +969,13 @@ function initializeTui(api, disposeRoot) {
     const isCurrent = isEventForCurrentSession(api, event)
     if (!isCurrent) return
     syncPulseTimer()
+    if (eventName === "message.part.delta") streamTracker.mark(event)
     requestRender(api)
   }))
 
   api.lifecycle.onDispose(() => {
     stopPulseTimer()
+    streamTracker.dispose()
     for (const dispose of disposers) dispose()
     disposeRoot()
   })
