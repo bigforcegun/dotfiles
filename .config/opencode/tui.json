@@ -4,7 +4,10 @@
   "diff_style": "auto",
   "plugin": [
     "oh-my-openagent@latest",
-    "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js"
+    "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
+    "@slkiser/opencode-quota@latest",
+    "opencode-subagent-statusline",
+    "oh-my-openagent@latest"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",

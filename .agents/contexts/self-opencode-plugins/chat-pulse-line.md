@@ -7,8 +7,9 @@
 - Prototype implementation exists under `.config/opencode/plugins/chat-pulse-line/` in the dotfiles repo.
 - `~/.config/opencode/plugins` has been restored as a symlink to `.dotfiles/.config/opencode/plugins`; old divergent live folder was backed up as `~/.config/opencode/plugins.bak.20260628-202156`.
 - `setup_user` now links `.config/opencode/plugins` so the topology survives future setup runs.
-- Renderer, fake-API smoke test, and `app_bottom` TUI integration are implemented.
+- Renderer, metric/status builder, fake-API smoke test, and `app_bottom` TUI integration are implemented.
 - Pulse blocks are colored by operation type through OpenTUI `span` nodes with `style.fg`.
+- Status widgets now include exact token totals, TPS, streaming TPS, turn/chat timers, and tool count/latency totals.
 - `npm run check`, `npm run smoke`, `bash -n setup_user`, and Bun/OpenTUI colored-span assertion pass.
 - Real OpenCode TUI placement still needs manual QA.
 
@@ -78,8 +79,20 @@
   - success;
   - other.
 - Encodes block height from approximate output/tokens.
-- Appends input/output/cache summary when width allows.
-- Exposes `buildPulseLine()`, `buildPulseView()`, and `__testing` helpers.
+- Builds structured metrics from message/session token data and assistant parts:
+  - input/output/cache totals;
+  - output TPS from completed assistant timing;
+  - live TPS while an assistant turn is active;
+  - streaming text TPS from text-part timing;
+  - current turn duration, total chat spent time, tool count, tool total time, and tool average time.
+- Appends grouped status widgets when width allows:
+  - chat base: `↓` input, `↑` output, `◇` cache;
+  - timing: `⚡` TPS, `↯` stream TPS, `💬`/`🏁` turn time, `Σ` chat time;
+  - tools: `🔧` count, `⏱` average, `⌛` total.
+- Uses ` | ` between widgets in a group and ` ▌ ` between widget groups.
+- Degrades to pulse blocks only when the rendered line would exceed the available width.
+- Falls back to a single success-height block from token totals, or to a busy dot, when no assistant parts are available.
+- Exposes `buildPulseBlocks()`, `buildPulseMetrics()`, `buildPulseLine()`, `buildPulseView()`, and `__testing` helpers.
 
 ### TUI integration: implemented, placement unverified
 
@@ -87,7 +100,7 @@
 - Registers one slot at order `100_000`.
 - Renders `app_bottom()` through Solid/OpenTUI text.
 - Renders each pulse block as its own `span` so reasoning/read/write/tool/error/success colors survive the real TUI renderer.
-- Uses half renderer width as the pulse budget.
+- Uses half renderer width as the pulse budget from the TUI integration; renderer also accepts an explicit `pulseWidth` override.
 - Requests rerender on session/message/part lifecycle events for the current session only.
 - Runs a 450ms pulse timer only while session status is `busy` or `retry`.
 - Cleans event, timer, and Solid root disposers on lifecycle dispose.
@@ -101,6 +114,7 @@
   - event-triggered rerender filtering;
   - export-shape messages;
   - token-only fallback;
+  - structured status widgets and pulse view compatibility aliases;
   - cleanup.
 - `npm run check` passes in the live plugin directory after removing the stale missing `tui-test.js` reference.
 - Bun/OpenTUI `testRender()` confirms the first rendered blocks carry distinct foreground RGB values for reasoning/read/write/success.
@@ -111,22 +125,22 @@
 Render a compact status row near the prompt:
 
 ```text
-▁▃▂▆▁ ▒▒ ▇▇ ░  42% ctx  in 18k / out 2.1k / cache 9k
+▁▃▂▆▁▇▄  ↓ 18k | ↑ 2.1k | ◇ 9k ▌ ⚡ 42.00 | ↯ 38.50 | 💬 00:14 | Σ 03:21 ▌ 🔧 6 | ⏱ 01.20s | ⌛ 00:07
 > user prompt...
 ```
 
 If terminal width is narrow, progressively degrade:
 
-1. blocks + context percent;
-2. blocks + token summary;
-3. blocks only;
-4. single busy indicator;
-5. hidden if it would make prompt unusable.
+1. blocks + grouped token/timing/tool widgets;
+2. blocks only;
+3. token-derived fallback block or single busy indicator;
+4. hidden if it would make prompt unusable.
 
 ## Next steps
 
-1. Add a durable renderer-level smoke test if the plugin gets a Bun-based test command.
-   - Node smoke can verify ANSI output, but OpenTUI `app_bottom()` color spans need Bun/native OpenTUI.
+1. Keep renderer smoke coverage aligned with `pulse-line.js` exports and metric widgets.
+   - Node smoke can verify renderer output and structured widget data.
+   - OpenTUI `app_bottom()` color spans still need Bun/native OpenTUI when color-rendering behavior changes.
 2. Re-run verification after each source change.
    - `npm run check`
    - `npm run smoke`

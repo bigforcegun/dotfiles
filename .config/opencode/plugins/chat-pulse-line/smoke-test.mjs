@@ -49,7 +49,7 @@ function assertStatusWidgetTexts(view, expected) {
     }
     currentGroup.widgets.push(widget)
   }
-  assert.equal(view.statusText, groups.map((group) => group.widgets.map((widget) => widget.text).join(" | ")).join(" ▌ "))
+  assert.equal(view.statusText, `${groups.map((group) => group.widgets.map((widget) => widget.text).join(" | ")).join(" ▌ ")} `)
 }
 
 function buildStatusViewForApi(targetApi) {
@@ -182,9 +182,10 @@ assertSplitViewAliases(normalView)
 assert.equal(normalView.pulseBlocks.length, 4)
 assert.match(normalView.statusText, /↓ 18k \| ↑ 2\.1k/)
 assert.match(normalView.statusText, /◇ 9\.1k/)
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps", "streamTps", "turnTotal", "chatTotal", "toolCount", "toolAverage", "toolTotal", "user", "assistant", "toolResults"])
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓", "↑", "◇", "⚡", "↯", "🖨️ ", "Σ", "🔧", "⏱", "⌛", "👤", "🖨️ ", "🧰"])
-assertStatusWidgetTexts(normalView, ["↓ 18k", "↑ 2.1k", "◇ 9.1k", "⚡ 00.00", "↯ 00.00", "🖨️  ?", "Σ 00:00", "🔧 2", "⏱ 00.00s", "⌛ 00:00", "👤 0", "🖨️  0", "🧰 225"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps", "streamTps", "turnTotal", "chatTotal", "toolCount", "toolAverage", "toolTotal"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓", "↑", "◇", "⚡", "↯", "💬", "Σ", "🔧", "⏱", "⌛"])
+assertStatusWidgetTexts(normalView, ["↓ 18k", "↑ 2.1k", "◇ 9.1k", "⚡ 00.00", "↯ 00.00", "💬 ?", "Σ 00:00", "🔧 2", "⏱ 00.00s", "⌛ 00:00"])
+assert.equal(normalView.statusText.endsWith(" "), true)
 assert.equal(normalView.metricSnapshot.exact.output, 2_140)
 assert.equal(normalView.metricSnapshot.tools.count, 2)
 const statusViewForApi = buildStatusViewForApi(api)
@@ -226,7 +227,7 @@ const metricSnapshot = pulseTesting.buildPulseMetrics({
 })
 assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 4 })
 assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
-assert.deepEqual(metricSnapshot.segments, { system: 1, user: 2, assistant: 4, toolResults: 2 })
+assert.equal("segments" in metricSnapshot, false)
 const streamStatus = pulseTesting.buildStatusView({ messages: metricFixtureMessages, status: { type: "idle" }, now: 2_500, partForMessage() { return [] } })
 assert.ok(streamStatus.text.includes("⚡ 50.00"))
 assert.ok(streamStatus.text.includes("↯ 04.00"))
@@ -318,6 +319,36 @@ const noTpsSnapshot = pulseTesting.buildPulseMetrics({
 })
 assert.equal(noTpsSnapshot.exact.tps, undefined)
 
+const gpt54StepFinishSnapshot = pulseTesting.buildPulseMetrics({
+  messages: [
+    { info: { id: "gpt54_user", sessionID, role: "user", time: { created: 500 } }, parts: [] },
+    {
+      info: { id: "gpt54_assistant", sessionID, role: "assistant", time: { created: 1_000, completed: 3_000 } },
+      parts: [
+        { id: "gpt54_text", sessionID, messageID: "gpt54_assistant", type: "text", text: "visible answer", time: { start: 1_000, end: 2_000 } },
+        { id: "gpt54_finish", sessionID, messageID: "gpt54_assistant", type: "step-finish", tokens: { output: 120 } },
+      ],
+    },
+  ],
+  session: { tokens: { output: 9_999 } },
+  status: { type: "idle" },
+  now: 3_000,
+  partForMessage() {
+    return []
+  },
+})
+assert.equal(gpt54StepFinishSnapshot.exact.tps, 60)
+
+const liveStreamTrackerSnapshot = pulseTesting.buildPulseMetrics({
+  messages: [{ info: { id: "live_assistant", sessionID, role: "assistant" }, parts: [] }],
+  status: { type: "busy" },
+  streamTps: 12.34,
+  partForMessage() {
+    return []
+  },
+})
+assert.equal(liveStreamTrackerSnapshot.exact.streamTps, 12.34)
+
 const wideMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: normalView.statusText })
 assert.equal(wideMetrics.workWidth, 120)
 assert.equal(wideMetrics.statusWidth, Math.min(tuiTesting.terminalWidth(normalView.statusText), wideMetrics.workWidth - 2))
@@ -356,6 +387,13 @@ const clippedLine = tuiTesting.renderSplitLine({ pulseText: "abcd", statusText: 
 assert.equal(tuiTesting.terminalWidth(clippedLine), clippedMetrics.workWidth)
 assertStatusRightPinned(clippedLine, normalView.statusText, clippedMetrics.workWidth)
 assert.equal(tuiTesting.computeSplitSegments({ pulseText: "abcd", statusText: normalView.statusText, metrics: clippedMetrics }).pulseText, "")
+
+const toolEdgeStatus = "🔧 122 | ⏱ 04.19s | ⌛ 08:30 "
+const toolEdgeWidth = tuiTesting.terminalWidth(toolEdgeStatus) - 1
+const toolEdgeText = tuiTesting.statusTextForWidth(toolEdgeStatus, toolEdgeWidth)
+assert.equal(tuiTesting.terminalWidth(toolEdgeText), toolEdgeWidth)
+assert.equal(toolEdgeText.endsWith("08:30 "), true)
+assert.equal(toolEdgeText.includes("08:300"), false)
 
 const restoredLongStatus = "↓ 907k | ↑ 63k | ◇ 25.4m ▌ ⚡ 00.00 | ↯ 00.00"
 const restoredPulseMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: restoredLongStatus, hasPulse: true })

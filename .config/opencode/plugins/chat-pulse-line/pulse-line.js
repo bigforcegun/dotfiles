@@ -103,7 +103,7 @@ const STATUS_WIDGETS = [
       return formatClockDuration(value)
     },
     label(metrics) {
-      return metrics.turn.active ? "🖨️ " : "🏁"
+      return metrics.turn.active ? "💬" : "🏁"
     },
   },
   {
@@ -162,68 +162,8 @@ const STATUS_WIDGETS = [
       return formatClockDuration(value)
     },
   },
-  {
-    id: "system",
-    group: "chat_segments",
-    label: "⚙",
-    value(metrics) {
-      return metrics.segments.system
-    },
-    visible(metrics) {
-      return metrics.hasSystemPrompt
-    },
-    format(value) {
-      return formatContextNumber(value)
-    },
-  },
-  {
-    id: "user",
-    group: "chat_segments",
-    label: "👤",
-    value(metrics) {
-      return metrics.segments.user
-    },
-    visible(metrics) {
-      return hasChatSegments(metrics)
-    },
-    format(value) {
-      return formatContextNumber(value)
-    },
-  },
-  {
-    id: "assistant",
-    group: "chat_segments",
-    label: "🖨️ ",
-    value(metrics) {
-      return metrics.segments.assistant
-    },
-    visible(metrics) {
-      return hasChatSegments(metrics)
-    },
-    format(value) {
-      return formatContextNumber(value)
-    },
-  },
-  {
-    id: "toolResults",
-    group: "chat_segments",
-    label: "🧰",
-    value(metrics) {
-      return metrics.segments.toolResults
-    },
-    visible(metrics) {
-      return hasChatSegments(metrics)
-    },
-    format(value) {
-      return formatContextNumber(value)
-    },
-  },
 ]
 const RESET_COLOR = "\u001b[0m"
-
-function hasChatSegments(metrics) {
-  return [metrics.segments.user, metrics.segments.assistant, metrics.segments.toolResults].some((value) => value > 0)
-}
 
 function normalizeToolName(value) {
   return typeof value === "string" ? value.toLowerCase().replace(/^[^:]+:/, "") : ""
@@ -441,8 +381,32 @@ function formatDuration(value) {
   return `${Math.round(value)}ms`
 }
 
-function formatContextNumber(value) {
-  return formatNumber(value) ?? (Number.isFinite(value) ? "0" : "?")
+function messageCompletionSeconds(info) {
+  const created = info?.time?.created
+  const completed = info?.time?.completed
+  if (!Number.isFinite(created) || !Number.isFinite(completed) || completed <= created) return undefined
+  return (completed - created) / 1000
+}
+
+function latestStepFinishOutputTokens(parts) {
+  let output
+  for (const part of parts ?? []) {
+    if (part?.type !== "step-finish") continue
+    const candidate = finiteNonNegative(part.tokens?.output ?? part.tokens?.total)
+    if (Number.isFinite(candidate)) output = candidate
+  }
+  return output
+}
+
+function messageOutputTokens(info, parts) {
+  const exactOutput = finiteNonNegative(info?.tokens?.output)
+  if (Number.isFinite(exactOutput)) return exactOutput
+
+  const finishedOutput = latestStepFinishOutputTokens(parts)
+  if (Number.isFinite(finishedOutput)) return finishedOutput
+
+  const streamedOutput = textPartTokens(parts ?? [], "text")
+  return streamedOutput > 0 ? streamedOutput : undefined
 }
 
 function tokenTotals(messages, session) {
@@ -620,10 +584,6 @@ function exactMetrics(messages, session) {
   if (!hasCacheWrite) cacheWrite = finiteNonNegative(session?.tokens?.cache?.write)
   if (!hasReasoning) reasoning = finiteNonNegative(session?.tokens?.reasoning)
 
-  const created = latest?.info?.time?.created
-  const completed = latest?.info?.time?.completed
-  const seconds = Number.isFinite(created) && Number.isFinite(completed) ? (completed - created) / 1000 : 0
-
   return {
     input: hasInput ? input : finiteNonNegative(input),
     output: hasOutput ? output : finiteNonNegative(output),
@@ -631,7 +591,7 @@ function exactMetrics(messages, session) {
     cacheRead,
     cacheWrite,
     reasoning: hasReasoning ? reasoning : finiteNonNegative(reasoning),
-    tps: Number.isFinite(latest?.info?.tokens?.output) && latest.info.tokens.output > 0 && seconds > 0 ? latest.info.tokens.output / seconds : undefined,
+    tps: undefined,
     tpsLoading: false,
   }
 }
@@ -664,45 +624,6 @@ function textStreamDurationSeconds(parts, now) {
 
 function textPartTokens(parts, type) {
   return parts.reduce((total, part) => total + (part.type === type ? approximateTokens(part.text) : 0), 0)
-}
-
-function toolResultTokens(parts) {
-  return parts.reduce((total, part) => {
-    if (part.type !== "tool") return total
-    const state = part.state
-    if (!state || (state.status !== "completed" && state.status !== "error")) return total
-    if (typeof state.output === "string") return total + approximateTokens(state.output)
-    if (typeof state.error === "string") return total + approximateTokens(state.error)
-    return total
-  }, 0)
-}
-
-function userSegmentToken(part) {
-  if (part.type === "text") return approximateTokens(part.text)
-  if ((part.type === "file" || part.type === "symbol") && typeof part.source?.text?.value === "string") return approximateTokens(part.source.text.value)
-  if (part.type === "agent" && typeof part.source?.value === "string") return approximateTokens(part.source.value)
-  return 0
-}
-
-function visibleSegmentTokens(messages, partForMessage) {
-  const segments = { system: 0, user: 0, assistant: 0, toolResults: 0 }
-
-  for (const message of messages) {
-    const info = messageInfo(message)
-    const parts = messageParts(message, partForMessage)
-
-    if (info?.role === "user") {
-      if (typeof info.system === "string" && info.system.trim()) segments.system = approximateTokens(info.system)
-      segments.user += parts.reduce((total, part) => total + userSegmentToken(part), 0)
-      continue
-    }
-
-    if (info?.role !== "assistant") continue
-    segments.assistant += textPartTokens(parts, "text")
-    segments.toolResults += toolResultTokens(parts)
-  }
-
-  return segments
 }
 
 function assistantToolParts(messages, partForMessage) {
@@ -753,14 +674,20 @@ export function buildPulseMetrics(input) {
   const lastInfo = messageInfo(messages[messages.length - 1])
   const exact = exactMetrics(messages, input.session)
   const parts = latest ? messageParts(latest.message, input.partForMessage) : []
+  const completedSeconds = messageCompletionSeconds(latest?.info)
+  const completedOutputTokens = latest ? messageOutputTokens(latest.info, parts) : undefined
   const streamTokens = textPartTokens(parts, "text")
   const streamSeconds = textStreamDurationSeconds(parts, input.now)
-  exact.streamTps = streamTokens > 0 && streamSeconds > 0 ? streamTokens / streamSeconds : undefined
+  exact.tps = Number.isFinite(completedOutputTokens) && completedSeconds > 0 ? completedOutputTokens / completedSeconds : undefined
+  exact.streamTps = Number.isFinite(input.streamTps) && input.streamTps > 0
+    ? input.streamTps
+    : streamTokens > 0 && streamSeconds > 0
+      ? streamTokens / streamSeconds
+      : undefined
   const tools = assistantToolParts(messages, input.partForMessage)
   const totalMs = tools.reduce((total, part) => total + toolDurationMs(part, input.status, input.now), 0)
   const previousUser = latest ? latestUserBefore(messages, latest.index) : undefined
   const previousUserParts = previousUser ? messageParts(previousUser.message, input.partForMessage) : []
-  const segments = visibleSegmentTokens(messages, input.partForMessage)
   const latestStarted = liveStartTime(latest, parts)
   const activeTurn = turnIsActive(messages, input.status)
   if (activeTurn && lastInfo?.role === "user") {
@@ -787,10 +714,8 @@ export function buildPulseMetrics(input) {
     chat: {
       totalMs: chatSpentTotalMs(messages, input.partForMessage, input.now, activeTurn),
     },
-    hasSystemPrompt: segments.system > 0,
-    segments,
   }
-  metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.segments).some((value) => value > 0)
+  metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0
   return metrics
 }
 
@@ -825,7 +750,7 @@ function composeStatusWidgets(widgets) {
     currentGroup.widgets.push(widget)
   }
 
-  return groups.map((group) => group.widgets.map((widget) => widget.text).join(STATUS_SEPARATOR)).join(STATUS_GROUP_SEPARATOR)
+  return `${groups.map((group) => group.widgets.map((widget) => widget.text).join(STATUS_SEPARATOR)).join(STATUS_GROUP_SEPARATOR)} `
 }
 
 function buildStatusView(input) {

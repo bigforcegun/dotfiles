@@ -73,6 +73,7 @@ function terminalCharWidth(char) {
   const codePoint = char.codePointAt(0)
   if (!Number.isFinite(codePoint)) return 0
   if (codePoint === 0 || codePoint < 32 || (codePoint >= 0x7f && codePoint < 0xa0)) return 0
+  if ((codePoint >= 0xfe00 && codePoint <= 0xfe0f) || (codePoint >= 0xe0100 && codePoint <= 0xe01ef)) return 0
   if ((codePoint >= 0x300 && codePoint <= 0x36f) || (codePoint >= 0x1ab0 && codePoint <= 0x1aff) || (codePoint >= 0x1dc0 && codePoint <= 0x1dff) || (codePoint >= 0x20d0 && codePoint <= 0x20ff) || (codePoint >= 0xfe20 && codePoint <= 0xfe2f)) return 0
   if (WIDE_STATUS_SYMBOLS.has(codePoint)) return 2
   if ((codePoint >= 0x1100 && codePoint <= 0x115f) || codePoint === 0x2329 || codePoint === 0x232a || (codePoint >= 0x2e80 && codePoint <= 0xa4cf) || (codePoint >= 0xac00 && codePoint <= 0xd7a3) || (codePoint >= 0xf900 && codePoint <= 0xfaff) || (codePoint >= 0xfe10 && codePoint <= 0xfe19) || (codePoint >= 0xfe30 && codePoint <= 0xfe6f) || (codePoint >= 0xff00 && codePoint <= 0xff60) || (codePoint >= 0xffe0 && codePoint <= 0xffe6) || (codePoint >= 0x1f000 && codePoint <= 0x1faff)) return 2
@@ -109,6 +110,12 @@ function sliceEndColumns(value, maxWidth) {
     width += charWidth
   }
   return output
+}
+
+function statusTextForWidth(value, width) {
+  const targetWidth = Math.max(0, Math.floor(width))
+  const text = sliceEndColumns(value, targetWidth)
+  return `${" ".repeat(Math.max(0, targetWidth - terminalWidth(text)))}${text}`
 }
 
 function computeSplitSegments(input) {
@@ -196,33 +203,6 @@ function cacheApproximateTokens(text) {
     else nonAscii += 1
   }
   return Math.ceil(ascii / 4 + nonAscii / 2)
-}
-
-function cacheToolResultTokens(parts) {
-  return parts.reduce((total, part) => {
-    if (part.type !== "tool") return total
-    const state = part.state
-    if (!state || (state.status !== "completed" && state.status !== "error")) return total
-    if (typeof state.output === "string") return total + cacheApproximateTokens(state.output)
-    if (typeof state.error === "string") return total + cacheApproximateTokens(state.error)
-    return total
-  }, 0)
-}
-
-function cacheToolResultToken(part) {
-  if (part.type !== "tool") return 0
-  const state = part.state
-  if (!state || (state.status !== "completed" && state.status !== "error")) return 0
-  if (typeof state.output === "string") return cacheApproximateTokens(state.output)
-  if (typeof state.error === "string") return cacheApproximateTokens(state.error)
-  return 0
-}
-
-function cacheUserSegmentToken(part) {
-  if (part.type === "text") return cacheApproximateTokens(part.text)
-  if ((part.type === "file" || part.type === "symbol") && typeof part.source?.text?.value === "string") return cacheApproximateTokens(part.source.text.value)
-  if (part.type === "agent" && typeof part.source?.value === "string") return cacheApproximateTokens(part.source.value)
-  return 0
 }
 
 function cacheNormalizeToolName(value) {
@@ -485,8 +465,6 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     tools: { count: 0, totalMs: 0, averageMs: undefined },
     turn: { totalMs: undefined },
     chat: { totalMs: undefined },
-    hasSystemPrompt: false,
-    segments: { system: 0, user: 0, assistant: 0, toolResults: 0 },
   }
 
   function metricInput(sessionID) {
@@ -603,10 +581,6 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       index: 0,
       partIndex: 0,
       currentParts: undefined,
-      segmentSystem: 0,
-      segmentUser: 0,
-      segmentAssistant: 0,
-      segmentToolResults: 0,
       latestToolCount: 0,
       latestToolTotalMs: 0,
       pulseBlocks: [],
@@ -642,16 +616,9 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       chat: {
         totalMs: cacheChatSpentTotalMs(job.messages, messagePartsFor, job.now, activeTurn),
       },
-      hasSystemPrompt: job.segmentSystem > 0,
-      segments: {
-        system: job.segmentSystem,
-        user: job.segmentUser,
-        assistant: job.segmentAssistant,
-        toolResults: job.segmentToolResults,
-      },
       pulseBlocks: job.pulseBlocks,
     }
-    metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.segments).some((value) => value > 0)
+    metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0
 
     for (const messageID of job.touchedMessages) messageMetricCache.set(messageID, { messageID, sessionID: job.sessionID, metrics })
     sessionMetricCache.set(job.sessionID, metrics)
@@ -672,9 +639,6 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       while (job.partIndex < parts.length && processed < METRIC_BATCH_SIZE && Date.now() - started <= budgetMs) {
         const part = parts[job.partIndex]
         if (part?.id) partTokenCache.set(part.id, { messageID: info?.id, sessionID: job.sessionID, type: part.type })
-        if (info?.role === "user") job.segmentUser += cacheUserSegmentToken(part)
-        if (info?.role === "assistant" && part.type === "text") job.segmentAssistant += cacheApproximateTokens(part.text)
-        if (info?.role === "assistant" && part.type === "tool") job.segmentToolResults += cacheToolResultToken(part)
         if (job.index === job.latestIndex) {
           if (part.type === "tool") {
             job.latestToolCount += 1
@@ -687,7 +651,6 @@ function createMetricCache(api, requestRenderFn = requestRender) {
         processed += 1
       }
       if (job.partIndex < parts.length) break
-      if (info?.role === "user" && typeof info?.system === "string") job.segmentSystem = cacheApproximateTokens(info.system)
       if (job.index === job.previousIndex) job.previousParts = parts
       if (job.index === job.latestIndex) job.latestParts = parts
       if (job.index === job.latestIndex && parts.length === 0) {
@@ -946,7 +909,7 @@ function StatusLine(props) {
   setProp(element, "height", 1)
   setProp(element, "flexGrow", 0)
   setProp(element, "flexShrink", 0)
-  appendText(element, props.view.statusText, props.textColor)
+  appendText(element, statusTextForWidth(props.view.statusText, props.metrics.statusWidth), props.textColor)
   return element
 }
 
@@ -1072,5 +1035,5 @@ const plugin = {
 }
 
 export default plugin
-export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, createMetricCache, currentLayout, renderSplitLine, terminalWidth }
+export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, createMetricCache, currentLayout, renderSplitLine, statusTextForWidth, terminalWidth }
 export { renderForSession }
