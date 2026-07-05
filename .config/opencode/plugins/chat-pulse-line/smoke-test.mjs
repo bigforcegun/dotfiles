@@ -40,7 +40,16 @@ function assertSplitViewAliases(view) {
 
 function assertStatusWidgetTexts(view, expected) {
   assert.deepEqual(view.statusWidgets.map((widget) => widget.text), expected)
-  assert.equal(view.statusText, expected.join(" / "))
+  const groups = []
+  let currentGroup
+  for (const widget of view.statusWidgets) {
+    if (!currentGroup || currentGroup.name !== widget.group) {
+      currentGroup = { name: widget.group, widgets: [] }
+      groups.push(currentGroup)
+    }
+    currentGroup.widgets.push(widget)
+  }
+  assert.equal(view.statusText, groups.map((group) => group.widgets.map((widget) => widget.text).join(" | ")).join(" ▌ "))
 }
 
 function buildStatusViewForApi(targetApi) {
@@ -156,8 +165,8 @@ assert.ok(disposeEvents.some((event) => event.eventName === "message.removed"))
 
 const wideRenderApi = { ...api, renderer: { ...api.renderer, width: 240 } }
 const slotOutput = renderForSession(wideRenderApi, sessionID, 0)
-assert.match(slotOutput, /↓  18k \/ ↑  2\.1k/)
-assert.match(slotOutput, /◇  9\.1k/)
+assert.match(slotOutput, /↓ 18k \| ↑ 2\.1k/)
+assert.match(slotOutput, /◇ 9\.1k/)
 assert.match(slotOutput, /\u001b\[38;5;141m▁\u001b\[0m/)
 assert.match(slotOutput, /\u001b\[38;5;75m▄\u001b\[0m/)
 assert.match(slotOutput, /\u001b\[38;5;214m▁\u001b\[0m/)
@@ -171,11 +180,11 @@ assert.equal(directOutput, slotOutput)
 const normalView = buildViewForApi(wideRenderApi, 240)
 assertSplitViewAliases(normalView)
 assert.equal(normalView.pulseBlocks.length, 4)
-assert.match(normalView.statusText, /↓  18k \/ ↑  2\.1k/)
-assert.match(normalView.statusText, /◇  9\.1k/)
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps", "streamTps", "toolCount", "toolAverage", "toolTotal", "system", "user", "assistant", "toolResults", "other"])
-assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓ ", "↑ ", "◇ ", "⚡", "↯", "🔧", "⏱ ", "⌛", "⚙ ", "👤 ", "🤖 ", "🧰 ", "… "])
-assertStatusWidgetTexts(normalView, ["↓  18k", "↑  2.1k", "◇  9.1k", "⚡ 00.00", "↯ 00.00", "🔧 2", "⏱  1ms", "⌛ 1ms", "⚙  0", "👤  0", "🤖  2", "🧰  225", "…  29k"])
+assert.match(normalView.statusText, /↓ 18k \| ↑ 2\.1k/)
+assert.match(normalView.statusText, /◇ 9\.1k/)
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.id), ["input", "output", "cache", "tps", "streamTps", "turnTotal", "chatTotal", "toolCount", "toolAverage", "toolTotal", "user", "assistant", "toolResults"])
+assert.deepEqual(normalView.statusWidgets.map((widget) => widget.label), ["↓", "↑", "◇", "⚡", "↯", "🖨️ ", "Σ", "🔧", "⏱", "⌛", "👤", "🖨️ ", "🧰"])
+assertStatusWidgetTexts(normalView, ["↓ 18k", "↑ 2.1k", "◇ 9.1k", "⚡ 00.00", "↯ 00.00", "🖨️  ?", "Σ 00:00", "🔧 2", "⏱ 00.00s", "⌛ 00:00", "👤 0", "🖨️  0", "🧰 225"])
 assert.equal(normalView.metricSnapshot.exact.output, 2_140)
 assert.equal(normalView.metricSnapshot.tools.count, 2)
 const statusViewForApi = buildStatusViewForApi(api)
@@ -217,7 +226,7 @@ const metricSnapshot = pulseTesting.buildPulseMetrics({
 })
 assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 4 })
 assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
-assert.deepEqual(metricSnapshot.categories, { system: 1, user: 2, assistant: 5, context: 0, schema: undefined, toolResults: 2, thinking: 7, answer: 100, other: 145, latestSystem: 1, latestUser: 2, latestToolResults: 2 })
+assert.deepEqual(metricSnapshot.segments, { system: 1, user: 2, assistant: 4, toolResults: 2 })
 const streamStatus = pulseTesting.buildStatusView({ messages: metricFixtureMessages, status: { type: "idle" }, now: 2_500, partForMessage() { return [] } })
 assert.ok(streamStatus.text.includes("⚡ 50.00"))
 assert.ok(streamStatus.text.includes("↯ 04.00"))
@@ -348,7 +357,7 @@ assert.equal(tuiTesting.terminalWidth(clippedLine), clippedMetrics.workWidth)
 assertStatusRightPinned(clippedLine, normalView.statusText, clippedMetrics.workWidth)
 assert.equal(tuiTesting.computeSplitSegments({ pulseText: "abcd", statusText: normalView.statusText, metrics: clippedMetrics }).pulseText, "")
 
-const restoredLongStatus = "↓  907k / ↑  63k / ◇  25.4m / ⚡ 00.00 / ↯ 00.00"
+const restoredLongStatus = "↓ 907k | ↑ 63k | ◇ 25.4m ▌ ⚡ 00.00 | ↯ 00.00"
 const restoredPulseMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: restoredLongStatus, hasPulse: true })
 assert.equal(restoredPulseMetrics.workWidth, 120)
 assert.equal(restoredPulseMetrics.pulseWidth > 0, true)
@@ -380,7 +389,7 @@ const exportShapeApi = {
   },
 }
 const exportShapeOutput = renderForSession(exportShapeApi, sessionID, 0)
-assert.match(exportShapeOutput, /↓  18k \/ ↑  2\.1k/)
+assert.match(exportShapeOutput, /↓ 18k \| ↑ 2\.1k/)
 assert.equal(stripAnsi(exportShapeOutput).startsWith("▁▄▁▇"), true)
 
 const tokenOnlyApi = {
@@ -400,13 +409,13 @@ const tokenOnlyApi = {
   },
 }
 const tokenOnlyOutput = renderForSession(tokenOnlyApi, sessionID, 0)
-assert.match(tokenOnlyOutput, /↓  18k \/ ↑  2\.1k/)
+assert.match(tokenOnlyOutput, /↓ 18k \| ↑ 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(tokenOnlyOutput)), true)
 
 const tokenOnlyView = buildViewForApi(tokenOnlyApi)
 assertSplitViewAliases(tokenOnlyView)
 assert.equal(tokenOnlyView.pulseBlocks.length, 1)
-assert.match(tokenOnlyView.statusText, /↓  18k \/ ↑  2\.1k/)
+assert.match(tokenOnlyView.statusText, /↓ 18k \| ↑ 2\.1k/)
 
 const sessionTokenOnlyApi = {
   ...api,
@@ -425,13 +434,13 @@ const sessionTokenOnlyApi = {
   },
 }
 const sessionTokenOnlyOutput = renderForSession(sessionTokenOnlyApi, sessionID, 0)
-assert.match(sessionTokenOnlyOutput, /↓  18k \/ ↑  2\.1k/)
+assert.match(sessionTokenOnlyOutput, /↓ 18k \| ↑ 2\.1k/)
 assert.equal(/[▁▂▃▄▅▆▇█]/.test(stripAnsi(sessionTokenOnlyOutput)), true)
 
 const sessionTokenOnlyView = buildViewForApi(sessionTokenOnlyApi)
 assertSplitViewAliases(sessionTokenOnlyView)
 assert.equal(sessionTokenOnlyView.pulseBlocks.length, 1)
-assert.match(sessionTokenOnlyView.statusText, /↓  18k \/ ↑  2\.1k/)
+assert.match(sessionTokenOnlyView.statusText, /↓ 18k \| ↑ 2\.1k/)
 
 const outputOnlyApi = {
   ...api,
@@ -452,7 +461,7 @@ const outputOnlyApi = {
   },
 }
 const outputOnlyView = buildViewForApi(outputOnlyApi)
-assertStatusWidgetTexts(outputOnlyView, ["↓  ?", "↑  2.1k", "◇  ?", "⚡ 00.00", "↯ 00.00", "🔧 0", "⏱  ?", "⌛ 0ms"])
+assertStatusWidgetTexts(outputOnlyView, ["↓ ?", "↑ 2.1k", "◇ ?", "⚡ 00.00", "↯ 00.00", "🏁 ?", "Σ 00:00", "🔧 0", "⏱ ?", "⌛ 00:00"])
 
 const cacheOnlyApi = {
   ...api,
@@ -473,7 +482,7 @@ const cacheOnlyApi = {
   },
 }
 const cacheOnlyView = buildViewForApi(cacheOnlyApi)
-assertStatusWidgetTexts(cacheOnlyView, ["↓  ?", "↑  ?", "◇  9.1k", "⚡ 00.00", "↯ 00.00", "🔧 0", "⏱  ?", "⌛ 0ms"])
+assertStatusWidgetTexts(cacheOnlyView, ["↓ ?", "↑ ?", "◇ 9.1k", "⚡ 00.00", "↯ 00.00", "🏁 ?", "Σ 00:00", "🔧 0", "⏱ ?", "⌛ 00:00"])
 
 const busyOnlyApi = {
   ...api,
@@ -500,7 +509,7 @@ const narrowStatusApi = { ...api, renderer: { ...api.renderer, width: 10 } }
 const narrowStatusView = buildViewForApi(narrowStatusApi, 10)
 assertSplitViewAliases(narrowStatusView)
 assert.equal(narrowStatusView.pulseBlocks.length, 1)
-assert.match(narrowStatusView.statusText, /↓  18k \/ ↑  2\.1k/)
+assert.match(narrowStatusView.statusText, /↓ 18k \| ↑ 2\.1k/)
 
 disposeEvents[0].handler({ type: disposeEvents[0].eventName, properties: { sessionID: "ses_other" } })
 assert.equal(renderRequests, 0)

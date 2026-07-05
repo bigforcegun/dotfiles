@@ -169,7 +169,17 @@ function sessionIsPulsing(api) {
   const sessionID = currentSessionID(api)
   if (!sessionID) return false
   const status = api.state.session.status(sessionID)
-  return status?.type === "busy" || status?.type === "retry"
+  if (status?.type === "busy" || status?.type === "retry") return true
+
+  const messages = api.state.session.messages(sessionID)
+  if (!Array.isArray(messages) || messages.length === 0) return false
+  const lastInfo = cacheMessageInfo(messages[messages.length - 1])
+  if (lastInfo?.role === "user") return true
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = cacheMessageInfo(messages[index])
+    if (info?.role === "assistant") return !Number.isFinite(info.time?.completed)
+  }
+  return false
 }
 
 function cacheMessageInfo(message) {
@@ -208,6 +218,13 @@ function cacheToolResultToken(part) {
   return 0
 }
 
+function cacheUserSegmentToken(part) {
+  if (part.type === "text") return cacheApproximateTokens(part.text)
+  if ((part.type === "file" || part.type === "symbol") && typeof part.source?.text?.value === "string") return cacheApproximateTokens(part.source.text.value)
+  if (part.type === "agent" && typeof part.source?.value === "string") return cacheApproximateTokens(part.source.value)
+  return 0
+}
+
 function cacheNormalizeToolName(value) {
   return typeof value === "string" ? value.toLowerCase().replace(/^[^:]+:/, "") : ""
 }
@@ -239,9 +256,9 @@ function cachePartKind(part) {
     case "agent":
     case "compaction":
     case "snapshot":
-      return "other"
+      return "misc"
     default:
-      return "other"
+      return "misc"
   }
 }
 
@@ -372,8 +389,9 @@ function cacheTurnTotalMs(latest, latestParts, previousUser, previousUserParts, 
   return end - actualStart
 }
 
-function cacheChatSpentTotalMs(messages, partsForMessage, now) {
+function cacheChatSpentTotalMs(messages, partsForMessage, now, active) {
   let total = 0
+  const activeTurn = active && Number.isFinite(now)
   for (let index = 0; index < messages.length; index += 1) {
     const userInfo = cacheMessageInfo(messages[index])
     if (userInfo?.role !== "user") continue
@@ -390,6 +408,7 @@ function cacheChatSpentTotalMs(messages, partsForMessage, now) {
       const assistantEnd = cacheMessageEndMs(messages[next], assistantParts, now)
       if (Number.isFinite(assistantEnd) && (!Number.isFinite(end) || assistantEnd > end)) end = assistantEnd
     }
+    if (activeTurn && !messages.slice(index + 1).some((message) => cacheMessageInfo(message)?.role === "user")) end = now
     if (Number.isFinite(end) && end >= start) total += end - start
   }
   return total
@@ -434,23 +453,15 @@ function sessionBusy(status) {
   return status?.type === "busy" || status?.type === "retry"
 }
 
-function cacheContextTokens(message, parts) {
-  let total = 0
-  const info = cacheMessageInfo(message)
-  if (typeof info?.system === "string") total += cacheApproximateTokens(info.system)
-  for (const part of parts) {
-    if (part.type === "text" || part.type === "reasoning") total += cacheApproximateTokens(part.text)
-    if ((part.type === "file" || part.type === "symbol") && typeof part.source?.text?.value === "string") total += cacheApproximateTokens(part.source.text.value)
-    if (part.type === "tool") total += cacheToolResultTokens([part])
+function cacheTurnIsActive(messages, status) {
+  if (sessionBusy(status)) return true
+  const lastInfo = cacheMessageInfo(messages[messages.length - 1])
+  if (lastInfo?.role === "user") return true
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const info = cacheMessageInfo(messages[index])
+    if (info?.role === "assistant") return !Number.isFinite(info.time?.completed)
   }
-  return total
-}
-
-function cacheContextPartTokens(part) {
-  if (part.type === "text" || part.type === "reasoning") return cacheApproximateTokens(part.text)
-  if ((part.type === "file" || part.type === "symbol") && typeof part.source?.text?.value === "string") return cacheApproximateTokens(part.source.text.value)
-  if (part.type === "tool") return cacheToolResultToken(part)
-  return 0
+  return false
 }
 
 function createMetricCache(api, requestRenderFn = requestRender) {
@@ -475,7 +486,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     turn: { totalMs: undefined },
     chat: { totalMs: undefined },
     hasSystemPrompt: false,
-    categories: { system: 0, user: 0, context: 0, schema: undefined, toolResults: 0, thinking: 0, answer: 0 },
+    segments: { system: 0, user: 0, assistant: 0, toolResults: 0 },
   }
 
   function metricInput(sessionID) {
@@ -592,14 +603,12 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       index: 0,
       partIndex: 0,
       currentParts: undefined,
-      contextTokens: 0,
-      previousSystem: 0,
-      previousUser: 0,
+      segmentSystem: 0,
+      segmentUser: 0,
+      segmentAssistant: 0,
+      segmentToolResults: 0,
       latestToolCount: 0,
       latestToolTotalMs: 0,
-      latestToolResults: 0,
-      latestThinking: 0,
-      latestAnswer: 0,
       pulseBlocks: [],
       latestParts: [],
       previousParts: [],
@@ -617,6 +626,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     const previousUserParts = previousUser ? messagePartsFor(previousUser) : []
     const exact = cacheExactMetrics(latestMessage, job.session, job.latestParts, job.now)
     const liveStreamTps = streamTpsForMessage(cacheMessageInfo(latestMessage)?.id)
+    const activeTurn = cacheTurnIsActive(job.messages, job.status)
     if (Number.isFinite(liveStreamTps)) exact.streamTps = liveStreamTps
     const metrics = {
       exact,
@@ -626,24 +636,22 @@ function createMetricCache(api, requestRenderFn = requestRender) {
         averageMs: job.latestToolCount > 0 ? job.latestToolTotalMs / job.latestToolCount : undefined,
       },
       turn: {
+        active: activeTurn,
         totalMs: cacheTurnTotalMs(latestMessage, job.latestParts, previousUser, previousUserParts, job.now),
       },
       chat: {
-        totalMs: cacheChatSpentTotalMs(job.messages, messagePartsFor, job.now),
+        totalMs: cacheChatSpentTotalMs(job.messages, messagePartsFor, job.now, activeTurn),
       },
-      hasSystemPrompt: job.previousSystem > 0,
-      categories: {
-        system: job.previousSystem,
-        user: job.previousUser,
-        context: job.contextTokens,
-        schema: undefined,
-        toolResults: job.latestToolResults,
-        thinking: Number.isFinite(exact.reasoning) ? exact.reasoning : job.latestThinking,
-        answer: Number.isFinite(exact.output) ? exact.output : job.latestAnswer,
+      hasSystemPrompt: job.segmentSystem > 0,
+      segments: {
+        system: job.segmentSystem,
+        user: job.segmentUser,
+        assistant: job.segmentAssistant,
+        toolResults: job.segmentToolResults,
       },
       pulseBlocks: job.pulseBlocks,
     }
-    metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.categories).some((value) => value > 0)
+    metrics.hasData = [exact.input, exact.output, exact.cache, exact.reasoning, exact.tps].some(Number.isFinite) || metrics.tools.count > 0 || Object.values(metrics.segments).some((value) => value > 0)
 
     for (const messageID of job.touchedMessages) messageMetricCache.set(messageID, { messageID, sessionID: job.sessionID, metrics })
     sessionMetricCache.set(job.sessionID, metrics)
@@ -664,15 +672,14 @@ function createMetricCache(api, requestRenderFn = requestRender) {
       while (job.partIndex < parts.length && processed < METRIC_BATCH_SIZE && Date.now() - started <= budgetMs) {
         const part = parts[job.partIndex]
         if (part?.id) partTokenCache.set(part.id, { messageID: info?.id, sessionID: job.sessionID, type: part.type })
-        if (job.index < job.latestIndex - 1) job.contextTokens += cacheContextPartTokens(part)
-        if (job.index === job.previousIndex && info?.role === "user" && part.type === "text") job.previousUser += cacheApproximateTokens(part.text)
+        if (info?.role === "user") job.segmentUser += cacheUserSegmentToken(part)
+        if (info?.role === "assistant" && part.type === "text") job.segmentAssistant += cacheApproximateTokens(part.text)
+        if (info?.role === "assistant" && part.type === "tool") job.segmentToolResults += cacheToolResultToken(part)
         if (job.index === job.latestIndex) {
           if (part.type === "tool") {
             job.latestToolCount += 1
             job.latestToolTotalMs += cacheToolDurationMs(part, job.status, job.now)
-            job.latestToolResults += cacheToolResultToken(part)
-          } else if (part.type === "reasoning") job.latestThinking += cacheApproximateTokens(part.text)
-          else if (part.type === "text") job.latestAnswer += cacheApproximateTokens(part.text)
+          }
           const block = cachePulseBlock(part)
           if (block) job.pulseBlocks.push(block)
         }
@@ -680,8 +687,7 @@ function createMetricCache(api, requestRenderFn = requestRender) {
         processed += 1
       }
       if (job.partIndex < parts.length) break
-      if (job.index < job.latestIndex - 1 && typeof info?.system === "string") job.contextTokens += cacheApproximateTokens(info.system)
-      if (job.index === job.previousIndex && typeof info?.system === "string") job.previousSystem = cacheApproximateTokens(info.system)
+      if (info?.role === "user" && typeof info?.system === "string") job.segmentSystem = cacheApproximateTokens(info.system)
       if (job.index === job.previousIndex) job.previousParts = parts
       if (job.index === job.latestIndex) job.latestParts = parts
       if (job.index === job.latestIndex && parts.length === 0) {
@@ -936,9 +942,10 @@ function GapLine(props) {
 function StatusLine(props) {
   const element = createElement("text")
   setProp(element, "selectable", false)
+  setProp(element, "width", props.metrics.statusWidth)
   setProp(element, "height", 1)
   setProp(element, "flexGrow", 0)
-  setProp(element, "flexShrink", 1)
+  setProp(element, "flexShrink", 0)
   appendText(element, props.view.statusText, props.textColor)
   return element
 }
