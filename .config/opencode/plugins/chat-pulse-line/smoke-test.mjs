@@ -209,7 +209,7 @@ const metricFixtureMessages = [
       tokens: { input: 40, output: 100, reasoning: 7, cache: { read: 5, write: 3 } },
     },
     parts: [
-      { id: "metric_reason", sessionID, messageID: "metric_assistant", type: "reasoning", text: "hidden" },
+      { id: "metric_reason", sessionID, messageID: "metric_assistant", type: "reasoning", text: "hidden", time: { start: 1_000, end: 1_500 } },
       { id: "metric_text", sessionID, messageID: "metric_assistant", type: "text", text: "visible answer", time: { start: 1_000, end: 2_000 } },
       { id: "metric_tool_done", sessionID, messageID: "metric_assistant", type: "tool", tool: "read", state: { status: "completed", input: {}, output: "abcdefgh", time: { start: 1_000, end: 2_000 } } },
       { id: "metric_tool_running", sessionID, messageID: "metric_assistant", type: "tool", tool: "write", state: { status: "running", input: {}, time: { start: 2_000 } } },
@@ -225,12 +225,12 @@ const metricSnapshot = pulseTesting.buildPulseMetrics({
     return []
   },
 })
-assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 4 })
+assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 6 })
 assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
 assert.equal("segments" in metricSnapshot, false)
 const streamStatus = pulseTesting.buildStatusView({ messages: metricFixtureMessages, status: { type: "idle" }, now: 2_500, partForMessage() { return [] } })
 assert.ok(streamStatus.text.includes("⚡ 50.00"))
-assert.ok(streamStatus.text.includes("↯ 04.00"))
+assert.ok(streamStatus.text.includes("↯ 06.00"))
 
 const lifetimeToolSnapshot = pulseTesting.buildPulseMetrics({
   messages: [
@@ -348,6 +348,38 @@ const liveStreamTrackerSnapshot = pulseTesting.buildPulseMetrics({
   },
 })
 assert.equal(liveStreamTrackerSnapshot.exact.streamTps, 12.34)
+
+const originalDateNow = Date.now
+let streamNow = 1_000
+Date.now = () => streamNow
+
+const updatedOnlyTracker = tuiTesting.createStreamTracker()
+updatedOnlyTracker.mark({ properties: { part: { type: "text", messageID: "stream_updated", id: "stream_updated_part", sessionID, text: "hello" } } })
+streamNow += 600
+assert.equal(updatedOnlyTracker.streamTps(sessionID), 2 / 0.6)
+
+const reasoningTracker = tuiTesting.createStreamTracker()
+streamNow = 1_000
+reasoningTracker.mark({ properties: { part: { type: "reasoning", messageID: "stream_reasoning", id: "stream_reasoning_part", sessionID, text: "hidden", time: { start: 400, end: 1_000 } } } })
+assert.equal(reasoningTracker.streamTps(sessionID), 2 / 0.6)
+
+const burstTracker = tuiTesting.createStreamTracker()
+streamNow = 2_000
+burstTracker.mark({ properties: { part: { type: "text", messageID: "stream_delta", id: "stream_delta_part", sessionID }, delta: { text: "hello" } } })
+streamNow += 200
+burstTracker.mark({ properties: { part: { type: "text", messageID: "stream_delta", id: "stream_delta_part", sessionID }, delta: { text: " world" } } })
+assert.equal(burstTracker.streamTps(sessionID), undefined)
+streamNow += 400
+assert.equal(burstTracker.streamTps(sessionID), 5)
+
+const timedUpdatedTracker = tuiTesting.createStreamTracker()
+streamNow = 2_000
+timedUpdatedTracker.mark({ properties: { part: { type: "text", messageID: "stream_timed_updated", id: "stream_timed_updated_part", sessionID, text: "", time: { start: 1_000 } } } })
+streamNow += 500
+timedUpdatedTracker.mark({ properties: { part: { type: "text", messageID: "stream_timed_updated", id: "stream_timed_updated_part", sessionID, text: "hello", time: { start: 1_000, end: 1_600 } } } })
+assert.equal(timedUpdatedTracker.streamTps(sessionID), 2 / 0.6)
+
+Date.now = originalDateNow
 
 const wideMetrics = tuiTesting.computePulseLayoutMetrics({ viewportWidth: 120, layout: "wide", statusText: normalView.statusText })
 assert.equal(wideMetrics.workWidth, 120)

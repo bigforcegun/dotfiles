@@ -20,6 +20,7 @@ const MIN_STREAM_SECONDS = 0.5
 const RENDER_THROTTLE_MS = 250
 const CACHE_READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "query", "inspect", "analyze"]
 const CACHE_WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
+const STREAM_PART_TYPES = new Set(["text", "reasoning"])
 const WIDE_STATUS_SYMBOLS = new Set([0x231b, 0x26a1])
 const RENDER_EVENTS = [
   "message.removed",
@@ -242,6 +243,10 @@ function cachePartKind(part) {
   }
 }
 
+function isStreamPartType(type) {
+  return STREAM_PART_TYPES.has(type)
+}
+
 function cacheHeightIndex(tokens) {
   if (tokens <= 16) return 0
   if (tokens <= 64) return 1
@@ -316,14 +321,21 @@ function cachePartEndTime(part, now) {
   return Number.isFinite(now) ? now : undefined
 }
 
+function cachePartExplicitEndTime(part) {
+  const direct = part.time?.end
+  if (Number.isFinite(direct)) return direct
+  const state = part.state?.time?.end
+  return Number.isFinite(state) ? state : undefined
+}
+
 function cacheTextStreamDurationSeconds(parts, now) {
   let start
   let end
   for (const part of parts ?? []) {
-    if (part.type !== "text") continue
+    if (!isStreamPartType(part.type)) continue
     const partStart = cachePartStartTime(part)
     if (!Number.isFinite(partStart)) continue
-    const partEnd = cachePartEndTime(part, now)
+    const partEnd = cachePartExplicitEndTime(part)
     if (!Number.isFinite(start) || partStart < start) start = partStart
     if (Number.isFinite(partEnd) && (!Number.isFinite(end) || partEnd > end)) end = partEnd
   }
@@ -333,7 +345,7 @@ function cacheTextStreamDurationSeconds(parts, now) {
 }
 
 function cacheTextPartTokens(parts) {
-  return (parts ?? []).reduce((total, part) => total + (part.type === "text" ? cacheApproximateTokens(part.text) : 0), 0)
+  return (parts ?? []).reduce((total, part) => total + (isStreamPartType(part.type) ? cacheApproximateTokens(part.text) : 0), 0)
 }
 
 function cacheMessageStartMs(entry, parts) {
@@ -541,17 +553,20 @@ function createMetricCache(api, requestRenderFn = requestRender) {
     const properties = event?.properties ?? {}
     const part = properties.part
     const type = part?.type ?? properties.type
-    if (type !== "text") return
+    if (!isStreamPartType(type)) return
     const messageID = part?.messageID ?? properties.messageID ?? properties.message?.id ?? properties.info?.id
     if (!messageID) return
     const partID = part?.id ?? properties.partID ?? messageID
     const text = streamPartText(event, part, messageID, partID)
     if (typeof text !== "string") return
     const now = Date.now()
-    const stream = streamMetricCache.get(messageID) ?? { sessionID: eventSessionID(event), started: now, ended: now, parts: new Map() }
+    const partStart = cachePartStartTime(part)
+    const partEnd = cachePartExplicitEndTime(part)
+    const stream = streamMetricCache.get(messageID) ?? { sessionID: eventSessionID(event), started: now, updated: now, ended: undefined, parts: new Map() }
     stream.sessionID = stream.sessionID ?? eventSessionID(event)
-    stream.started = Math.min(stream.started, now)
-    stream.ended = Math.max(stream.ended, now)
+    stream.started = Math.min(stream.started, Number.isFinite(partStart) ? partStart : now)
+    stream.updated = Math.max(stream.updated ?? now, now)
+    if (Number.isFinite(partEnd)) stream.ended = Math.max(stream.ended ?? partEnd, partEnd)
     stream.parts.set(partID, text)
     streamMetricCache.set(messageID, stream)
   }
@@ -559,7 +574,8 @@ function createMetricCache(api, requestRenderFn = requestRender) {
   function streamTpsForMessage(messageID) {
     const stream = streamMetricCache.get(messageID)
     if (!stream) return undefined
-    const seconds = (stream.ended - stream.started) / 1000
+    const end = Number.isFinite(stream.ended) ? stream.ended : stream.updated
+    const seconds = (end - stream.started) / 1000
     if (seconds < MIN_STREAM_SECONDS) return undefined
     const text = Array.from(stream.parts.values()).join("")
     const tokens = cacheApproximateTokens(text)
@@ -800,30 +816,40 @@ function createStreamTracker() {
     const properties = event?.properties ?? {}
     const part = properties.part
     const type = part?.type ?? properties.type
-    if (type !== "text") return
+    if (!isStreamPartType(type)) return
     const messageID = part?.messageID ?? properties.messageID ?? properties.message?.id ?? properties.info?.id
     if (!messageID) return
     const partID = part?.id ?? properties.partID ?? messageID
     const delta = textDelta(event, part, messageID, partID)
     if (!delta) return
     const now = Date.now()
-    const stream = streams.get(messageID) ?? { sessionID: eventSessionID(event), started: now, ended: now, parts: new Map() }
+    const partStart = cachePartStartTime(part)
+    const partEnd = cachePartExplicitEndTime(part)
+    const stream = streams.get(messageID) ?? { sessionID: eventSessionID(event), started: now, updated: now, ended: undefined, parts: new Map() }
     stream.sessionID = stream.sessionID ?? eventSessionID(event)
-    stream.started = Math.min(stream.started, now)
-    stream.ended = Math.max(stream.ended, now)
+    stream.started = Math.min(stream.started, Number.isFinite(partStart) ? partStart : now)
+    stream.updated = Math.max(stream.updated ?? now, now)
+    if (Number.isFinite(partEnd)) stream.ended = Math.max(stream.ended ?? partEnd, partEnd)
     stream.parts.set(partID, delta.text)
     streams.set(messageID, stream)
   }
 
-  function streamTps(sessionID) {
+  function streamTps(sessionID, now = Date.now()) {
     let latest
     for (const stream of streams.values()) {
-      if (stream.sessionID !== sessionID) continue
-      if (!latest || stream.ended > latest.ended) latest = stream
-    }
-    if (!latest) return undefined
-    const seconds = (latest.ended - latest.started) / 1000
-    if (seconds < MIN_STREAM_SECONDS) return undefined
+        if (stream.sessionID !== sessionID) continue
+        const streamUpdated = Number.isFinite(stream.updated) ? stream.updated : stream.started
+        const latestUpdated = latest ? (Number.isFinite(latest.updated) ? latest.updated : latest.started) : undefined
+        if (!latest || streamUpdated > latestUpdated) latest = stream
+      }
+      if (!latest) return undefined
+      const end = Number.isFinite(latest.ended)
+        ? latest.ended
+        : Number.isFinite(now)
+          ? Math.max(latest.updated ?? latest.started, now)
+          : (latest.updated ?? latest.started)
+      const seconds = (end - latest.started) / 1000
+      if (seconds < MIN_STREAM_SECONDS) return undefined
     const tokens = cacheApproximateTokens(Array.from(latest.parts.values()).join(""))
     return tokens > 0 ? tokens / seconds : undefined
   }
@@ -867,7 +893,8 @@ function pulseViewInput(api, sessionID, tick, width, pulseWidth, metrics, stream
 
 function renderViewForSession(api, sessionID, tick, streamTracker) {
   const layout = pulseRowLayout()
-  const streamTps = streamTracker?.streamTps(sessionID)
+  const active = sessionIsPulsing(api)
+  const streamTps = active ? streamTracker?.streamTps(sessionID, Date.now()) : undefined
   const baseView = buildPulseView(pulseViewInput(api, sessionID, tick, rendererWidth(api), undefined, undefined, streamTps))
   const metrics = computePulseLayoutMetrics({ viewportWidth: viewportWidth(api), layout, statusText: baseView.statusText, hasPulse: baseView.pulseBlocks.length > 0 })
   const view = buildPulseView(pulseViewInput(api, sessionID, tick, metrics.workWidth, metrics.pulseWidth, undefined, streamTps))
@@ -1015,7 +1042,7 @@ function initializeTui(api, disposeRoot) {
     const isCurrent = isEventForCurrentSession(api, event)
     if (!isCurrent) return
     syncPulseTimer()
-    if (eventName === "message.part.delta") streamTracker.mark(event)
+    if (eventName === "message.part.delta" || eventName === "message.part.updated") streamTracker.mark(event)
     requestRender(api)
   }))
 
@@ -1035,5 +1062,5 @@ const plugin = {
 }
 
 export default plugin
-export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, createMetricCache, currentLayout, renderSplitLine, statusTextForWidth, terminalWidth }
+export const __testing = { computeCurrentPulseLayoutMetrics, computePulseLayoutMetrics, computeSplitSegments, createMetricCache, createStreamTracker, currentLayout, renderSplitLine, statusTextForWidth, terminalWidth }
 export { renderForSession }

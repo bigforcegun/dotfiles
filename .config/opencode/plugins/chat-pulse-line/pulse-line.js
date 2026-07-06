@@ -9,6 +9,7 @@ const READ_TOOL_PREFIXES = ["read", "list", "get", "fetch", "search", "find", "q
 const WRITE_TOOL_PREFIXES = ["write", "edit", "apply", "create", "update", "patch", "delete", "remove", "move", "rename"]
 
 const HEIGHT_GLYPHS = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+const STREAM_PART_TYPES = new Set(["text", "reasoning"])
 const COLOR_BY_KIND = {
   text: { ansi: "\u001b[38;5;244m", tui: "#928374" },
   reasoning: { ansi: "\u001b[38;5;141m", tui: "#b16286" },
@@ -203,6 +204,10 @@ function partKind(part) {
     default:
       return "misc"
   }
+}
+
+function isStreamPartType(type) {
+  return STREAM_PART_TYPES.has(type)
 }
 
 function approximateTokens(text) {
@@ -610,7 +615,7 @@ function textStreamDurationSeconds(parts, now) {
   let start
   let end
   for (const part of parts) {
-    if (part.type !== "text") continue
+    if (!isStreamPartType(part.type)) continue
     const partStart = partStartTime(part)
     if (!Number.isFinite(partStart)) continue
     const partEnd = partEndTime(part, now)
@@ -623,7 +628,8 @@ function textStreamDurationSeconds(parts, now) {
 }
 
 function textPartTokens(parts, type) {
-  return parts.reduce((total, part) => total + (part.type === type ? approximateTokens(part.text) : 0), 0)
+  if (type) return parts.reduce((total, part) => total + (part.type === type ? approximateTokens(part.text) : 0), 0)
+  return parts.reduce((total, part) => total + (isStreamPartType(part.type) ? approximateTokens(part.text) : 0), 0)
 }
 
 function assistantToolParts(messages, partForMessage) {
@@ -676,7 +682,7 @@ export function buildPulseMetrics(input) {
   const parts = latest ? messageParts(latest.message, input.partForMessage) : []
   const completedSeconds = messageCompletionSeconds(latest?.info)
   const completedOutputTokens = latest ? messageOutputTokens(latest.info, parts) : undefined
-  const streamTokens = textPartTokens(parts, "text")
+  const streamTokens = textPartTokens(parts)
   const streamSeconds = textStreamDurationSeconds(parts, input.now)
   exact.tps = Number.isFinite(completedOutputTokens) && completedSeconds > 0 ? completedOutputTokens / completedSeconds : undefined
   exact.streamTps = Number.isFinite(input.streamTps) && input.streamTps > 0
