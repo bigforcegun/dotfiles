@@ -51,8 +51,6 @@
       "LANG",
       "USER",
       "USERNAME",
-      "SALOTECH_FRESHDESK_API_KEY",
-      "SALOTECH_FRESHDESK_DOMAIN",
       "XDG_CONFIG_HOME",
       "XDG_DATA_HOME",
       "XDG_CACHE_HOME",
@@ -144,6 +142,26 @@
       "quarantined": false
     },
     {
+      "name": "bfg-vault",
+      "url": "${env:BFG_VAULT_MCP_URL}",
+      "protocol": "http",
+      "headers": {
+        "Authorization": "Bearer ${env:BFG_VAULT_MCP_AUTH}"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false,
+      "disabled_tools": [
+        "vault_write",
+        "vault_append",
+        "vault_patch",
+        "vault_move",
+        "vault_delete",
+        "open_file",
+        "periodic_note_get_path"
+      ]
+    },
+    {
       "name": "krita",
       "protocol": "stdio",
       "command": "/opt/homebrew/bin/uv",
@@ -192,6 +210,46 @@
       "quarantined": false,
       "disabled_tools": [
         "export"
+      ]
+    },
+    {
+      "name": "salotech-freshdesk-direct",
+      "protocol": "http",
+      "url": "${env:SALOTECH_FRESHDESK_MCP_URL}",
+      "headers": {
+        "Authorization": "${env:SALOTECH_FRESHDESK_API_KEY}"
+      },
+      "oauth": null,
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": [
+        "create_ticket",
+        "update_ticket",
+        "delete_ticket",
+        "create_ticket_note",
+        "create_ticket_reply",
+        "update_ticket_conversation",
+        "update_ticket_summary",
+        "delete_ticket_summary",
+        "create_ticket_field",
+        "update_ticket_field",
+        "update_contact",
+        "create_contact_field",
+        "update_contact_field",
+        "create_agent",
+        "update_agent",
+        "create_group",
+        "update_group",
+        "create_canned_response",
+        "update_canned_response",
+        "create_canned_response_folder",
+        "update_canned_response_folder",
+        "create_solution_article",
+        "update_solution_article",
+        "create_solution_category",
+        "update_solution_category",
+        "create_solution_category_folder",
+        "update_solution_category_folder"
       ]
     },
     {
@@ -245,8 +303,8 @@
       "quarantined": false,
       "url": "https://mcp.slack.com/mcp",
       "oauth": {
-        "client_id": "1601185624273.8899143856786",
-        "redirect_uri": "http://localhost:3118/callback",
+        "client_id": "${env:SALOTECH_SLACK_CLIENT_ID}",
+        "redirect_uri": "${env:SALOTECH_SLACK_REDIRECT_URI}",
         "scopes": []
       },
       "disabled_tools": [
@@ -301,23 +359,6 @@
       "disabled_tools": []
     },
     {
-      "name": "salotech-trino",
-      "protocol": "stdio",
-      "command": "mcp-trino",
-      "args": [
-        "mcp-trino"
-      ],
-      "env": {
-        "TRINO_USER": "${env:SALOTECH_TRINO_USER}",
-        "TRINO_HOST": "${env:SALOTECH_TRINO_HOST}",
-        "MCP_TRANSPORT": "http",
-        "OAUTH_ENABLED": "true"
-      },
-      "enabled": false,
-      "quarantined": false,
-      "disabled_tools": []
-    },
-    {
       "name": "salotech-opensearch",
       "protocol": "stdio",
       "command": "uvx",
@@ -360,21 +401,23 @@
     {
       "name": "salotech",
       "servers": [
+        "bfg-vault",
         "playwright",
         "semble",
         "context7",
         "salotech-slack",
         "salotech-atlassian",
         "salotech-freshdesk",
+        "salotech-freshdesk-direct",
         "salotech-mongodb-sisa",
         "salotech-grafana",
-        "salotech-trino",
         "salotech-opensearch"
       ]
     },
     {
       "name": "dev",
       "servers": [
+        "bfg-vault",
         "context7",
         "grep-app",
         "semble"
@@ -383,6 +426,7 @@
     {
       "name": "gamedev",
       "servers": [
+        "bfg-vault",
         "krita",
         "godot",
         "semble",
