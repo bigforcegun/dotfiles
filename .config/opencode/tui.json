@@ -5,6 +5,7 @@
   "plugin": [
     "oh-my-openagent@latest",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
+    "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
     "@slkiser/opencode-quota@latest",
     "opencode-subagent-statusline",
     "@ishaksebsib/opencode-tree",
@@ -12,7 +13,7 @@
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",
-    "input_newline": "return,shift+return,ctrl+j",
+    "input_newline": "return,shift+return",
     "input_word_forward": "alt+f,alt+right,ctrl+right",
     "input_word_backward": "alt+b,alt+left,ctrl+left",
     "dialog.prompt.submit": "ctrl+return"

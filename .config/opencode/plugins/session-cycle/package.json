@@ -1,0 +1,12 @@
+{
+  "name": "session-cycle",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./tui.js",
+  "exports": {
+    ".": "./tui.js"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.17.0 <2"
+  }
+}
