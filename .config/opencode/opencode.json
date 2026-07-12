@@ -3,6 +3,7 @@
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",
+  "small_model": "openai/gpt-5.4-fast",
   "watcher": {
     "ignore": [
       "node_modules/**",
@@ -77,9 +78,10 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest",
-    "@slkiser/opencode-quota@latest",
-    "@ramtinj95/opencode-tokenscope@latest",
-    "opencode-skill-creator"
+    "oh-my-openagent@4.16.2",
+    "@slkiser/opencode-quota@3.11.1",
+    "@ramtinj95/opencode-tokenscope@1.8.0",
+    "opencode-skill-creator@0.2.23",
+    "opencode-subagent-statusline@1.2.0"
   ]
 }

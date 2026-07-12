@@ -3,13 +3,12 @@
   "theme": "gruvbox",
   "diff_style": "auto",
   "plugin": [
-    "oh-my-openagent@latest",
+    "oh-my-openagent@4.16.2",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
-    "@slkiser/opencode-quota@latest",
-    "opencode-subagent-statusline",
-    "@ishaksebsib/opencode-tree",
-    "oh-my-openagent@latest"
+    "@slkiser/opencode-quota@3.11.1",
+    "opencode-subagent-statusline@1.2.0",
+    "@ishaksebsib/opencode-tree@0.4.2"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",
