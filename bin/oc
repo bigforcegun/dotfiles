@@ -9,6 +9,13 @@ set -u
 tmux_window_id=""
 tmux_window_name=""
 tmux_window_auto_rename=""
+opencode_bin="${OPENCODE_BIN:-opencode}"
+if [[ "${1:-}" == "--luna" ]]; then
+  opencode_bin="opencode-luna"
+  export OPENCODE_DB="${OPENCODE_DB:-opencode.db}"
+  shift
+fi
+opencode_process_name="${opencode_bin:t}"
 
 diagnose() {
   print -r -- "oc: $*" >&2
@@ -29,7 +36,7 @@ is_loopback_url() {
 
 manual_attach_command() {
   local url="$1"
-  print -r -- "opencode attach $url --dir $PWD"
+  print -r -- "$opencode_bin attach $url --dir $PWD"
 }
 
 canonical_path() {
@@ -76,7 +83,7 @@ rename_tmux_window_for_oc() {
 discover_candidates() {
   local line pid command
 
-  pgrep -f 'opencode' 2>/dev/null | while IFS= read -r line; do
+  pgrep -f "$opencode_process_name" 2>/dev/null | while IFS= read -r line; do
     [[ -n "$line" ]] || continue
     pid="${line%% *}"
     [[ "$pid" =~ '^[0-9]+$' ]] || continue
@@ -90,8 +97,8 @@ discover_candidates() {
     [[ -n "$command" ]] || continue
 
     case "$command" in
-      *"opencode attach"*) continue ;;
-      *"opencode --port "*|*"opencode serve"*|*"opencode web"*)
+      *"$opencode_process_name attach"*) continue ;;
+      *"$opencode_process_name --port "*|*"$opencode_process_name serve"*|*"$opencode_process_name web"*)
         print -r -- "$pid $command"
         ;;
     esac
@@ -165,9 +172,9 @@ attach_to() {
   if [[ -n "${OPENCODE_SERVER_PASSWORD:-${OPENCODE_ATTACH_PASSWORD:-}}" ]]; then
     OPENCODE_SERVER_USERNAME="${OPENCODE_SERVER_USERNAME:-opencode}" \
       OPENCODE_SERVER_PASSWORD="${OPENCODE_SERVER_PASSWORD:-${OPENCODE_ATTACH_PASSWORD:-}}" \
-      command opencode attach "$url" --dir "$PWD" "$@"
+      command "$opencode_bin" attach "$url" --dir "$PWD" "$@"
   else
-    command opencode attach "$url" --dir "$PWD" "$@"
+    command "$opencode_bin" attach "$url" --dir "$PWD" "$@"
   fi
 }
 
@@ -176,18 +183,18 @@ start_project_tui() {
   shift
 
   if [[ -n "${OC_NO_START:-}" ]]; then
-    print -r -- "cd $root && opencode --port 0" >&2
+    print -r -- "cd $root && $opencode_bin --port 0" >&2
     return 1
   fi
 
-  (cd "$root" && command opencode --port 0 "$@")
+  (cd "$root" && command "$opencode_bin" --port 0 "$@")
 }
 
 explicit_attach_url="${OPENCODE_ATTACH_URL:-}"
 allow_unverified_attach="${OC_ALLOW_UNVERIFIED_ATTACH:-}"
 
-if ! command -v opencode >/dev/null 2>&1; then
-  diagnose "opencode not found in PATH"
+if ! command -v "$opencode_bin" >/dev/null 2>&1; then
+  diagnose "$opencode_bin not found in PATH"
   exit 127
 fi
 
@@ -353,7 +360,7 @@ if (( ${#discovered_candidates} == 0 )); then
   diagnose "no OpenCode backends found for $canonical_root"
   diagnose "project root: $canonical_root"
   diagnose "candidate count: 0"
-  diagnose "manual: cd $canonical_root && opencode --port 0"
+  diagnose "manual: cd $canonical_root && $opencode_bin --port 0"
 elif (( ${#rejected_candidate_lines} > 0 )); then
   diagnose "no matching OpenCode backend found for $canonical_root"
   diagnose "project root: $canonical_root"
@@ -363,7 +370,7 @@ elif (( ${#rejected_candidate_lines} > 0 )); then
   for rejected_line in "${rejected_candidate_lines[@]}"; do
     diagnose "  $rejected_line"
   done
-  diagnose "manual: cd $canonical_root && opencode --port 0"
+  diagnose "manual: cd $canonical_root && $opencode_bin --port 0"
 fi
 
 debug "selected action: start project backend"
