@@ -149,7 +149,7 @@
         "Authorization": "Bearer ${env:BFG_VAULT_MCP_AUTH}"
       },
       "oauth": null,
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": [
         "vault_write",
@@ -191,6 +191,18 @@
       "env": {
         "GODOT_PATH": "${env:GODOT_PATH}"
       },
+      "enabled": false,
+      "quarantined": false
+    },
+    {
+      "name": "endless-library",
+      "protocol": "stdio",
+      "command": "/Users/bigforcegun/Projects/llm-workspace/endless-library/bin/elcli",
+      "args": [
+        "--root",
+        "/Users/bigforcegun/Projects/llm-workspace/endless-library",
+        "mcp"
+      ],
       "enabled": true,
       "quarantined": false
     },
@@ -206,7 +218,7 @@
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_SISA_URI}"
       },
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": [
         "export"
@@ -264,7 +276,7 @@
         "FRESHDESK_DOMAIN": "${env:SALOTECH_FRESHDESK_DOMAIN}"
       },
       "oauth": null,
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": [
         "create_ticket",
@@ -299,7 +311,7 @@
     {
       "name": "salotech-slack",
       "protocol": "streamable-http",
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "url": "https://mcp.slack.com/mcp",
       "oauth": {
@@ -328,15 +340,9 @@
         "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
       },
       "oauth": null,
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": [
-        "addCommentToJiraIssue",
-        "addWorklogToJiraIssue",
-        "createJiraIssue",
-        "createIssueLink",
-        "editJiraIssue",
-        "transitionJiraIssue",
         "createConfluencePage",
         "updateConfluencePage",
         "createConfluenceFooterComment",
@@ -354,7 +360,7 @@
         "GRAFANA_URL": "${env:SALOTECH_GRAFANA_URL}",
         "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${env:SALOTECH_GRAFANA_SERVICE_ACCOUNT_TOKEN}"
       },
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": []
     },
@@ -411,16 +417,20 @@
         "salotech-freshdesk-direct",
         "salotech-mongodb-sisa",
         "salotech-grafana",
-        "salotech-opensearch"
+        "salotech-opensearch",
+        "endless-library"
       ]
     },
     {
       "name": "dev",
       "servers": [
+        "endless-library",
         "bfg-vault",
         "context7",
         "grep-app",
-        "semble"
+        "semble",
+        "endless-library",
+        "playwright"
       ]
     },
     {
