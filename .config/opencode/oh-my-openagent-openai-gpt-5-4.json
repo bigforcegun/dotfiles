@@ -2,15 +2,15 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "high"
     },
     "hephaestus": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "high"
     },
     "oracle": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "openai/gpt-5.5",
       "variant": "high",
       "fallback_models": [
         {
@@ -20,22 +20,22 @@
       ]
     },
     "librarian": {
-      "model": "openai/gpt-5.6-luna-fast",
+      "model": "openai/gpt-5.4-mini-fast",
       "variant": "medium",
       "fallback_models": [
         {
-          "model": "openai/gpt-5.6-luna",
+          "model": "openai/gpt-5.4-nano",
           "variant": "low",
           "reasoningEffort": "low"
         }
       ]
     },
     "explore": {
-      "model": "openai/gpt-5.6-luna-fast",
+      "model": "openai/gpt-5.4-mini-fast",
       "variant": "medium",
       "fallback_models": [
         {
-          "model": "openai/gpt-5.6-luna",
+          "model": "openai/gpt-5.4-nano",
           "variant": "low",
           "reasoningEffort": "low"
         }
@@ -52,7 +52,7 @@
       ]
     },
     "prometheus": {
-      "model": "openai/gpt-5.6-sol-fast",
+      "model": "openai/gpt-5.5-fast",
       "variant": "high",
       "fallback_models": [
         {
@@ -62,11 +62,11 @@
       ]
     },
     "metis": {
-      "model": "openai/gpt-5.6-sol-fast",
+      "model": "openai/gpt-5.5-fast",
       "variant": "high"
     },
     "momus": {
-      "model": "openai/gpt-5.6-sol-fast",
+      "model": "openai/gpt-5.5-fast",
       "variant": "xhigh",
       "fallback_models": [
         {
@@ -76,11 +76,11 @@
       ]
     },
     "atlas": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "high"
     },
     "sisyphus-junior": {
-      "model": "openai/gpt-5.6-luna-fast",
+      "model": "openai/gpt-5.4-mini-fast",
       "variant": "medium"
     }
   },
@@ -90,7 +90,7 @@
       "variant": "high"
     },
     "ultrabrain": {
-      "model": "openai/gpt-5.6-sol",
+      "model": "openai/gpt-5.5",
       "variant": "xhigh",
       "fallback_models": [
         {
@@ -100,7 +100,7 @@
       ]
     },
     "deep": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "high",
       "fallback_models": [
         {
@@ -114,18 +114,18 @@
       "variant": "high",
       "fallback_models": [
         {
-          "model": "openai/gpt-5.6-sol",
+          "model": "openai/gpt-5.5",
           "variant": "high"
         }
       ]
     },
     "quick": {
-      "model": "openai/gpt-5.6-luna-fast",
+      "model": "openai/gpt-5.4-mini-fast",
       "variant": "medium",
       "reasoningEffort": "medium",
       "fallback_models": [
         {
-          "model": "openai/gpt-5.6-luna",
+          "model": "openai/gpt-5.4-nano",
           "variant": "low",
           "reasoningEffort": "low"
         },
@@ -137,7 +137,7 @@
       ]
     },
     "unspecified-low": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "medium",
       "fallback_models": [
         {
@@ -147,11 +147,11 @@
       ]
     },
     "unspecified-high": {
-      "model": "openai/gpt-5.6-terra-fast",
+      "model": "openai/gpt-5.4-fast",
       "variant": "high",
       "fallback_models": [
         {
-          "model": "openai/gpt-5.6-sol",
+          "model": "openai/gpt-5.5",
           "variant": "high"
         },
         {
