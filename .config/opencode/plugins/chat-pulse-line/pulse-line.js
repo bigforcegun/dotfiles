@@ -393,6 +393,42 @@ function messageCompletionSeconds(info) {
   return (completed - created) / 1000
 }
 
+function completedToolDurationMs(parts) {
+  const intervals = []
+  for (const part of parts ?? []) {
+    if (part?.type !== "tool") continue
+    const status = part.state?.status
+    const start = part.state?.time?.start
+    const end = part.state?.time?.end
+    if ((status !== "completed" && status !== "error") || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
+    intervals.push([start, end])
+  }
+
+  let total = 0
+  let start
+  let end
+  for (const [nextStart, nextEnd] of intervals.sort(([left], [right]) => left - right)) {
+    if (!Number.isFinite(start)) {
+      start = nextStart
+      end = nextEnd
+    } else if (nextStart <= end) {
+      end = Math.max(end, nextEnd)
+    } else {
+      total += end - start
+      start = nextStart
+      end = nextEnd
+    }
+  }
+  return Number.isFinite(start) ? total + end - start : 0
+}
+
+function messageGenerationSeconds(info, parts) {
+  const completionSeconds = messageCompletionSeconds(info)
+  if (!Number.isFinite(completionSeconds)) return undefined
+  const generationSeconds = completionSeconds - completedToolDurationMs(parts) / 1000
+  return generationSeconds > 0 ? generationSeconds : undefined
+}
+
 function latestStepFinishOutputTokens(parts) {
   let output
   for (const part of parts ?? []) {
@@ -680,7 +716,7 @@ export function buildPulseMetrics(input) {
   const lastInfo = messageInfo(messages[messages.length - 1])
   const exact = exactMetrics(messages, input.session)
   const parts = latest ? messageParts(latest.message, input.partForMessage) : []
-  const completedSeconds = messageCompletionSeconds(latest?.info)
+  const completedSeconds = messageGenerationSeconds(latest?.info, parts)
   const completedOutputTokens = latest ? messageOutputTokens(latest.info, parts) : undefined
   const streamTokens = textPartTokens(parts)
   const streamSeconds = textStreamDurationSeconds(parts, input.now)

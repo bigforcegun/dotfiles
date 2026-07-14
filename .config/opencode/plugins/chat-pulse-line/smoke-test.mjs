@@ -225,11 +225,11 @@ const metricSnapshot = pulseTesting.buildPulseMetrics({
     return []
   },
 })
-assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 50, tpsLoading: false, streamTps: 6 })
+assert.deepEqual(metricSnapshot.exact, { input: 40, output: 100, cache: 8, cacheRead: 5, cacheWrite: 3, reasoning: 7, tps: 100, tpsLoading: false, streamTps: 6 })
 assert.deepEqual(metricSnapshot.tools, { count: 3, totalMs: 1_500, averageMs: 500 })
 assert.equal("segments" in metricSnapshot, false)
 const streamStatus = pulseTesting.buildStatusView({ messages: metricFixtureMessages, status: { type: "idle" }, now: 2_500, partForMessage() { return [] } })
-assert.ok(streamStatus.text.includes("⚡ 50.00"))
+assert.ok(streamStatus.text.includes("⚡ 100"))
 assert.ok(streamStatus.text.includes("↯ 06.00"))
 
 const lifetimeToolSnapshot = pulseTesting.buildPulseMetrics({
@@ -338,6 +338,30 @@ const gpt54StepFinishSnapshot = pulseTesting.buildPulseMetrics({
   },
 })
 assert.equal(gpt54StepFinishSnapshot.exact.tps, 60)
+
+const gpt56ToolPauseSnapshot = pulseTesting.buildPulseMetrics({
+  messages: [
+    { info: { id: "gpt56_user", sessionID, role: "user", time: { created: 500 } }, parts: [] },
+    {
+      info: {
+        id: "gpt56_assistant",
+        sessionID,
+        role: "assistant",
+        time: { created: 1_000, completed: 9_000 },
+        tokens: { output: 200 },
+      },
+      parts: [
+        { id: "gpt56_tool", sessionID, messageID: "gpt56_assistant", type: "tool", tool: "bash", state: { status: "completed", time: { start: 2_000, end: 7_000 } } },
+      ],
+    },
+  ],
+  status: { type: "idle" },
+  now: 9_000,
+  partForMessage() {
+    return []
+  },
+})
+assert.equal(gpt56ToolPauseSnapshot.exact.tps, 200 / 3, "GPT-5.6 output TPS must exclude completed tool wall time")
 
 const liveStreamTrackerSnapshot = pulseTesting.buildPulseMetrics({
   messages: [{ info: { id: "live_assistant", sessionID, role: "assistant" }, parts: [] }],
