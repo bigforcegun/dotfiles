@@ -340,7 +340,7 @@
         "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
       },
       "oauth": null,
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "disabled_tools": [
         "createConfluencePage",
@@ -348,6 +348,21 @@
         "createConfluenceFooterComment",
         "createConfluenceInlineComment"
       ]
+    },
+    {
+      "name": "salotech-miro-isa",
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/node",
+      "args": [
+        "/Users/bigforcegun/Sources/mcp-remote/dist/proxy.js",
+        "https://mcp.miro.com/"
+      ],
+      "env": {
+        "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
     },
     {
       "name": "salotech-grafana",
@@ -418,7 +433,8 @@
         "salotech-mongodb-sisa",
         "salotech-grafana",
         "salotech-opensearch",
-        "endless-library"
+        "endless-library",
+        "salotech-miro-isa"
       ]
     },
     {
@@ -430,6 +446,7 @@
         "grep-app",
         "semble",
         "endless-library",
+        "salotech-miro-isa",
         "playwright"
       ]
     },
