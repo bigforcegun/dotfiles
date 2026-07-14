@@ -1,0 +1,128 @@
+#!/usr/bin/env zsh
+
+# Move OpenCode sessions between registered projects using the native CLI.
+emulate -LR zsh
+setopt pipefail
+set -u
+
+opencode_bin="${OPENCODE_BIN:-opencode}"
+
+die() {
+  print -u2 -r -- "oc-session: $*"
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  oc-session projects
+  oc-session find <project> <session-id-or-title>
+  oc-session export <session-id> <archive.json>
+  oc-session import <archive.json> <target-project>
+  oc-session rehome <source-project> <session-id-or-title> <target-project>
+
+Project may be its worktree path, configured name, or unique directory basename.
+EOF
+  exit 1
+}
+
+sql_literal() {
+  local value="$1"
+  value="${value//\'/\'\'}"
+  print -r -- "'$value'"
+}
+
+db() {
+  "$opencode_bin" db "$1" --format tsv | tail -n +2
+}
+
+resolve_project() {
+  local selector="$1" quoted row id worktree
+  local -a rows
+
+  quoted="$(sql_literal "$selector")"
+  while IFS=$'\t' read -r id worktree; do
+    [[ -n "$id" && -n "$worktree" ]] && rows+=("$id"$'\t'"$worktree")
+  done < <(db "select id, worktree from project where worktree = $quoted or name = $quoted or substr(worktree, -length($quoted) - 1) = '/' || $quoted order by worktree")
+
+  (( ${#rows} == 1 )) || {
+    if (( ${#rows} == 0 )); then
+      print -u2 -r -- "oc-session: project not found: $selector"
+      return 1
+    fi
+    print -u2 -r -- "oc-session: project is ambiguous: $selector"
+    print -u2 -rl -- "$rows"
+    return 1
+  }
+  print -r -- "$rows[1]"
+}
+
+resolve_session() {
+  local project_id="$1" query="$2" quoted row id title
+  local -a rows
+
+  quoted="$(sql_literal "$query")"
+  while IFS=$'\t' read -r id title; do
+    [[ -n "$id" ]] && rows+=("$id"$'\t'"$title")
+  done < <(db "select id, title from session where project_id = $(sql_literal "$project_id") and parent_id is null and (id = $quoted or instr(lower(title), lower($quoted)) > 0) order by time_updated desc")
+
+  (( ${#rows} == 1 )) || {
+    if (( ${#rows} == 0 )); then
+      print -u2 -r -- "oc-session: session not found: $query"
+      return 1
+    fi
+    print -u2 -r -- "oc-session: session is ambiguous: $query"
+    print -u2 -rl -- "$rows"
+    return 1
+  }
+  print -r -- "$rows[1]"
+}
+
+import_into() {
+  local archive="$1" target="$2" project worktree
+  [[ -f "$archive" ]] || die "archive not found: $archive"
+
+  project="$(resolve_project "$target")" || return 1
+  worktree="${project#*$'\t'}"
+  (cd "$worktree" && "$opencode_bin" import "$archive") || die "import failed"
+}
+
+command -v "$opencode_bin" >/dev/null 2>&1 || die "$opencode_bin not found in PATH"
+
+case "${1:-}" in
+  projects)
+    [[ $# == 1 ]] || usage
+    print -r -- $'PROJECT\tSESSIONS'
+    db "select p.worktree, count(s.id) from project p left join session s on s.project_id = p.id and s.parent_id is null group by p.id order by max(s.time_updated) desc"
+    ;;
+  find)
+    [[ $# == 3 ]] || usage
+    project="$(resolve_project "$2")" || exit 1
+    print -r -- $'ID\tTITLE'
+    db "select id, title from session where project_id = $(sql_literal "${project%%$'\t'*}") and parent_id is null and (id = $(sql_literal "$3") or instr(lower(title), lower($(sql_literal "$3"))) > 0) order by time_updated desc"
+    ;;
+  export)
+    [[ $# == 3 ]] || usage
+    [[ ! -e "$3" ]] || die "archive already exists: $3"
+    "$opencode_bin" export "$2" > "$3" || die "export failed"
+    print -r -- "Exported $2 to $3"
+    ;;
+  import)
+    [[ $# == 3 ]] || usage
+    import_into "$2" "$3"
+    ;;
+  rehome)
+    [[ $# == 4 ]] || usage
+    source_project="$(resolve_project "$2")" || exit 1
+    session="$(resolve_session "${source_project%%$'\t'*}" "$3")" || exit 1
+    session_id="${session%%$'\t'*}"
+    archive="$(mktemp "${TMPDIR:-/tmp}/oc-session.XXXXXX.json")" || die "could not create temporary archive"
+    trap 'rm -f -- "$archive"' EXIT
+    "$opencode_bin" export "$session_id" > "$archive" || die "export failed"
+    import_into "$archive" "$4"
+    print -r -- "Rehomed $session_id to ${4}."
+    ;;
+  *)
+    usage
+    ;;
+esac
