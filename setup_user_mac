@@ -85,6 +85,7 @@ link ".config/kilo"
 
 link ".mcpproxy"
 link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
+link "Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist"
 
 link ".config/rulesync/contexts"
 
@@ -145,6 +146,23 @@ head "Enable userspace services..."
 launchctl load -w ~/Library/LaunchAgents/ke.bou.dark-mode-notify.plist
 # mcpproxy-go
 launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist
+# endless-library watch
+ELD_ROOT="/Users/bigforcegun/Projects/llm-workspace/endless-library"
+ELD_BIN="$ELD_ROOT/bin/elcli"
+if [[ -d "$ELD_ROOT" ]]; then
+    if [[ ! -x "$ELD_BIN" ]]; then
+        head "Building endless-library binary..."
+        (cd "$ELD_ROOT" && go build -o bin/elcli ./src/cmd/elcli)
+    fi
+
+    if [[ -x "$ELD_BIN" ]]; then
+        ./bin/eld reload
+    else
+        echo "Skipping endless-library LaunchAgent; missing executable $ELD_BIN"
+    fi
+else
+    echo "Skipping endless-library LaunchAgent; missing repo $ELD_ROOT"
+fi
 # TBXark
 # launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
 

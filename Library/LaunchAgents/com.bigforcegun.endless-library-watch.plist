@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.bigforcegun.endless-library-watch</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/Applications/calibre.app/Contents/MacOS:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>StandardErrorPath</key>
+    <string>/tmp/com.bigforcegun.endless-library-watch.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/com.bigforcegun.endless-library-watch.out.log</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>-lc</string>
+        <string>cd /Users/bigforcegun/Projects/llm-workspace/endless-library &amp;&amp; exec ./bin/elcli --root /Users/bigforcegun/Projects/llm-workspace/endless-library watch --interval 2s --model debug-hash-v1</string>
+    </array>
+</dict>
+</plist>

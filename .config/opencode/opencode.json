@@ -62,6 +62,21 @@
     "*": "allow",
     "external_directory": "ask",
     "doom_loop": "ask",
+    "bash": {
+      "*": "allow",
+      "*brew install*": "deny",
+      "*brew uninstall*": "deny",
+      "*brew remove*": "deny",
+      "*brew cask install*": "deny",
+      "*brew cask uninstall*": "deny",
+      "*port install*": "deny",
+      "*port uninstall*": "deny",
+      "*mas install*": "deny",
+      "*mas uninstall*": "deny",
+      "*installer *": "deny",
+      "*softwareupdate --install*": "deny",
+      "*pkgutil --forget*": "deny"
+    },
     "edit": {
       "*": "allow",
       "opencode.json": "deny",

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ELD_LABEL="${ELD_LABEL:-com.bigforcegun.endless-library-watch}"
+ELD_PLIST="${ELD_PLIST:-$HOME/Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist}"
+ELD_SERVICE="gui/$(id -u)/$ELD_LABEL"
+
+usage() {
+  cat >&2 <<EOF
+eld <verb> — manage endless-library watcher ($ELD_LABEL)
+  status            launchd job state
+  start             load launch agent
+  stop              unload launch agent
+  restart           unload + load
+  reload            alias for restart
+  logs [-f|-n N]    tail watcher logs
+EOF
+}
+
+status() {
+  launchctl print "$ELD_SERVICE"
+}
+
+start() {
+  launchctl load -w "$ELD_PLIST"
+}
+
+stop() {
+  launchctl unload -w "$ELD_PLIST"
+}
+
+restart() {
+  launchctl unload -w "$ELD_PLIST" >/dev/null 2>&1 || true
+  launchctl load -w "$ELD_PLIST"
+}
+
+logs() {
+  tail "$@" /tmp/com.bigforcegun.endless-library-watch.out.log /tmp/com.bigforcegun.endless-library-watch.err.log
+}
+
+verb="${1:-help}"
+shift || true
+
+case "$verb" in
+  status) status "$@" ;;
+  start) start "$@" ;;
+  stop) stop "$@" ;;
+  restart|reload) restart "$@" ;;
+  logs) logs "$@" ;;
+  help|--help|-h) usage ;;
+  *)
+    printf 'eld: unknown verb %s\n' "$verb" >&2
+    usage
+    exit 1
+    ;;
+esac
