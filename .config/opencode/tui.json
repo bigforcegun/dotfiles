@@ -3,7 +3,7 @@
   "theme": "gruvbox",
   "diff_style": "auto",
   "plugin": [
-    "oh-my-openagent@4.16.2",
+    "oh-my-openagent@4.18.2",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
     "@slkiser/opencode-quota@3.11.1",

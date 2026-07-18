@@ -1,0 +1,211 @@
+#!/usr/bin/env zsh
+
+# Render an OpenCode session and all of its subagent descendants.
+emulate -LR zsh
+setopt pipefail
+set -u
+
+opencode_bin="${OPENCODE_BIN:-opencode}"
+watch_seconds=""
+session_query=""
+
+typeset -A node_title node_agent node_updated node_children
+
+die() {
+  print -u2 -r -- "oc-tree: $*"
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  oc-tree [--watch[=seconds]] [<root-session-id-or-title>]
+
+Render an OpenCode root session and every nested subagent session.
+Without an argument, uses the most recently updated root session for $PWD.
+
+Options:
+  -w, --watch[=seconds]  Refresh the tree every 3 seconds (or the given interval).
+  -h, --help             Show this help.
+EOF
+}
+
+sql_literal() {
+  local value="$1"
+  value="${value//\'/\'\'}"
+  print -r -- "'$value'"
+}
+
+db() {
+  "$opencode_bin" db "$1" --format tsv | tail -n +2
+}
+
+project_id_for_directory() {
+  local directory="$1" quoted row project_id worktree
+  local -a rows
+
+  quoted="$(sql_literal "$directory")"
+  while IFS=$'\t' read -r project_id worktree; do
+    [[ -n "$project_id" ]] && rows+=("$project_id")
+  done < <(db "select id, worktree from project where worktree = $quoted")
+
+  (( ${#rows} == 1 )) || {
+    (( ${#rows} == 0 )) && die "no OpenCode project is registered for: $directory"
+    die "multiple OpenCode projects are registered for: $directory"
+  }
+  print -r -- "$rows[1]"
+}
+
+root_for_session() {
+  local session_id="$1"
+  db "with recursive ancestry(id, parent_id) as (
+    select id, parent_id from session where id = $(sql_literal "$session_id")
+    union all
+    select parent.id, parent.parent_id
+    from session as parent join ancestry on ancestry.parent_id = parent.id
+  ) select id from ancestry where parent_id is null limit 1"
+}
+
+root_for_query() {
+  local query="$1" quoted session_id project_id
+  quoted="$(sql_literal "$query")"
+
+  session_id="$(db "select id from session where id = $quoted")"
+  if [[ -n "$session_id" ]]; then
+    root_for_session "$session_id"
+    return
+  fi
+
+  project_id="$(project_id_for_directory "$PWD")"
+  local -a matches
+  while IFS=$'\t' read -r session_id; do
+    [[ -n "$session_id" ]] && matches+=("$session_id")
+  done < <(db "select id from session where project_id = $(sql_literal "$project_id") and parent_id is null and instr(lower(title), lower($quoted)) > 0 order by time_updated desc")
+
+  (( ${#matches} == 1 )) || {
+    (( ${#matches} == 0 )) && die "root session not found: $query"
+    die "root session title is ambiguous: $query"
+  }
+  print -r -- "$matches[1]"
+}
+
+latest_root_for_directory() {
+  local project_id="$1"
+  db "select id from session where project_id = $(sql_literal "$project_id") and parent_id is null order by time_updated desc limit 1"
+}
+
+load_tree() {
+  local root_id="$1" id parent_id title agent updated
+  node_title=()
+  node_agent=()
+  node_updated=()
+  node_children=()
+
+  while IFS=$'\x1f' read -r id parent_id title agent updated; do
+    [[ -n "$id" ]] || continue
+    node_title[$id]="$title"
+    node_agent[$id]="$agent"
+    node_updated[$id]="$updated"
+    if [[ -n "$parent_id" ]]; then
+      if [[ -n "${node_children[$parent_id]-}" ]]; then
+        node_children[$parent_id]+=" $id"
+      else
+        node_children[$parent_id]="$id"
+      fi
+    fi
+  done < <(db "with recursive tree(id, parent_id, title, agent, time_updated, created_path) as (
+    select id, parent_id, title, agent, time_updated, printf('%020d', time_created)
+    from session where id = $(sql_literal "$root_id")
+    union all
+    select child.id, child.parent_id, child.title, child.agent, child.time_updated,
+      tree.created_path || '.' || printf('%020d', child.time_created)
+    from session as child join tree on child.parent_id = tree.id
+  ) select id || char(31) || coalesce(parent_id, '') || char(31) || title || char(31) || coalesce(agent, '') || char(31) || datetime(time_updated / 1000, 'unixepoch', 'localtime') from tree order by created_path")
+}
+
+label_for() {
+  local id="$1" label
+  label="${node_title[$id]}"
+  [[ -n "${node_agent[$id]}" ]] && label+=" [${node_agent[$id]}]"
+  [[ -n "${node_updated[$id]}" ]] && label+="  ${node_updated[$id]}"
+  print -r -- "$label"
+}
+
+render_children() {
+  local parent_id="$1" prefix="$2" child_id child_prefix connector index
+  local children_value="${node_children[$parent_id]-}"
+  local -a children
+
+  [[ -n "$children_value" ]] || return
+  children=("${(@s: :)children_value}")
+
+  for (( index = 1; index <= ${#children}; index += 1 )); do
+    child_id="$children[$index]"
+    if (( index == ${#children} )); then
+      connector="└─"
+      child_prefix="${prefix}   "
+    else
+      connector="├─"
+      child_prefix="${prefix}│  "
+    fi
+    print -r -- "${prefix}${connector} $(label_for "$child_id")"
+    render_children "$child_id" "$child_prefix"
+  done
+}
+
+render() {
+  local root_id
+  if [[ -n "$session_query" ]]; then
+    root_id="$(root_for_query "$session_query")" || return 1
+  else
+    root_id="$(latest_root_for_directory "$(project_id_for_directory "$PWD")")" || return 1
+  fi
+  [[ -n "$root_id" ]] || die "no root sessions found"
+
+  load_tree "$root_id"
+  print -r -- "● $(label_for "$root_id")"
+  render_children "$root_id" ""
+}
+
+command -v "$opencode_bin" >/dev/null 2>&1 || die "$opencode_bin not found in PATH"
+
+while (( $# > 0 )); do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -w|--watch)
+      watch_seconds=3
+      ;;
+    --watch=*)
+      watch_seconds="${1#*=}"
+      [[ "$watch_seconds" == <->(|.<->) ]] || die "watch interval must be a positive number"
+      (( watch_seconds > 0 )) || die "watch interval must be greater than zero"
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      [[ -z "$session_query" ]] || die "only one session ID or title is allowed"
+      session_query="$1"
+      ;;
+  esac
+  shift
+done
+
+(( $# == 0 )) || die "only one session ID or title is allowed"
+
+if [[ -n "$watch_seconds" ]]; then
+  while true; do
+    [[ -t 1 ]] && clear
+    render
+    sleep "$watch_seconds"
+  done
+else
+  render
+fi
