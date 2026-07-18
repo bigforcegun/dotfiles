@@ -82,6 +82,7 @@ link ".config/opencode/skills"
 link ".config/opencode/tools"
 link ".config/opencode/plugins"
 link ".config/opencode/opencode-quota"
+link ".agentcairn/config.toml"
 
 ## Kilo Section
 

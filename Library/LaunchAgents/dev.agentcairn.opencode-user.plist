@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.agentcairn.opencode-user</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/uv</string>
+    <string>run</string>
+    <string>--project</string>
+    <string>/Users/bigforcegun/Sources/agentcairn</string>
+    <string>cairn</string>
+    <string>sweep</string>
+    <string>--harness</string>
+    <string>opencode</string>
+    <string>--mode</string>
+    <string>user</string>
+    <string>--project</string>
+    <string>/Users/bigforcegun/.dotfiles</string>
+    <string>--max-sessions</string>
+    <string>10</string>
+    <string>--max-candidates</string>
+    <string>50</string>
+    <string>--resume</string>
+    <string>--state-dir</string>
+    <string>/Users/bigforcegun/.cache/agentcairn/opencode</string>
+    <string>--vault</string>
+    <string>/Users/bigforcegun/Nextcloud/documents/notes/LLM/Memory</string>
+  </array>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>UV_PYTHON</key>
+    <string>3.13</string>
+  </dict>
+  <key>Nice</key>
+  <integer>10</integer>
+  <key>StartInterval</key>
+  <integer>600</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/bigforcegun/Library/Logs/agentcairn-opencode-user.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/bigforcegun/Library/Logs/agentcairn-opencode-user.err.log</string>
+</dict>
+</plist>

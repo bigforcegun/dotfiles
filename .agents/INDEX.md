@@ -20,6 +20,8 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/mcpd-envless-start/` | decision/design | `contexts/mcpd-envless-start/README.md` | chat discussion, `.mcpproxy/mcp_config.json`, `bin/mcpd`, launchd plist |
 | `contexts/opencode-speed-improvements/` | research | `contexts/opencode-speed-improvements/README.md` | chat research, OpenCode/Codex GitHub issues |
 | `contexts/mcpproxy-sort-key-reordering/` | finding/gotcha | `contexts/mcpproxy-sort-key-reordering/README.md` | mcpproxy-go + mongodb-mcp-server source, live MongoDB explain |
+| `contexts/agentcairn-memory-integration/` | stage 1 complete; stage 2 planned | `contexts/agentcairn-memory-integration/README.md` | OpenCode session research, AgentCairn runtime observations |
+| `contexts/coding-agent-session-manager/` | research/design | `contexts/coding-agent-session-manager/README.md` | prior session research, local OpenCode/tmux inventory, upstream tool comparison |
 
 ## Root rules
 

@@ -75,7 +75,9 @@ link ".config/opencode/commands"
 link ".config/opencode/rules"
 link ".config/opencode/skills"
 link ".config/opencode/tools"
+link ".config/opencode/plugins"
 link ".config/opencode/opencode-quota"
+link ".agentcairn/config.toml"
 
 ## Kilo Section
 
@@ -86,6 +88,8 @@ link ".config/kilo"
 link ".mcpproxy"
 link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
 link "Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist"
+link "Library/LaunchAgents/dev.agentcairn.opencode-user.plist"
+link "Library/LaunchAgents/dev.agentcairn.opencode-research.plist"
 
 link ".config/rulesync/contexts"
 

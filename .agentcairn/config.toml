@@ -1,0 +1,59 @@
+# agentcairn configuration — env vars override these values.
+# Uncomment a line to set it. Docs: https://github.com/ccf/agentcairn
+
+# Vault directory (the source of truth).
+vault = "/Users/bigforcegun/Nextcloud/documents/notes/LLM/Memory"
+
+# DuckDB index path (rebuildable cache).
+# index = "~/.cache/agentcairn/indexes/<vault_key>.duckdb"
+
+# Embedding provider: fastembed | ollama | voyage | openai | fake.
+embedder = "fastembed"
+
+# Embedding model name.
+embed_model = "nomic-ai/nomic-embed-text-v1.5"
+
+# Cross-encoder reranker on recall (biggest quality lever).
+# rerank = true
+
+# Token-savings ledger (local, no telemetry).
+# usage = 1
+
+# Savings ledger path.
+# usage_path = "~/.cache/agentcairn/usage.jsonl"
+
+# Memory durability judge: anthropic | embedding | none.
+judge = "embedding"
+
+# Model for the LLM judge tier.
+# judge_model = "claude-haiku-4-5"
+
+# LLM judge timeout floor (seconds); the real budget scales with batch size.
+# judge_timeout = 90
+
+# Ollama server (ollama embedder).
+# ollama_host = "http://localhost:11434"
+
+# OpenAI-compatible embedding endpoint.
+# openai_base_url = "https://api.openai.com/v1"
+
+# API key for the LLM judge tier.
+# anthropic_api_key = ""
+
+# API key for Voyage embeddings.
+# voyage_api_key = ""
+
+# API key for OpenAI embeddings.
+# openai_api_key = ""
+
+# Semantic dedup + supersession during ingest (LLM judge tier only).
+# consolidate = true
+
+# Auto-recall relevant memory before each substantive prompt (Claude Code).
+auto_recall = true
+
+# How many memories auto-recall injects per prompt.
+# auto_recall_k = 3
+
+# Auto-recall scope: 'project' (default hard filter) or 'all' (cross-project opt-in).
+auto_recall_scope = "project"
