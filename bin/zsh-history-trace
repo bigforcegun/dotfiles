@@ -1,0 +1,182 @@
+#!/usr/bin/env zsh
+
+setopt no_unset
+setopt pipe_fail
+umask 077
+
+typeset target="${HOME}/.zsh_history_bfpc"
+typeset log_path
+typeset line operation raw_operation path_match current_state previous_state
+typeset fs_process_thread_token
+typeset target_was_set=0
+typeset log_overridden=0
+
+usage() {
+  cat <<'EOF'
+Usage: zsh-history-trace [options] [history-file]
+
+Trace writes and filesystem lifecycle events for a zsh history file in the
+foreground. The default target is $HOME/.zsh_history_bfpc.
+
+Options:
+  -l, --log FILE  Write the 0600 event log to FILE
+  -h, --help      Show this help
+
+Requires sudo permission for fs_usage. This command does not daemonize,
+install launchd jobs, or request sudo credentials in advance. Press Ctrl-C to
+stop it.
+EOF
+}
+
+die() {
+  print -u2 -- "zsh-history-trace: $*"
+  exit 2
+}
+
+while (( $# )); do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -l|--log)
+      (( $# >= 2 )) || die "--log requires a file"
+      log_path="$2"
+      log_overridden=1
+      shift 2
+      ;;
+    --)
+      shift
+      (( $# <= 1 )) || die "expected at most one history file"
+      (( $# )) && target="$1"
+      shift
+      ;;
+    -* )
+      die "unknown option: $1"
+      ;;
+    * )
+      (( target_was_set == 0 )) || die "expected at most one history file"
+      target="$1"
+      target_was_set=1
+      shift
+      (( $# == 0 )) || die "expected at most one history file"
+      ;;
+  esac
+done
+
+if [[ "$target" != /* ]]; then
+  target="${PWD}/${target}"
+fi
+
+target="$(
+  target_dir="${target:h}"
+  [[ -d "$target_dir" ]] || exit 1
+  cd -- "$target_dir" || exit 1
+  print -r -- "$PWD/${target:t}"
+)" || die "could not resolve target directory"
+
+(( log_overridden )) || log_path="${target}.manual-trace.log"
+log_dir="${log_path:h}"
+[[ -d "$log_dir" ]] || die "log directory does not exist: $log_dir"
+: >| "$log_path" || die "cannot create log: $log_path"
+chmod 600 "$log_path" || die "cannot secure log: $log_path"
+
+stat_target() {
+  local snapshot
+  snapshot="$(/usr/bin/stat -f '%d:%i:%z' "$target" 2>/dev/null)" || {
+    print -r -- missing
+    return 0
+  }
+  print -r -- "$snapshot"
+}
+
+classify_path_match() {
+  local token
+  path_match=
+  for token in ${(z)line}; do
+    token="${token#\"}"
+    token="${token%\"}"
+    token="${token#\'}"
+    token="${token%\'}"
+    token="${token%,}"
+    token="${token%;}"
+    token="${token#\(}"
+    token="${token%\)}"
+    if [[ "$token" == "$target" ]]; then
+      path_match=target
+      return 0
+    elif [[ "$token" == "${target}.new" ]]; then
+      path_match=target.new
+      return 0
+    fi
+  done
+  return 1
+}
+
+event_operation() {
+  local token lower
+  raw_operation=
+  for token in ${(z)line}; do
+    lower="${token:l}"
+    case "$lower" in
+      rename|exchange) print -r -- "rename:$token"; return 0 ;;
+      unlink|remove) print -r -- "unlink:$token"; return 0 ;;
+      truncate) print -r -- "truncate:$token"; return 0 ;;
+      pwrite|write) print -r -- "write:$token"; return 0 ;;
+    esac
+  done
+  return 1
+}
+
+notify() {
+  local message="$1"
+  print -r -- "$(date '+%Y-%m-%dT%H:%M:%S%z') alert=$message"
+  if (( $+commands[terminal-notifier] )); then
+    terminal-notifier -title 'zsh history trace' -message "$message" >/dev/null 2>&1 || true
+  fi
+}
+
+record_event() {
+  local operation_name="$1"
+  local state="$2"
+  local now
+  now="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+  print -r -- "$now attribution=fs_usage_suspect process_thread=$fs_process_thread_token raw_operation=$raw_operation path_match=$path_match event=$operation_name target=$target state=$state" >>| "$log_path"
+
+  if [[ "$previous_state" != missing && "$state" == missing ]]; then
+    notify "history disappeared: $target"
+  elif [[ "$previous_state" != missing && "$state" != missing ]]; then
+    local previous_size="${previous_state##*:}"
+    local current_size="${state##*:}"
+    local previous_inode="${previous_state#*:}"
+    local current_inode="${state#*:}"
+    previous_inode="${previous_inode%%:*}"
+    current_inode="${current_inode%%:*}"
+    if (( current_size < previous_size )); then
+      notify "history shrank: $previous_size -> $current_size bytes"
+    elif [[ "${previous_state%%:*}" != "${state%%:*}" || "$previous_inode" != "$current_inode" ]]; then
+      notify "history file replaced: $target"
+    fi
+  fi
+  previous_state="$state"
+}
+
+previous_state="$(stat_target)"
+print -r -- "$(date '+%Y-%m-%dT%H:%M:%S%z') start target=$target state=$previous_state" >>| "$log_path"
+print -- "Tracing exact target: $target"
+print -- "Log: $log_path"
+print -- "Waiting for write/truncate/rename/unlink events; press Ctrl-C to stop."
+
+trap 'print; print -- "Stopped. Log: '"$log_path"'"; exit 130' INT TERM
+
+sudo fs_usage -w -f pathname 2>/dev/null | while IFS= read -r line; do
+  operation_result="$(event_operation)" || continue
+  operation="${operation_result%%:*}"
+  raw_operation="${operation_result#*:}"
+  classify_path_match || continue
+  fs_process_thread_token="${${(z)line}[-1]}"
+  current_state="$(stat_target)"
+  record_event "$operation" "$current_state"
+done
+
+exit ${pipestatus[1]}

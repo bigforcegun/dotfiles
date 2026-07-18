@@ -44,7 +44,10 @@ export HOST_OS HOST_TYPE
 export SHELL_SESSIONS_DISABLE=1
 export SHELL_SESSION_HISTORY=0
 
-export HISTFILE="$HOME/.zsh_history_bfpc"
+# Never export the real history path. A partially initialized child zsh can
+# otherwise inherit it with a small/default SAVEHIST and rewrite this file.
+HISTFILE="$HOME/.zsh_history_bfpc"
+typeset +x HISTFILE
 HISTSIZE=1000000000
 SAVEHIST=1000000000
 

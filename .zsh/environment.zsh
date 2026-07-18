@@ -12,6 +12,8 @@ export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
 unsetopt SHARE_HISTORY
 unsetopt HIST_SAVE_NO_DUPS
 unsetopt HIST_IGNORE_ALL_DUPS
+# Hide duplicate results while searching history without changing stored events.
+setopt HIST_FIND_NO_DUPS
 setopt    incappendhistory
 setopt    appendhistory
 ZSH_HIGHLIGHT_MAXLENGTH=1024                 # don't colorize long command lines (slow)

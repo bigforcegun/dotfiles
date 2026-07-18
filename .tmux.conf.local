@@ -484,6 +484,12 @@ set -g status-position top
 set -g default-command "$SHELL --login"
 set -g default-shell $SHELL
 
+# A tmux server keeps its initial environment forever. Never let that long-
+# lived environment pass our real history path to a partially initialized zsh.
+set-environment -gu HISTFILE
+set-environment -gu HISTSIZE
+set-environment -gu SAVEHIST
+
 set -g base-index 1
 set -g pane-base-index 1
 
