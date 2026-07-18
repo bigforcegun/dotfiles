@@ -22,6 +22,7 @@ This is the entrypoint for cross-agent work in this repository.
 | `contexts/mcpproxy-sort-key-reordering/` | finding/gotcha | `contexts/mcpproxy-sort-key-reordering/README.md` | mcpproxy-go + mongodb-mcp-server source, live MongoDB explain |
 | `contexts/agentcairn-memory-integration/` | stage 1 complete; stage 2 planned | `contexts/agentcairn-memory-integration/README.md` | OpenCode session research, AgentCairn runtime observations |
 | `contexts/coding-agent-session-manager/` | research/design | `contexts/coding-agent-session-manager/README.md` | prior session research, local OpenCode/tmux inventory, upstream tool comparison |
+| `contexts/zsh-fnkn-history-truncation-shit/` | active investigation | `contexts/zsh-fnkn-history-truncation-shit/README.md` | zsh history forensic logs, current shell config, manual tracer |
 
 ## Root rules
 
