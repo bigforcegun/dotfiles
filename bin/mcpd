@@ -5,7 +5,8 @@ MCPD_LABEL="${MCPD_LABEL:-com.bigforcegun.mcpproxy}"
 MCPD_PLIST="${MCPD_PLIST:-$HOME/Library/LaunchAgents/com.bigforcegun.mcpproxy.plist}"
 MCPD_CONFIG="${MCPD_CONFIG:-$HOME/.mcpproxy/mcp_config.json}"
 MCPD_DATA_CONFIG="${MCPD_DATA_CONFIG:-$HOME/.mcpproxy-data/mcp_config.json}"
-MCPD_VERBS=(status start stop restart reload logs health doctor profiles ps run help --help)
+MCPD_CACHE_INDEX="$HOME/.mcpproxy-data/index.bleve"
+MCPD_VERBS=(status start stop restart reload rm-cache logs health doctor profiles ps run help --help)
 
 usage() {
   cat >&2 <<EOF
@@ -14,6 +15,7 @@ mcpd <verb> — manage mcpproxy daemon ($MCPD_LABEL)
   start|stop        bootstrap / bootout
   restart           kickstart -k
   reload            bootout + bootstrap, reload plist
+  rm-cache          remove cache index
   logs [-f|-n N]    tail out/err logs
   health            mcpproxy status
   doctor            mcpproxy doctor
@@ -233,6 +235,10 @@ case "$verb" in
     launchctl bootout "$(svc)" 2>/dev/null || true
     launchctl bootstrap "gui/$(id -u)" "$MCPD_PLIST"
     printf 'mcpd: reloaded (plist loaded)\n'
+    ;;
+  rm-cache)
+    rm -rf "$MCPD_CACHE_INDEX"
+    printf 'mcpd: cache removed\n'
     ;;
   logs)
     if (($# > 0)); then
