@@ -11,3 +11,13 @@ When creating `opencode.json` for a user:
 7. If modifying any OpenCode config file, always create a `.bak` backup file first in the same directory.
 8. Before modifying any OpenCode config file, show a clear alert and ask for explicit user permission.
 9. Request permission for each individual OpenCode config modification; do not reuse prior approval.
+
+## Debug and Smoke Runs
+
+For one-off OpenCode debug or smoke prompts, always isolate the local session database:
+
+```bash
+OPENCODE_DB=:memory: opencode run "Reply with exactly: OMO_OK"
+```
+
+Never use bare `opencode run` for these checks. `OPENCODE_DB=:memory:` keeps the test session out of normal local OpenCode history. It does not suppress provider-side or other external logs.

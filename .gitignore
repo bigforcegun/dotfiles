@@ -29,14 +29,16 @@ vendor/bundle
 .git-worktrees/**/*
 
 env
-.omo/
+.omo/*
+!.omo/omo.jsonc
 
 .DS_Store
 *.bak
 *.bak-*
 token-usage-output.txt
 
-.opencode/skills/
+
 .config/opencode/skills/
 node_modules/
 .playwright-mcp/
+**/.claude/settings.local.json

@@ -218,7 +218,7 @@
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_SISA_URI}"
       },
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "disabled_tools": [
         "export"
@@ -269,6 +269,8 @@
       "protocol": "stdio",
       "command": "uvx",
       "args": [
+        "--with",
+        "mcp<2",
         "freshdesk-mcp"
       ],
       "env": {
@@ -276,7 +278,7 @@
         "FRESHDESK_DOMAIN": "${env:SALOTECH_FRESHDESK_DOMAIN}"
       },
       "oauth": null,
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "disabled_tools": [
         "create_ticket",
@@ -361,7 +363,7 @@
         "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
       },
       "oauth": null,
-      "enabled": true,
+      "enabled": false,
       "quarantined": false
     },
     {
@@ -375,7 +377,7 @@
         "GRAFANA_URL": "${env:SALOTECH_GRAFANA_URL}",
         "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${env:SALOTECH_GRAFANA_SERVICE_ACCOUNT_TOKEN}"
       },
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "disabled_tools": []
     },
@@ -396,6 +398,40 @@
       "enabled": false,
       "quarantined": false,
       "disabled_tools": []
+    },
+    {
+      "name": "salotech-vkbot-mysql",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@benborla29/mcp-server-mysql"
+      ],
+      "env": {
+        "MYSQL_HOST": "${env:SALOTECH_VKBOT_NEW_MYSQL_HOST}",
+        "MYSQL_PORT": "${env:SALOTECH_VKBOT_NEW_MYSQL_PORT}",
+        "MYSQL_USER": "${env:SALOTECH_VKBOT_NEW_MYSQL_USERNAME}",
+        "MYSQL_PASS": "${env:SALOTECH_VKBOT_NEW_MYSQL_PASSWORD}",
+        "MYSQL_DB": "${env:SALOTECH_VKBOT_NEW_MYSQL_DATABASE}"
+      },
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": []
+    },
+    {
+      "name": "salotech-redash",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@suthio/redash-mcp"
+      ],
+      "env": {
+        "REDASH_URL": "${env:SALOTECH_REDASH_HOST}",
+        "REDASH_API_KEY": "${env:SALOTECH_REDASH_TOCKEN}"
+      },
+      "enabled": true,
+      "quarantined": false
     }
   ],
   "observability": {
@@ -422,6 +458,7 @@
     {
       "name": "salotech",
       "servers": [
+        "endless-library",
         "bfg-vault",
         "playwright",
         "semble",
@@ -434,7 +471,19 @@
         "salotech-grafana",
         "salotech-opensearch",
         "endless-library",
-        "salotech-miro-isa"
+        "salotech-miro-isa",
+        "salotech-redash"
+      ]
+    },
+    {
+      "name": "salotech-support",
+      "servers": [
+        "salotech-atlassian",
+        "salotech-freshdesk",
+        "salotech-freshdesk-direct",
+        "salotech-mongodb-sisa",
+        "salotech-opensearch",
+        "salotech-redash"
       ]
     },
     {
@@ -446,13 +495,13 @@
         "grep-app",
         "semble",
         "endless-library",
-        "salotech-miro-isa",
         "playwright"
       ]
     },
     {
       "name": "gamedev",
       "servers": [
+        "endless-library",
         "bfg-vault",
         "krita",
         "godot",

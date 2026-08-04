@@ -503,7 +503,7 @@ set -g history-limit 999999999
 # set -g display-time 4000
 
 # Refresh 'status-left' and 'status-right' more often
-set -g status-interval 5
+set -g status-interval 15
 
 # Enable focus events
 set -g focus-events on

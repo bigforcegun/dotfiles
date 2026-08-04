@@ -2,12 +2,15 @@
   "$schema": "https://opencode.ai/tui.json",
   "theme": "gruvbox",
   "diff_style": "auto",
+  "scroll_acceleration": {
+    "enabled": true
+  },
   "plugin": [
-    "oh-my-openagent@4.18.2",
+    "oh-my-openagent@4.19.4",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
-    "@slkiser/opencode-quota@3.11.1",
-    "opencode-subagent-statusline@1.2.0",
+    "@slkiser/opencode-quota@4.4.1",
+    "file:///Users/bigforcegun/.config/opencode/node_modules/opencode-subagent-statusline/dist/tui.js",
     "@ishaksebsib/opencode-tree@0.4.2"
   ],
   "keybinds": {

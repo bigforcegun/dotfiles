@@ -43,9 +43,12 @@
           "name": "qwen2.5-coder-7b-instruct"
         }
       }
-    }
+    },
+    "openai": {},
+    "openrouter": {}
   },
   "instructions": [
+    "~/.config/opencode/instructions/SOUL-HK-47-RU.md",
     "~/.config/opencode/instructions/agent-identity.md",
     "~/.config/opencode/instructions/common.md",
     "~/.config/opencode/instructions/communication.md",
@@ -93,11 +96,10 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@4.18.2",
-    "@slkiser/opencode-quota@3.11.1",
-    "@ramtinj95/opencode-tokenscope@1.8.0",
-    "opencode-skill-creator@0.2.23",
-    "opencode-subagent-statusline@1.2.0"
+    "oh-my-openagent@4.19.4",
+    "@slkiser/opencode-quota@4.4.1",
+    "@ramtinj95/opencode-tokenscope@1.8.1",
+    "opencode-skill-creator@0.2.25"
   ],
   "mcp": {
     "agentcairn": {

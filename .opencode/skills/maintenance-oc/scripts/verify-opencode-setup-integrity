@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_DIR="${OPENCODE_CONFIG_DIR:-}"
+
+usage() {
+  cat >&2 <<'EOF'
+usage: verify-opencode-setup-integrity [--config-dir path]
+
+Report the active OpenCode config directory plus the filesystem and JSON state
+of opencode.json and tui.json. The script is read-only.
+EOF
+}
+
+die() {
+  printf 'verify-opencode-setup-integrity: %s\n' "$*" >&2
+  exit 1
+}
+
+while (($#)); do
+  case "$1" in
+    --config-dir)
+      [[ $# -ge 2 ]] || die '--config-dir requires a path'
+      CONFIG_DIR="$2"
+      shift 2
+      ;;
+    -h|--help|help)
+      usage
+      exit 0
+      ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+if [[ -z "$CONFIG_DIR" ]]; then
+  command -v opencode >/dev/null 2>&1 || die 'opencode is required when --config-dir is omitted'
+  while read -r key value; do
+    if [[ "$key" == config ]]; then
+      CONFIG_DIR="$value"
+      break
+    fi
+  done < <(opencode debug paths)
+fi
+
+[[ -n "$CONFIG_DIR" && -d "$CONFIG_DIR" ]] || die "config directory not found: ${CONFIG_DIR:-unknown}"
+command -v jq >/dev/null 2>&1 || die 'missing dependency: jq'
+
+result=0
+report_config() {
+  local name="$1" path type target=
+  path="$CONFIG_DIR/$name"
+
+  if [[ -L "$path" ]]; then
+    type=symlink
+    target="$(readlink "$path")"
+    if [[ ! -e "$path" ]]; then
+      printf '%s.type=%s\n%s.target=%s\n%s.json=dangling\n' "$name" "$type" "$name" "$target" "$name"
+      result=1
+      return
+    fi
+  elif [[ -f "$path" ]]; then
+    type=regular
+  else
+    printf '%s.type=missing\n%s.json=missing\n' "$name" "$name"
+    result=1
+    return
+  fi
+
+  printf '%s.type=%s\n' "$name" "$type"
+  [[ -n "$target" ]] && printf '%s.target=%s\n' "$name" "$target"
+  if jq empty "$path" >/dev/null 2>&1; then
+    printf '%s.json=valid\n' "$name"
+  else
+    printf '%s.json=invalid\n' "$name"
+    result=1
+  fi
+}
+
+printf 'config.dir=%s\n' "$CONFIG_DIR"
+report_config opencode.json
+report_config tui.json
+exit "$result"

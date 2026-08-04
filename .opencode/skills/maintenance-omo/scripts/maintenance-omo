@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+repo_root=$(cd "$(dirname "$(realpath "$0")")/../../../.." && pwd)
+opencode_config="$HOME/.config/opencode/opencode.json"
+omo_config="$HOME/.omo/omo.jsonc"
+canonical_config="$repo_root/.omo/omo.jsonc"
+problems=0
+
+usage() {
+  cat <<'EOF'
+Usage: maintenance-omo <command> [option]
+
+Read-only OMO caretaker checks.
+
+Commands:
+  status          Show configured plugin and matching cache state.
+  update-check    Compare the configured version with npm latest.
+  config-audit    Check canonical config links and legacy config leftovers.
+  verify [--smoke] Start the OMO MCP surface; --smoke also sends one prompt.
+EOF
+}
+
+problem() {
+  printf 'ERROR: %s\n' "$*" >&2
+  problems=1
+}
+
+plugin_spec() {
+  [[ -f "$opencode_config" ]] || return 1
+  node -e '
+    const config = require(process.argv[1]);
+    const spec = (config.plugin ?? []).find((entry) => typeof entry === "string" && entry.startsWith("oh-my-openagent@"));
+    if (!spec) process.exit(1);
+    process.stdout.write(spec);
+  ' "$opencode_config"
+}
+
+configured_version() {
+  local spec
+  spec=$(plugin_spec) || return 1
+  printf '%s\n' "${spec##*@}"
+}
+
+matching_package() {
+  local version=$1
+  printf '%s\n' "$HOME/.cache/opencode/packages/oh-my-openagent@$version/node_modules/oh-my-openagent/package.json"
+}
+
+check_link() {
+  local path=$1 expected=$2 actual
+  if [[ ! -L "$path" ]]; then
+    problem "$path is not a symlink"
+    return
+  fi
+  actual=$(realpath "$path") || {
+    problem "$path has an unresolved target"
+    return
+  }
+  if [[ "$actual" == "$expected" ]]; then
+    printf 'OK: %s -> %s\n' "$path" "$actual"
+  else
+    problem "$path points to $actual, expected $expected"
+  fi
+}
+
+config_audit() {
+  check_link "$omo_config" "$canonical_config"
+  [[ -f "$canonical_config" ]] || problem "canonical config is missing: $canonical_config"
+
+  local legacy
+  for legacy in oh-my-openagent.json oh-my-openagent.jsonc oh-my-opencode.json oh-my-opencode.jsonc; do
+    if [[ -e "$HOME/.config/opencode/$legacy" ]]; then
+      problem "legacy config remains: $HOME/.config/opencode/$legacy"
+    fi
+  done
+}
+
+status() {
+  local spec version package cached
+  spec=$(plugin_spec) || {
+    problem "OMO plugin entry is missing from $opencode_config"
+    return
+  }
+  version=${spec##*@}
+  printf 'plugin=%s\n' "$spec"
+
+  package=$(matching_package "$version")
+  if [[ ! -f "$package" ]]; then
+    problem "matching package cache is missing: $package"
+    return
+  fi
+  cached=$(node -e 'process.stdout.write(require(process.argv[1]).version)' "$package")
+  if [[ "$cached" == "$version" ]]; then
+    printf 'cache=%s\n' "$cached"
+  else
+    problem "cache version $cached does not match configured $version"
+  fi
+}
+
+update_check() {
+  local version latest
+  version=$(configured_version) || {
+    problem "configured OMO version is unavailable"
+    return
+  }
+  printf 'configured=%s\n' "$version"
+  if latest=$(npm view oh-my-openagent version 2>/dev/null); then
+    printf 'latest=%s\n' "$latest"
+  else
+    printf 'latest=unavailable\n'
+  fi
+}
+
+verify() {
+  local output server
+  command -v opencode >/dev/null || {
+    problem "opencode is not on PATH"
+    return
+  }
+  output=$(opencode mcp list 2>&1) || {
+    printf '%s\n' "$output"
+    problem "opencode mcp list failed"
+    return
+  }
+  printf '%s\n' "$output"
+  for server in websearch context7 grep_app lsp; do
+    [[ "$output" == *"$server"* ]] || problem "missing MCP server: $server"
+  done
+
+  if [[ ${1:-} == "--smoke" ]]; then
+    output=$(opencode run 'Reply with exactly: OMO_OK' 2>&1) || {
+      printf '%s\n' "$output"
+      problem "OMO smoke prompt failed"
+      return
+    }
+    printf '%s\n' "$output"
+    [[ "$output" == *"OMO_OK"* ]] || problem "OMO smoke prompt returned an unexpected response"
+  fi
+}
+
+case ${1:-help} in
+  status)
+    status
+    ;;
+  update-check)
+    update_check
+    ;;
+  config-audit)
+    config_audit
+    ;;
+  verify)
+    verify "${2:-}"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+exit "$problems"

@@ -65,7 +65,7 @@ link ".config/espanso"
 ## Opencode Section 🤡 (привет NPM модули в .config)
 
 link ".config/opencode/opencode.json"
-link ".config/opencode/oh-my-openagent.json"
+link ".omo/omo.jsonc"
 link ".config/opencode/tui.json"
 link ".config/opencode/package.json"
 link ".codex/lsp-client.json"
