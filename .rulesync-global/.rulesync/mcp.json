@@ -1,0 +1,19 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "agentcairn": {
+      "enabled": false,
+      "type": "local",
+      "command": [
+        "uv",
+        "run",
+        "--project",
+        "/Users/bigforcegun/Sources/agentcairn",
+        "agentcairn"
+      ],
+      "environment": {
+        "CAIRN_VAULT": "/Users/bigforcegun/Nextcloud/documents/notes/LLM/Memory"
+      }
+    }
+  }
+}

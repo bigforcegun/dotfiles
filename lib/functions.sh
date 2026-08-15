@@ -35,6 +35,13 @@ link() {
   assign "link" "$dotfiles_dir/$1" "$HOME/$1"
 }
 
+# link_as <path-in-dotfiles> <path-in-home>
+# For cases where the source and destination names differ,
+# e.g. .rulesync-global/.rulesync -> ~/.rulesync
+link_as() {
+  assign "link" "$dotfiles_dir/$1" "$HOME/$2"
+}
+
 copy() {
   assign "copy" "$dotfiles_dir/$1" "/$1"
 }

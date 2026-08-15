@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@opencode-ai/plugin": "1.18.11",
-    "opencode-subagent-statusline": "^1.2.1"
+    "@opencode-ai/plugin": "1.18.18",
+    "opencode-subagent-statusline": "^1.3.0"
   }
 }

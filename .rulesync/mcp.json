@@ -1,0 +1,9 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/mcp-schema.json",
+  "mcpServers": {
+    "toolchain-salotech": {
+      "type": "http",
+      "url": "http://127.0.0.1:9091/mcp/p/salotech"
+    }
+  }
+}

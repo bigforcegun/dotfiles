@@ -1,0 +1,493 @@
+#!/usr/bin/env python3
+"""dot-agents-ctl — контексты рабочих потоков в .agents/contexts.
+
+Корпус — всегда ./.agents относительно текущей директории.
+Читающие глаголы: load, list, check. Пишущие: new, set.
+Мутация всегда влечёт проверку. Индекс не генерируется: дерево держится
+на ссылке [[DOTFILES]] из каждой входной заметки.
+"""
+
+import argparse
+import datetime as dt
+import os
+import pathlib
+import re
+import sys
+
+STATUSES = ("active", "paused", "blocked", "done", "archived")
+REQUIRED = ("updated", "status")  # слаг и дата рождения — это имя папки
+FM_ORDER = ("updated", "status", "next", "tags")
+ENTRY = "{dir}.md"  # входная заметка называется как её папка
+STALE_DAYS = 90
+PROFILES = "~/.dotfiles/.rulesync-templates"  # пресеты rulesync, берутся прямо из дотфайлов
+
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+DATED_FILE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$")
+SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
+
+
+def fail(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def find_root():
+    root = pathlib.Path.cwd() / ".agents"
+    if not root.is_dir():
+        fail(".agents/ не найдена в текущей директории.\n"
+             "  mkdir -p .agents/contexts && dot-agents-ctl check")
+    return root
+
+
+def render(text, **vars):
+    """Подстановка {{KEY}}; шаблоны — обычные .md, правятся руками."""
+    for key, value in vars.items():
+        text = text.replace("{{" + key + "}}", str(value))
+    return text
+
+
+def read_template(templates, name):
+    path = pathlib.Path(templates) / name
+    if not path.is_file():
+        fail(f"шаблон {path} не найден")
+    return path.read_text(encoding="utf-8")
+
+
+def hub_name():
+    """Имя индексной заметки — имя репозитория без ведущей точки."""
+    return pathlib.Path.cwd().name.lstrip(".")
+
+
+def find_hub(root):
+    """Ищем её в корне корпуса, не придираясь к регистру."""
+    want = hub_name().lower()
+    return next((p.stem for p in root.glob("*.md") if p.stem.lower() == want), None)
+
+
+def strip_date(name):
+    return name[11:] if re.match(r"^\d{4}-\d{2}-\d{2}-", name) else name
+
+
+# --- фронтматтер: плоские скаляры и простые списки, ничего вложенного --------
+
+def split_frontmatter(text):
+    if not text.startswith("---\n"):
+        return None, text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None, text
+    return text[4:end], text[end + 4:].lstrip("\n")
+
+
+def parse_frontmatter(raw):
+    data, key = {}, None
+    for line in raw.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line.startswith(("  - ", "- ")) and key:
+            data.setdefault(key, []).append(unquote(line.split("-", 1)[1].strip()))
+            continue
+        if ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        key, value = key.strip(), value.strip()
+        if not value:
+            data[key] = []
+        elif value.startswith("[") and value.endswith("]"):
+            data[key] = [unquote(v.strip()) for v in value[1:-1].split(",") if v.strip()]
+        else:
+            data[key] = unquote(value)
+    return data
+
+
+def unquote(value):
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
+def dump_frontmatter(fm):
+    lines = ["---"]
+    for key in FM_ORDER + tuple(sorted(set(fm) - set(FM_ORDER))):
+        value = fm.get(key)
+        if value in ("", [], None):
+            continue
+        if isinstance(value, list):
+            lines.append(f"{key}: [" + ", ".join(value) + "]")
+        else:
+            value = str(value)
+            quote = any(c in value for c in ':#"') or value.startswith(("[", "{"))
+            lines.append(f"{key}: " + (f'"{value}"' if quote else value))
+    lines.append("---")
+    return "\n".join(lines)
+
+
+# --- модель ----------------------------------------------------------------
+
+class Context:
+    def __init__(self, path):
+        self.path = path
+        self.dir_name = path.name
+        self.slug = strip_date(path.name)
+        self.entry = path / ENTRY.format(dir=path.name)
+        self.fm = None
+        self.body = ""
+        if self.entry.exists():
+            raw, self.body = split_frontmatter(self.entry.read_text(encoding="utf-8"))
+            if raw is not None:
+                self.fm = parse_frontmatter(raw)
+
+    def get(self, key, default=""):
+        return (self.fm or {}).get(key, default)
+
+    def satellites(self):
+        return sorted(p.name for p in self.path.iterdir()
+                      if p.is_file() and p != self.entry and p.suffix == ".md")
+
+    def write(self):
+        self.entry.write_text(
+            dump_frontmatter(self.fm) + "\n\n" + self.body.rstrip("\n") + "\n",
+            encoding="utf-8")
+
+
+def load_contexts(root):
+    base = root / "contexts"
+    if not base.is_dir():
+        fail(f"{base} не найдена. Создай её или проверь, что ты в корне репозитория.")
+    return [Context(p) for p in sorted(base.iterdir())
+            if p.is_dir() and not p.name.startswith("_")]
+
+
+def resolve(root, slug):
+    matches = [c for c in load_contexts(root) if c.slug == slug]
+    if not matches:
+        fail(f"контекст '{slug}' не найден. `dot-agents-ctl list` покажет доступные.")
+    if len(matches) > 1:
+        fail(f"слаг '{slug}' неоднозначен: {', '.join(c.dir_name for c in matches)}")
+    ctx = matches[0]
+    if ctx.fm is None:
+        fail(f"{ctx.dir_name}: нет фронтматтера, запусти `dot-agents-ctl check`")
+    return ctx
+
+
+# --- проверки ---------------------------------------------------------------
+
+class Report:
+    def __init__(self):
+        self.errors, self.warns = [], []
+
+    def error(self, where, msg):
+        self.errors.append((where, msg))
+
+    def warn(self, where, msg):
+        self.warns.append((where, msg))
+
+
+def link_targets(root, contexts, report):
+    """Плоское пространство имён. Уникальность — условие однозначности ссылок."""
+    # Корневые заметки — хаб и правила — префикса даты не несут и в реалм входят.
+    targets = {p.stem for p in root.glob("*.md")} | {c.dir_name for c in contexts}
+    owners = {}
+    for ctx in contexts:
+        for name in ctx.satellites():
+            stem = name[:-3]
+            if stem in owners:
+                report.error(ctx.dir_name,
+                             f"имя заметки '{name}' не уникально по реалму, "
+                             f"уже в {owners[stem]}")
+            owners[stem] = ctx.dir_name
+            targets.add(stem)
+    return targets
+
+
+def check_contexts(root, contexts, report, stale_days):
+    today = dt.date.today()
+    targets = link_targets(root, contexts, report)
+    hub = find_hub(root)
+    if hub is None:
+        report.error(".agents", f"нет индексной заметки {hub_name()}.md — дерево без корня")
+    seen = {}
+
+    for ctx in contexts:
+        where = ctx.dir_name
+
+        if not ctx.entry.exists():
+            report.error(where, f"нет входной заметки {ctx.entry.name}")
+            continue
+        if ctx.fm is None:
+            report.error(where, "нет фронтматтера во входной заметке")
+            continue
+
+        if ctx.slug in seen:
+            report.error(where, f"голый слаг '{ctx.slug}' уже занят: {seen[ctx.slug]}")
+        seen[ctx.slug] = where
+        if not SLUG_RE.match(ctx.slug):
+            report.error(where, f"слаг '{ctx.slug}' не kebab-case")
+
+        links = {raw.split("|", 1)[0].strip()
+                 for raw in WIKILINK_RE.findall(ctx.body)}
+        check_frontmatter(ctx, where, report, today, stale_days)
+        check_files(ctx, where, report, links)
+        check_links(ctx, where, report, targets, links)
+        check_hub(ctx, where, report, links, hub)
+
+
+def check_frontmatter(ctx, where, report, today, stale_days):
+    for key in REQUIRED:
+        if not ctx.fm.get(key):
+            report.error(where, f"нет обязательного поля '{key}'")
+
+    status = ctx.get("status")
+    if status and status not in STATUSES:
+        report.error(where, f"status '{status}' вне набора {'/'.join(STATUSES)}")
+
+    updated = str(ctx.get("updated"))
+    if updated and not DATE_RE.match(updated):
+        report.error(where, f"updated='{updated}' не в формате YYYY-MM-DD")
+    elif DATE_RE.match(updated) and status not in ("archived", "done"):
+        age = (today - dt.date.fromisoformat(updated)).days
+        if age > stale_days:
+            report.warn(where, f"не трогали {age} дней, статус всё ещё '{status}'")
+
+
+def check_files(ctx, where, report, links):
+    """Заметка держится в дереве ссылкой из входной, а не отдельным реестром."""
+    for name in ctx.satellites():
+        if name[:-3] not in links:
+            report.error(where, f"'{name}' не слинкована из входной заметки — потеряна")
+        if not DATED_FILE_RE.match(name):
+            report.warn(where, f"'{name}' без префикса YYYY-MM-DD")
+
+
+def check_links(ctx, where, report, targets, links):
+    """Ссылки плоские: цель — имя файла, без путей и сегментов папки."""
+    for target in sorted(links):
+        raw = target
+        if "/" in target:
+            report.warn(where, f"ссылка [[{raw}]] адресует через папку; ссылки плоские")
+        elif target not in targets:
+            report.warn(where, f"ссылка [[{raw}]] не резолвится")
+
+
+def check_hub(ctx, where, report, links, hub):
+    """Индекса нет. Контекст висит в дереве ровно на своей ссылке в индексную заметку."""
+    if hub and hub not in links:
+        report.error(where, f"нет ссылки [[{hub}]]; контекст выпал из дерева")
+
+
+def run_check(root, stale_days):
+    contexts = load_contexts(root)
+    report = Report()
+    check_contexts(root, contexts, report, stale_days)
+
+    for label, items in (("ERROR", report.errors), ("WARN", report.warns)):
+        for where, msg in items:
+            print(f"{label:5} {where}: {msg}")
+    print(f"\n{len(contexts)} контекстов, {len(report.errors)} ошибок, "
+          f"{len(report.warns)} предупреждений")
+    return 1 if report.errors else 0
+
+
+# --- глаголы ----------------------------------------------------------------
+
+def cmd_new(args):
+    root = find_root()
+    if not SLUG_RE.match(args.slug):
+        fail(f"слаг '{args.slug}' не kebab-case")
+    for existing in load_contexts(root):
+        if existing.slug == args.slug:
+            fail(f"слаг '{args.slug}' уже занят: {existing.dir_name}")
+
+    hub = find_hub(root)
+    if hub is None:
+        fail(f"нет индексной заметки {hub_name()}.md; разверни корпус через "
+             f"`dot-agents-ctl init`")
+
+    today = dt.date.today().isoformat()
+    path = root / "contexts" / f"{today}-{args.slug}"
+    path.mkdir(parents=True)
+
+    fm = {"updated": today, "status": "active"}
+    if args.next:
+        fm["next"] = args.next
+    title = args.title or args.slug.replace("-", " ").capitalize()
+    if args.template:
+        note = render(read_template(pathlib.Path(args.template).parent,
+                                    pathlib.Path(args.template).name),
+                      HUB=hub, DATE=today, TITLE=title,
+                      PURPOSE=args.purpose or "TODO", NEXT=args.next or "")
+    else:
+        note = (dump_frontmatter(fm) + f"\n\n# {title}\n\n[[{hub}]]\n\n"
+                f"## Purpose\n\n{args.purpose or 'TODO'}\n")
+    (path / f"{today}-{args.slug}.md").write_text(note, encoding="utf-8")
+
+    print(f"создан {path.relative_to(pathlib.Path.cwd())}")
+    return 0
+
+
+def cmd_init(args):
+    """Разворачивает недостающее. Существующее не трогает."""
+    root = pathlib.Path.cwd() / ".agents"
+    hub = hub_name()
+    added = []
+
+    contexts = root / "contexts"
+    if not contexts.is_dir():
+        contexts.mkdir(parents=True)
+        added.append(str(contexts.relative_to(pathlib.Path.cwd())))
+
+    for name, template in ((f"{hub}.md", "index.md"),
+                           (f"{hub}-CONTEXTS-RULES.md", "rules.md")):
+        target = root / name
+        if target.exists():
+            continue
+        target.write_text(render(read_template(args.templates, template), HUB=hub),
+                          encoding="utf-8")
+        added.append(str(target.relative_to(pathlib.Path.cwd())))
+
+    if find_hub(root) is None:
+        fail(f"индексная заметка {hub}.md не создалась — проверь шаблоны")
+
+    print("\n".join(f"создано {a}" for a in added) if added
+          else "корпус уже развёрнут, добавлять нечего")
+    return 0
+
+
+def profiles_root(arg):
+    root = pathlib.Path(arg or os.environ.get("DOT_AGENTS_PROFILES") or PROFILES)
+    root = root.expanduser()
+    if not root.is_dir():
+        fail(f"каталог профилей {root} не найден; укажи --profiles или DOT_AGENTS_PROFILES")
+    return root
+
+
+def list_profiles(root):
+    return sorted(p.name for p in root.iterdir() if (p / ".rulesync").is_dir())
+
+
+def cmd_init_rulesync(args):
+    """Ставит пресет rulesync в текущий репозиторий. Существующее не трогает."""
+    root = profiles_root(args.profiles)
+    names = list_profiles(root)
+
+    if not args.profile:
+        print(f"профили ({root}):")
+        print("\n".join(f"  - {n}" for n in names))
+        return 0
+    if args.profile not in names:
+        fail(f"профиля '{args.profile}' нет. Доступны: {', '.join(names)}")
+
+    cwd = pathlib.Path.cwd()
+    pairs = [(root / "rulesync.jsonc", cwd / "rulesync.jsonc")]
+    src_dir = root / args.profile / ".rulesync"
+    for src in sorted(src_dir.rglob("*")):
+        if src.is_file():
+            pairs.append((src, cwd / ".rulesync" / src.relative_to(src_dir)))
+
+    added, kept = [], []
+    for src, dst in pairs:
+        if not src.is_file():
+            continue
+        if dst.exists():
+            kept.append(str(dst.relative_to(cwd)))
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(src.read_bytes())
+        added.append(str(dst.relative_to(cwd)))
+
+    for a in added:
+        print(f"создано {a}")
+    for k in kept:
+        print(f"оставлено как было {k}")
+    print("\nдальше: rulesync generate" if added else "\nдобавлять нечего")
+    return 0
+
+
+def cmd_load(args):
+    ctx = resolve(find_root(), args.slug)
+    print(dump_frontmatter(ctx.fm))
+    print()
+    print(ctx.body.rstrip("\n"))
+    return 0
+
+
+def cmd_list(args):
+    rows = []
+    for ctx in load_contexts(find_root()):
+        status = ctx.get("status") or "?"
+        if args.status and status != args.status:
+            continue
+        if args.tag and args.tag not in (ctx.get("tags", []) or []):
+            continue
+        rows.append((ctx.get("updated") or "?", ctx.slug, status, ctx.get("next")))
+    for updated, slug, status, nxt in sorted(rows, reverse=True):
+        print(f"{updated}  {status:9} {slug:42} {nxt[:60]}")
+    return 0
+
+
+def cmd_set(args):
+    root = find_root()
+    ctx = resolve(root, args.slug)
+
+    if args.status:
+        ctx.fm["status"] = args.status
+    if args.next is not None:
+        ctx.fm["next"] = args.next
+    ctx.fm["updated"] = dt.date.today().isoformat()
+    ctx.write()
+    print(f"{ctx.slug}: обновлён")
+    return run_check(root, STALE_DAYS)
+
+
+def cmd_check(args):
+    return run_check(find_root(), args.stale)
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="dot-agents-ctl", description=__doc__)
+    sub = parser.add_subparsers(dest="verb", required=True)
+
+    new = sub.add_parser("new", help="создать контекст")
+    new.add_argument("slug")
+    new.add_argument("--title")
+    new.add_argument("--purpose")
+    new.add_argument("--next")
+    new.add_argument("--template", help="путь к templates/context.md из скилла")
+    new.set_defaults(func=cmd_new)
+
+    ir = sub.add_parser("init-rulesync", help="поставить пресет rulesync в этот репозиторий")
+    ir.add_argument("profile", nargs="?", help="без имени — список доступных")
+    ir.add_argument("--profiles", help=f"каталог профилей (по умолчанию {PROFILES})")
+    ir.set_defaults(func=cmd_init_rulesync)
+
+    init = sub.add_parser("init", help="развернуть недостающее в ./.agents")
+    init.add_argument("--templates", required=True, help="директория templates/ из скилла")
+    init.set_defaults(func=cmd_init)
+
+    load = sub.add_parser("load", help="напечатать входную заметку контекста")
+    load.add_argument("slug")
+    load.set_defaults(func=cmd_load)
+
+    lst = sub.add_parser("list", help="таблица контекстов")
+    lst.add_argument("--status", choices=STATUSES)
+    lst.add_argument("--tag")
+    lst.set_defaults(func=cmd_list)
+
+    st = sub.add_parser("set", help="изменить фронтматтер; updated бампается сам")
+    st.add_argument("slug")
+    st.add_argument("--status", choices=STATUSES)
+    st.add_argument("--next")
+    st.set_defaults(func=cmd_set)
+
+    check = sub.add_parser("check", help="проверить корпус, exit 1 при ошибках")
+    check.add_argument("--stale", type=int, default=STALE_DAYS,
+                       help="порог протухания в днях")
+    check.set_defaults(func=cmd_check)
+
+    args = parser.parse_args()
+    sys.exit(args.func(args))
+
+
+if __name__ == "__main__":
+    main()

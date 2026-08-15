@@ -1,0 +1,41 @@
+{
+  "skill_name": "omo-maintenance",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Проверь состояние OMO в этом dotfiles-проекте: сравни текущую версию oh-my-openagent с npm latest, оцени необходимость обновления, а после изменений проверь запуск OpenCode с OMO и отсутствие дублей встроенных MCP через mcp-proxy/rulesync.",
+      "expected_output": "A concise maintenance report with current/upstream versions, whether an update was applied, validation through the OpenCode/OMO surface, and collision checks for OMO-native MCP names.",
+      "files": [],
+      "assertions": [
+        "Reports local/current oh-my-openagent version and upstream/latest version or explains why one could not be read.",
+        "States an update decision instead of blindly reinstalling or changing config.",
+        "Includes validation through the OpenCode/OMO runtime surface, not only source inspection.",
+        "Checks for OMO built-in MCP name collisions in mcp-proxy/rulesync or explains why no collision check was possible."
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "После обновления OMO Librarian стал медленно обходить sitemap. Найди причину в текущем локальном состоянии, предложи минимальный фикс без патча cached package и соблюдай правила backup/approval для OpenCode config.",
+      "expected_output": "A fix plan or patch that uses local context, prefers prompt_append speed policy over cached-package patching, and explicitly respects backup/approval rules for OpenCode config edits.",
+      "files": [],
+      "assertions": [
+        "Reads the current local OMO configuration and relevant runtime evidence before proposing a fix.",
+        "Prefers an agents.librarian.prompt_append speed policy over patching cached OMO package files.",
+        "Explicitly avoids cached-package patching as the fix path.",
+        "Mentions same-directory .bak backup and explicit approval requirements before OpenCode config edits."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "После изменения OMO проверь, что его OpenCode/MCP интеграция здорова: встроенные инструменты остаются OMO-native, а workspace-sensitive tools не вынесены в глобальный mcp-proxy. Исправь найденные проблемы минимально.",
+      "expected_output": "A diagnostic and remediation result that reads the local OMO/MCP context, avoids proxying workspace-sensitive tools, preserves the context7 exception, and validates the resulting tool surface.",
+      "files": [],
+      "assertions": [
+        "Reads the current OMO and OpenCode configuration before applying the OMO-native versus proxy boundaries.",
+        "States that websearch, grep_app, lsp, and ast_grep should not be duplicated under the same names through rulesync/mcp-proxy.",
+        "Preserves the context7 exception as a deliberate override case rather than treating it like the other built-ins.",
+        "States that workspace-sensitive tools such as lsp and ast_grep should not be served from the global mcp-proxy."
+      ]
+    }
+  ]
+}

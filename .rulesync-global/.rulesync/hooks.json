@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {},
+  "claudecode": {
+    "hooks": {
+      "preCompact": [
+        {
+          "type": "command",
+          "command": "bd prime"
+        }
+      ],
+      "preToolUse": [
+        {
+          "type": "command",
+          "command": "rtk hook claude",
+          "matcher": "Bash"
+        }
+      ],
+      "sessionStart": [
+        {
+          "type": "command",
+          "command": "bd prime"
+        }
+      ]
+    }
+  },
+  "cursor": {
+    "hooks": {
+      "preToolUse": [
+        {
+          "command": "rtk hook cursor",
+          "matcher": "Shell"
+        }
+      ]
+    }
+  }
+}

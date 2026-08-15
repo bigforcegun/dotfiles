@@ -68,7 +68,7 @@ link ".config/opencode/opencode.json"
 link ".omo/omo.jsonc"
 link ".config/opencode/tui.json"
 link ".config/opencode/package.json"
-link ".codex/lsp-client.json"
+
 link ".config/opencode/agents"
 link ".config/opencode/instructions"
 link ".config/opencode/commands"
@@ -91,7 +91,12 @@ link "Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist"
 link "Library/LaunchAgents/dev.agentcairn.opencode-user.plist"
 link "Library/LaunchAgents/dev.agentcairn.opencode-research.plist"
 
+## rulesync
+
 link ".config/rulesync/contexts"
+# `rulesync import -g` всегда пишет в ~/.rulesync, cwd игнорирует,
+# поэтому глобальный источник живёт в репо и линкуется под другим именем
+link_as ".rulesync-global/.rulesync" ".rulesync"
 
 # TBXark mcp-proxy
 link ".config/mcp-proxy/config.json"

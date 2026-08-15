@@ -11,7 +11,8 @@
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
     "@slkiser/opencode-quota@4.4.1",
     "file:///Users/bigforcegun/.config/opencode/node_modules/opencode-subagent-statusline/dist/tui.js",
-    "@ishaksebsib/opencode-tree@0.4.2"
+    "@ishaksebsib/opencode-tree@0.4.2",
+    "opencode-rules@0.6.4"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",

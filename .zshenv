@@ -108,3 +108,8 @@ export PATH="$PATH:$HOME/.rvm/bin"
 export PATH="$PATH:$HOME/Opt/ring/bin"
 
 export NVM_DIR="$HOME/.nvm"
+
+## пу пу пу пу пу пу
+
+export OPENCODE_DISABLE_EXTERNAL_SKILLS=1
+export OPENCODE_DISABLE_CLAUDE_CODE=1

@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Mount external folders into an Obsidian vault as symlinks, driven by a
+# checklist note. Checked box -> symlink exists, unchecked box -> symlink gone.
+#
+# Note format ("External Vaults MD.md"):
+#
+#   - [x] LLM/Agents/Dotfiles
+#       - /Users/bigforcegun/.dotfiles/.agents
+#
+# The checkbox line is the link path relative to the vault root, the indented
+# bullet below it is the source path on disk.
+
+VAULT="${BFG_VAULT:-$HOME/Nextcloud/documents/notes}"
+NOTE_NAME="${BFG_VAULT_NOTE:-External Vaults MD.md}"
+DRY_RUN=0
+FAILED=0
+
+usage() {
+  cat >&2 <<EOF
+usage: bfg-vault mount-external [--dry-run] [--vault DIR] [--note NAME]
+
+Reads "\$VAULT/\$NOTE" and reconciles symlinks with its checklist:
+  - [x] some/path   ->  create/repoint  \$VAULT/some/path -> source
+  - [ ] some/path   ->  remove          \$VAULT/some/path
+
+Only symlinks are ever removed; real files and directories are left alone.
+
+env:
+  BFG_VAULT       vault root  (default: \$HOME/Nextcloud/documents/notes)
+  BFG_VAULT_NOTE  note name   (default: External Vaults MD.md)
+EOF
+}
+
+say()  { printf '%s%s\n' "$( ((DRY_RUN)) && printf '[dry] ' )" "$*"; }
+warn() { printf 'bfg-vault: %s\n' "$*" >&2; }
+err()  { warn "$*"; FAILED=1; }
+die()  { warn "$*"; exit 1; }
+
+run() {
+  if ((DRY_RUN)); then
+    printf '        would: %s\n' "$*" >&2
+  else
+    "$@"
+  fi
+}
+
+apply() {
+  local want="$1" link="$2" src="$3" dest cur
+
+  case "$link" in
+    /*)    err "'$link': link path must be relative to the vault, skipped"; return ;;
+    *..*)  err "'$link': '..' is not allowed, skipped"; return ;;
+  esac
+  src="${src/#\~/$HOME}"
+  dest="$VAULT/$link"
+
+  if [[ $want != x ]]; then
+    if [[ -L $dest ]]; then
+      run rm "$dest"
+      say "unmounted   $link"
+    elif [[ -e $dest ]]; then
+      err "'$link': exists but is not a symlink, left alone"
+    else
+      say "absent      $link"
+    fi
+    return
+  fi
+
+  if [[ ! -e $src ]]; then
+    err "'$link': source does not exist: $src"
+    return
+  fi
+
+  if [[ -L $dest ]]; then
+    cur="$(readlink "$dest")"
+    if [[ $cur == "$src" ]]; then
+      say "ok          $link -> $src"
+    else
+      run rm "$dest"
+      run ln -s "$src" "$dest"
+      say "repointed   $link -> $src (was $cur)"
+    fi
+    return
+  fi
+
+  if [[ -e $dest ]]; then
+    err "'$link': exists and is not a symlink, refusing to replace"
+    return
+  fi
+
+  run mkdir -p "${dest%/*}"
+  run ln -s "$src" "$dest"
+  say "mounted     $link -> $src"
+}
+
+mount_external() {
+  local note="$VAULT/$NOTE_NAME" line want link=''
+
+  [[ -d $VAULT ]] || die "vault not found: $VAULT"
+  [[ -f $note  ]] || die "note not found: $note"
+
+  while IFS= read -r line || [[ -n $line ]]; do
+    if [[ $line =~ ^[[:space:]]*-[[:space:]]*\[([ xX])\][[:space:]]*(.*[^[:space:]])[[:space:]]*$ ]]; then
+      if [[ -n $link ]]; then
+        err "'$link': no source path underneath it, skipped"
+      fi
+      want="${BASH_REMATCH[1]}"
+      [[ $want == X ]] && want=x
+      link="${BASH_REMATCH[2]}"
+    elif [[ -n $link && $line =~ ^[[:space:]]+-[[:space:]]*(.*[^[:space:]])[[:space:]]*$ ]]; then
+      apply "$want" "$link" "${BASH_REMATCH[1]}"
+      link=''
+    fi
+  done < "$note"
+
+  if [[ -n $link ]]; then
+    err "'$link': no source path underneath it, skipped"
+  fi
+}
+
+case "${1:-}" in
+  mount-external) shift ;;
+  help|-h|--help) usage; exit 0 ;;
+  '')             usage; exit 2 ;;
+  *)              warn "unknown command: $1"; usage; exit 2 ;;
+esac
+
+while (($#)); do
+  case "$1" in
+    -n|--dry-run) DRY_RUN=1; shift ;;
+    --vault)      VAULT="${2:?--vault needs a path}"; shift 2 ;;
+    --note)       NOTE_NAME="${2:?--note needs a name}"; shift 2 ;;
+    -h|--help)    usage; exit 0 ;;
+    *)            warn "unknown option: $1"; usage; exit 2 ;;
+  esac
+done
+
+mount_external
+exit "$FAILED"

@@ -73,7 +73,7 @@ link ".config/opencode/opencode.json"
 link ".omo/omo.jsonc"
 link ".config/opencode/tui.json"
 link ".config/opencode/package.json"
-link ".codex/lsp-client.json"
+
 link ".config/opencode/agents"
 link ".config/opencode/instructions"
 link ".config/opencode/commands"
@@ -83,6 +83,12 @@ link ".config/opencode/tools"
 link ".config/opencode/plugins"
 link ".config/opencode/opencode-quota"
 link ".agentcairn/config.toml"
+
+## rulesync
+
+# `rulesync import -g` всегда пишет в ~/.rulesync, cwd игнорирует,
+# поэтому глобальный источник живёт в репо и линкуется под другим именем
+link_as ".rulesync-global/.rulesync" ".rulesync"
 
 ## Kilo Section
 
