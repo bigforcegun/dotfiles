@@ -713,6 +713,6 @@
     "default_model": "gpt-4",
     "encoding": "cl100k_base"
   },
-  "tool_response_limit": 20000,
+  "tool_response_limit": 50000,
   "tools_limit": 15
 }
