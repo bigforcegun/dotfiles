@@ -1,15 +1,6 @@
 {
   "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/permissions-schema.json",
   "permission": {
-    "*": {
-      "*": "allow"
-    },
-    "external_directory": {
-      "*": "ask"
-    },
-    "doom_loop": {
-      "*": "ask"
-    },
     "bash": {
       "*": "allow",
       "*brew install*": "deny",
@@ -43,6 +34,66 @@
       "*.local.json": "deny",
       ".env": "deny",
       "credentials/": "deny"
+    }
+  },
+  "opencode": {
+    "permission": {
+      "*": "allow",
+      "external_directory": "ask",
+      "doom_loop": "ask"
+    }
+  },
+  "codexcli": {
+    "permission": {
+      "edit": {
+        "./**": "allow",
+        "**/opencode.json": "deny",
+        "**/opencode.json.bak": "deny",
+        "**/.gitconfig": "deny",
+        "**/.gitmessage": "deny",
+        ".githooks/**": "deny",
+        ".opencode/**": "deny",
+        "~/.config/opencode/**": "deny"
+      },
+      "read": {
+        "*.local.json": "deny",
+        "**/.env": "deny",
+        "credentials/**": "deny"
+      }
+    }
+  },
+  "claudecode": {
+    "permission": {
+      "read": {
+        "*": "allow",
+        "*.local.json": "deny",
+        ".env": "deny",
+        "credentials/": "deny"
+      },
+      "write": {
+        "*": "allow"
+      },
+      "webfetch": {
+        "*": "allow"
+      },
+      "websearch": {
+        "*": "allow"
+      },
+      "grep": {
+        "*": "allow"
+      },
+      "glob": {
+        "*": "allow"
+      },
+      "notebookedit": {
+        "*": "allow"
+      },
+      "agent": {
+        "*": "allow"
+      }
+    },
+    "permissions": {
+      "defaultMode": "auto"
     }
   }
 }
