@@ -40,7 +40,7 @@ _zsh_history_writer_log() {
 }
 
 autoload -Uz add-zsh-hook
-add-zsh-hook zshexit _zsh_history_writer_log
+# add-zsh-hook zshexit _zsh_history_writer_log
 
 zsh-history-watch() {
     emulate -L zsh

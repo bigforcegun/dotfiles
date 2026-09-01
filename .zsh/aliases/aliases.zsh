@@ -71,6 +71,18 @@ mkdcd(){
   [[ -n "$1" ]] && mkdir -p "$1" && builtin cd "$1"
 }
 
+tmux-sessions-clean() {
+  emulate -L zsh
+
+  local -a sessions
+  local session
+  sessions=(${(on)${(f)"$(command tmux list-sessions -F '#{session_name}')"}:#^<->})
+
+  for session in ${sessions[2,-1]}; do
+    command tmux kill-session -t "=$session"
+  done
+}
+
 tcat(){
   bat --list-themes | fzf --preview="bat --theme={} --color=always $1"
 }
