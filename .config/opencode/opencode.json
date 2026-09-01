@@ -3,7 +3,7 @@
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",
-  "small_model": "openai/gpt-5.4-fast",
+  "small_model": "openai/gpt-5.6-luna-fast",
   "watcher": {
     "ignore": [
       "node_modules/**",
