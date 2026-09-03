@@ -3,23 +3,11 @@
   "hooks": {},
   "claudecode": {
     "hooks": {
-      "preCompact": [
-        {
-          "type": "command",
-          "command": "bd prime"
-        }
-      ],
       "preToolUse": [
         {
           "type": "command",
           "command": "rtk hook claude",
           "matcher": "Bash"
-        }
-      ],
-      "sessionStart": [
-        {
-          "type": "command",
-          "command": "bd prime"
         }
       ],
       "beforeSubmitPrompt": [
