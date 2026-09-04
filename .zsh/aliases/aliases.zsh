@@ -32,7 +32,7 @@ alias fzpath="hpath | fzf"
 alias fenv="env | fzf"
 # alias bfg='java -jar ~/bin/bfg-1.13.0.jar' #FIXME: plases for jar assets
 
-alias ls="eza --git --group-directories-first --icons"
+alias ls="eza --git --group-directories-first --icons=auto"
 alias ll="ls -l"
 alias la="ll -a"
 alias lk="ll -s=size"                # Sorted by size
