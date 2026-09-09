@@ -8,6 +8,9 @@ if [ -x "$hook_script" ]; then
     "$hook_script"
 fi
 
+# GUI-клиенты (Obsidian, Fork, VS Code) стартуют с launchd-PATH без brew
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH
+
 gitleaks_enabled="$(git config --bool hooks.gitleaks || printf 'false')"
 
 if [ "$gitleaks_enabled" = "true" ]; then
@@ -16,7 +19,7 @@ if [ "$gitleaks_enabled" = "true" ]; then
         exit 1
     fi
 
-    if ! gitleaks protect --staged --redact --verbose; then
+    if ! gitleaks git --staged --redact --verbose; then
         cat <<\EOF >&2
 Error: gitleaks has detected sensitive information in your staged changes.
 If you know what you are doing, you can disable this check per repository using:
