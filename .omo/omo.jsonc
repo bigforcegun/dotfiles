@@ -3,7 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "[opencode]": {
     "team_mode": {
-      "enabled": true,
+      "enabled": false,
       "max_parallel_members": 3,
       "max_members": 6,
       "tmux_visualization": false
