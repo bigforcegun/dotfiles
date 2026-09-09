@@ -115,6 +115,21 @@
       "quarantined": false
     },
     {
+      "name": "playwright-vivaldi-personal",
+      "env": {
+        "PLAYWRIGHT_MCP_EXECUTABLE_PATH": "${env:PLAYWRIGHT_VIVALDY_PERSONAL_MCP_EXECUTABLE_PATH}"
+      },
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--extension"
+      ],
+      "enabled": true,
+      "quarantined": false
+    },
+    {
       "name": "context7",
       "url": "https://mcp.context7.com/mcp",
       "protocol": "streamable-http",
@@ -588,6 +603,7 @@
         "bfg-vault",
         "bfg-nextcloud",
         "playwright",
+        "playwright-vivaldi-personal",
         "semble",
         "context7",
         "salotech-slack",
