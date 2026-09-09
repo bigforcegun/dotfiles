@@ -97,7 +97,7 @@
   },
   "plugin": [
     "oh-my-openagent@4.19.4",
-    "@slkiser/opencode-quota@4.4.1",
+    "@slkiser/opencode-quota@4.9.0",
     "@ramtinj95/opencode-tokenscope@1.8.1",
     "opencode-skill-creator@0.2.25",
     "opencode-rules@0.6.4"
