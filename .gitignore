@@ -29,6 +29,7 @@ token-usage-output.txt
 !.omo/omo.jsonc
 
 .config/opencode/skills/
+.config/opencode/commands/
 
 
 # runtime
