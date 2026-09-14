@@ -551,6 +551,23 @@
         "talk_mark_as_read",
         "talk_send_message"
       ]
+    },
+    {
+      "name": "bfg-qbittorrent",
+      "protocol": "stdio",
+      "command": "/opt/homebrew/bin/qbittorrent-mcp-rs",
+      "env": {
+        "QBITTORRENT_HOST": "${env:QBITTORRENT_HOST}"
+      },
+      "enabled": true,
+      "quarantined": false,
+      "disabled_tools": [
+        "install_search_plugin",
+        "uninstall_search_plugin",
+        "set_app_preferences",
+        "shutdown_app",
+        "ban_peers"
+      ]
     }
   ],
   "observability": {
@@ -577,7 +594,8 @@
     {
       "name": "personal",
       "servers": [
-        "bfg-nextcloud"
+        "bfg-nextcloud",
+        "bfg-qbittorrent"
       ]
     },
     {
