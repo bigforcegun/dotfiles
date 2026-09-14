@@ -1,6 +1,6 @@
-import { type PluginSurfaceProps, usePaseo } from "@getpaseo/plugin";
+import { type PluginSurfaceProps, usePaseo } from "@getpaseo/plugin/client";
 import { useQuery } from "@tanstack/react-query";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type LayoutChangeEvent,
   PanResponder,
@@ -38,6 +38,21 @@ interface WorkspaceInfo {
   label: string;
   status: string;
   kind: string;
+}
+
+interface ProjectInfo {
+  id: string;
+  name: string;
+}
+
+/**
+ * The live catalogue can repeat an id across cursor pages, which would emit
+ * duplicate React keys. Last write wins.
+ */
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const byId = new Map<string, T>();
+  for (const item of items) byId.set(item.id, item);
+  return [...byId.values()];
 }
 
 interface AgentInfo {
@@ -97,28 +112,34 @@ const agentNodeId = (id: string) => `agent:${id}`;
  * only have got there because the parent spawned that workspace.
  */
 function buildGraph(
-  workspaces: WorkspaceInfo[],
-  agents: AgentInfo[],
+  rawWorkspaces: WorkspaceInfo[],
+  rawAgents: AgentInfo[],
+  emptyProjects: ProjectInfo[],
 ): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = [];
+  const workspaces = dedupeById(rawWorkspaces);
+  const agents = dedupeById(rawAgents);
+  const nodes = new Map<string, GraphNode>();
   const edges: GraphEdge[] = [];
-  const seenProjects = new Map<string, string>();
+  const seenProjects = new Set<string>();
   const agentById = new Map<string, AgentInfo>();
   const knownWorkspaces = new Set(workspaces.map((workspace) => workspace.id));
 
+  const addProjectNode = (projectId: string, name: string) => {
+    if (seenProjects.has(projectId)) return;
+    seenProjects.add(projectId);
+    nodes.set(projectNodeId(projectId), {
+      id: projectNodeId(projectId),
+      kind: "project",
+      refId: projectId,
+      label: name,
+      sublabel: "project",
+      status: "project",
+    });
+  };
+
   for (const workspace of workspaces) {
-    if (!seenProjects.has(workspace.projectId)) {
-      seenProjects.set(workspace.projectId, workspace.projectName);
-      nodes.push({
-        id: projectNodeId(workspace.projectId),
-        kind: "project",
-        refId: workspace.projectId,
-        label: workspace.projectName,
-        sublabel: "project",
-        status: "project",
-      });
-    }
-    nodes.push({
+    addProjectNode(workspace.projectId, workspace.projectName);
+    nodes.set(workspaceNodeId(workspace.id), {
       id: workspaceNodeId(workspace.id),
       kind: "workspace",
       refId: workspace.id,
@@ -134,9 +155,12 @@ function buildGraph(
     });
   }
 
+  // Projects without any active workspace only arrive on the first page.
+  for (const project of emptyProjects) addProjectNode(project.id, project.name);
+
   for (const agent of agents) {
     agentById.set(agent.id, agent);
-    nodes.push({
+    nodes.set(agentNodeId(agent.id), {
       id: agentNodeId(agent.id),
       kind: "agent",
       refId: agent.id,
@@ -179,9 +203,9 @@ function buildGraph(
     }
   }
 
-  const deduped = new Map<string, GraphEdge>();
-  for (const edge of edges) deduped.set(edge.id, edge);
-  return { nodes, edges: [...deduped.values()] };
+  const dedupedEdges = new Map<string, GraphEdge>();
+  for (const edge of edges) dedupedEdges.set(edge.id, edge);
+  return { nodes: [...nodes.values()], edges: [...dedupedEdges.values()] };
 }
 
 type PaseoApi = ReturnType<typeof usePaseo>;
@@ -195,17 +219,35 @@ interface PageInfo {
   nextCursor?: string | null;
 }
 
-async function fetchAllWorkspaces(paseo: PaseoApi): Promise<RawWorkspace[]> {
-  const all: RawWorkspace[] = [];
+/**
+ * The daemon reports projects that have no workspace alongside the first page.
+ * The SDK's result type omits the field even though the payload carries it.
+ */
+interface RawEmptyProject {
+  projectId: string;
+  projectDisplayName: string;
+}
+
+interface WorkspaceCatalogue {
+  workspaces: RawWorkspace[];
+  emptyProjects: RawEmptyProject[];
+}
+
+async function fetchAllWorkspaces(paseo: PaseoApi): Promise<WorkspaceCatalogue> {
+  const workspaces: RawWorkspace[] = [];
+  let emptyProjects: RawEmptyProject[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page += 1) {
     const result = await paseo.workspaces.list({ page: { limit: PAGE_LIMIT, cursor } });
-    all.push(...((result.entries ?? []) as RawWorkspace[]));
+    workspaces.push(...((result.entries ?? []) as RawWorkspace[]));
+    if (page === 0) {
+      emptyProjects = (result as { emptyProjects?: RawEmptyProject[] }).emptyProjects ?? [];
+    }
     const info = result.pageInfo as PageInfo | undefined;
     if (!info?.hasMore || !info.nextCursor) break;
     cursor = info.nextCursor;
   }
-  return all;
+  return { workspaces, emptyProjects };
 }
 
 async function fetchAllAgents(paseo: PaseoApi): Promise<RawAgentEntry[]> {
@@ -324,12 +366,18 @@ function simulate(
 
 const RADIUS: Record<NodeKind, number> = { project: 20, workspace: 13, agent: 9 };
 
-const INITIAL_SCALE = 4.8;
+/** Dots grow far slower than distances, so zooming in separates nodes instead
+ * of covering the screen with them. */
+function nodeRadius(kind: NodeKind, scale: number): number {
+  return Math.max(3, RADIUS[kind] * Math.pow(scale, 0.3));
+}
+
+const INITIAL_SCALE = 0.2;
 /** `userSelect` is a web-only style; React Native's ViewStyle has no such key. */
 const NO_TEXT_SELECTION = { userSelect: "none" } as unknown as ViewStyle;
 
 const MIN_SCALE = 0.2;
-const MAX_SCALE = 10;
+const MAX_SCALE = 16;
 
 /**
  * A wheel is not a React Native concept, so this is the raw host event. It only
@@ -354,8 +402,12 @@ const EDGE_OPACITY = {
   spawn: { resting: 0.42, active: 1, faded: 0.06 },
 };
 
+/** The one deliberate literal in this file: a project dot is black in every
+ * theme, so it needs an outline instead of a fill to stay visible. */
+const PROJECT_COLOR = "#000000";
+
 function nodeColor(node: GraphNode, theme: PluginSurfaceProps["theme"]): string {
-  if (node.kind === "project") return theme.colors.accent;
+  if (node.kind === "project") return PROJECT_COLOR;
   switch (node.status) {
     case "running":
       return theme.colors.accent;
@@ -417,6 +469,7 @@ function NodeView({
           onRelease();
           if (Math.abs(gesture.dx) < 5 && Math.abs(gesture.dy) < 5) onActivate(node);
         },
+        onPanResponderTerminationRequest: () => false,
         onPanResponderTerminate: () => onRelease(),
       }),
     [node, onGrab, onMove, onRelease, onActivate],
@@ -446,7 +499,11 @@ function NodeView({
         borderRadius: radius,
         backgroundColor: color,
         borderWidth: hovered ? 2 : node.kind === "project" ? 2 : 1,
-        borderColor: hovered ? theme.colors.foreground : theme.colors.surface0,
+        borderColor: hovered
+          ? theme.colors.foreground
+          : node.kind === "project"
+            ? theme.colors.foregroundMuted
+            : theme.colors.surface0,
         opacity,
         zIndex: hovered ? 20 : 2,
       }}
@@ -495,13 +552,22 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
 
   const workspaces = useMemo<WorkspaceInfo[]>(
     () =>
-      (workspacesQuery.data ?? []).map((workspace) => ({
+      (workspacesQuery.data?.workspaces ?? []).map((workspace) => ({
         id: workspace.id,
         projectId: workspace.projectId,
         projectName: workspace.projectDisplayName,
         label: workspace.title ?? workspace.name,
         status: workspace.status,
         kind: workspace.workspaceKind,
+      })),
+    [workspacesQuery.data],
+  );
+
+  const emptyProjects = useMemo<ProjectInfo[]>(
+    () =>
+      (workspacesQuery.data?.emptyProjects ?? []).map((project) => ({
+        id: project.projectId,
+        name: project.projectDisplayName,
       })),
     [workspacesQuery.data],
   );
@@ -519,26 +585,42 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     [agentsQuery.data],
   );
 
-  const { nodes, edges } = useMemo(() => buildGraph(workspaces, agents), [workspaces, agents]);
+  const { nodes, edges } = useMemo(
+    () => buildGraph(workspaces, agents, emptyProjects),
+    [workspaces, agents, emptyProjects],
+  );
+
+  const activeHover = useMemo(() => {
+    if (!hovered) return null;
+    return nodes.some((node) => node.id === hovered) ? hovered : null;
+  }, [hovered, nodes]);
 
   const neighbourhood = useMemo(() => {
-    if (!hovered) return null;
-    const near = new Set<string>([hovered]);
+    if (!activeHover) return null;
+    const near = new Set<string>([activeHover]);
     for (const edge of edges) {
-      if (edge.from === hovered) near.add(edge.to);
-      if (edge.to === hovered) near.add(edge.from);
+      if (edge.from === activeHover) near.add(edge.to);
+      if (edge.to === activeHover) near.add(edge.from);
     }
     return near;
-  }, [hovered, edges]);
+  }, [activeHover, edges]);
 
   // Keep one body per node; new nodes enter on a deterministic ring so the
   // layout does not jump between refetches.
+  // A status-only refetch rebuilds node objects every 5s. Reheating on that
+  // would keep the layout permanently in motion, so only a changed id set counts.
   useMemo(() => {
     const bodies = bodiesRef.current;
     const live = new Set(nodes.map((node) => node.id));
-    for (const id of [...bodies.keys()]) if (!live.has(id)) bodies.delete(id);
+    let topologyChanged = false;
+    for (const id of [...bodies.keys()]) {
+      if (live.has(id)) continue;
+      bodies.delete(id);
+      topologyChanged = true;
+    }
     for (const node of nodes) {
       if (bodies.has(node.id)) continue;
+      topologyChanged = true;
       const angle = hashSeed(node.id) * Math.PI * 2;
       const radius = 240 + hashSeed(`${node.id}:r`) * 780;
       bodies.set(node.id, {
@@ -548,7 +630,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         vy: 0,
       });
     }
-    alphaRef.current = 1;
+    if (topologyChanged) alphaRef.current = 1;
     return bodies;
   }, [nodes]);
 
@@ -646,10 +728,36 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     [handleWheel],
   );
 
-  const recenter = useCallback(() => {
-    setPan({ x: 0, y: 0 });
-    setScale(INITIAL_SCALE);
-    alphaRef.current = 1;
+  // "reset" frames the whole graph rather than jumping back to a fixed zoom,
+  // so the right scale never has to be guessed from a constant.
+  const fitToContent = useCallback(() => {
+    const bodies = bodiesRef.current;
+    const viewport = sizeRef.current;
+    if (bodies.size === 0 || !viewport.width || !viewport.height) {
+      setPan({ x: 0, y: 0 });
+      setScale(INITIAL_SCALE);
+      return;
+    }
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const body of bodies.values()) {
+      if (body.x < minX) minX = body.x;
+      if (body.x > maxX) maxX = body.x;
+      if (body.y < minY) minY = body.y;
+      if (body.y > maxY) maxY = body.y;
+    }
+    const margin = 120;
+    const spanX = Math.max(maxX - minX, 1);
+    const spanY = Math.max(maxY - minY, 1);
+    const next = clamp(
+      Math.min((viewport.width - margin) / spanX, (viewport.height - margin) / spanY),
+      MIN_SCALE,
+      MAX_SCALE,
+    );
+    setScale(next);
+    setPan({ x: (-(minX + maxX) / 2) * next, y: (-(minY + maxY) / 2) * next });
   }, []);
 
   const centerX = size.width / 2 + pan.x;
@@ -683,7 +791,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         {[
           { label: "−", action: () => setScale((value) => clamp(value / 1.25, MIN_SCALE, MAX_SCALE)) },
           { label: "+", action: () => setScale((value) => clamp(value * 1.25, MIN_SCALE, MAX_SCALE)) },
-          { label: "reset", action: recenter },
+          { label: "fit", action: fitToContent },
         ].map((control) => (
           <Pressable
             key={control.label}
@@ -719,9 +827,9 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
           const dx = bx - ax;
           const dy = by - ay;
           const length = Math.sqrt(dx * dx + dy * dy);
-          const thickness = edge.kind === "spawn" ? 2.5 : 1.5;
+          const thickness = 1.5;
           const opacities = EDGE_OPACITY[edge.kind];
-          const touchesHover = edge.from === hovered || edge.to === hovered;
+          const touchesHover = edge.from === activeHover || edge.to === activeHover;
           const edgeOpacity = neighbourhood
             ? touchesHover
               ? opacities.active
@@ -756,10 +864,10 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               node={node}
               left={centerX + body.x * scale}
               top={centerY + body.y * scale}
-              radius={Math.max(4, RADIUS[node.kind] * scale)}
+              radius={nodeRadius(node.kind, scale)}
               color={nodeColor(node, theme)}
               theme={theme}
-              hovered={hovered === node.id}
+              hovered={activeHover === node.id}
               opacity={neighbourhood ? (near ? NODE_OPACITY.active : NODE_OPACITY.faded) : NODE_OPACITY.resting}
               onHover={setHovered}
               onGrab={handleGrab}
@@ -775,8 +883,8 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               const body = bodies.get(node.id);
               if (!body) return null;
               const near = neighbourhood?.has(node.id) ?? false;
-              const isHovered = hovered === node.id;
-              const radius = Math.max(4, RADIUS[node.kind] * scale);
+              const isHovered = activeHover === node.id;
+              const radius = nodeRadius(node.kind, scale);
               return (
                 <View
                   key={`label:${node.id}`}
