@@ -595,15 +595,42 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     return nodes.some((node) => node.id === hovered) ? hovered : null;
   }, [hovered, nodes]);
 
+  const adjacency = useMemo(() => {
+    const forward = new Map<string, string[]>();
+    const backward = new Map<string, string[]>();
+    const push = (map: Map<string, string[]>, key: string, value: string) => {
+      const list = map.get(key);
+      if (list) list.push(value);
+      else map.set(key, [value]);
+    };
+    for (const edge of edges) {
+      push(forward, edge.from, edge.to);
+      push(backward, edge.to, edge.from);
+    }
+    return { forward, backward };
+  }, [edges]);
+
+  // Highlighting cascades: every ancestor up to the project and every
+  // descendant down to the last subagent, not just the immediate neighbours.
   const neighbourhood = useMemo(() => {
     if (!activeHover) return null;
-    const near = new Set<string>([activeHover]);
-    for (const edge of edges) {
-      if (edge.from === activeHover) near.add(edge.to);
-      if (edge.to === activeHover) near.add(edge.from);
-    }
-    return near;
-  }, [activeHover, edges]);
+    const reached = new Set<string>([activeHover]);
+    const walk = (map: Map<string, string[]>) => {
+      const queue = [activeHover];
+      while (queue.length > 0) {
+        const current = queue.pop();
+        if (current === undefined) break;
+        for (const next of map.get(current) ?? []) {
+          if (reached.has(next)) continue;
+          reached.add(next);
+          queue.push(next);
+        }
+      }
+    };
+    walk(adjacency.forward);
+    walk(adjacency.backward);
+    return reached;
+  }, [activeHover, adjacency]);
 
   // Keep one body per node; new nodes enter on a deterministic ring so the
   // layout does not jump between refetches.
@@ -829,9 +856,10 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
           const length = Math.sqrt(dx * dx + dy * dy);
           const thickness = 1.5;
           const opacities = EDGE_OPACITY[edge.kind];
-          const touchesHover = edge.from === activeHover || edge.to === activeHover;
+          const edgeInCascade =
+            neighbourhood !== null && neighbourhood.has(edge.from) && neighbourhood.has(edge.to);
           const edgeOpacity = neighbourhood
-            ? touchesHover
+            ? edgeInCascade
               ? opacities.active
               : opacities.faded
             : opacities.resting;
