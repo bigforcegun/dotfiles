@@ -1,29 +1,12 @@
 ---
 name: opencode-skill-creator
-description: >-
-  Create, test, evaluate, optimize, and package OpenCode skills with the
-  opencode-skill-creator plugin. Use when users explicitly mention
-  opencode-skill-creator, OpenCode Skill Creator, creating an OpenCode skill,
-  editing an OpenCode SKILL.md, running skill evals, benchmarking skill
-  performance, or optimizing an OpenCode skill description. For new skill
-  creation, this skill must stop for intake questions; if the user says "no
-  questions" or "just make it", warn and ask for separate confirmation before
-  drafting. Do not use for generic Claude Code or Superpowers skill creation
-  unless the user asks to port that workflow to OpenCode.
+description: Create, test, evaluate, optimize, and package OpenCode skills with the opencode-skill-creator plugin. Use when users explicitly mention opencode-skill-creator, OpenCode Skill Creator, creating an OpenCode skill, editing an OpenCode SKILL.md, running skill evals, benchmarking skill performance, or optimizing an OpenCode skill description. Do not use for generic Claude Code or Superpowers skill creation unless the user asks to port that workflow to OpenCode.
+# upstream: opencode-skill-creator@0.2.25 — pristine, do not fork here
 targets:
   - 'opencode'
 ---
+
 # OpenCode Skill Creator
-
-## First response protocol for new skills
-
-Before drafting files, creating directories, launching evals, or inspecting install locations for a new skill, classify the user's request:
-
-1. **Normal new skill request** — ask 3-5 targeted intake questions and stop.
-2. **New skill request with enough workflow details already present** — summarize the workflow, ask for confirmation/corrections, and stop.
-3. **New skill request that says not to ask questions** — warn that skipping intake will likely produce a generic skill, ask "Proceed best-effort anyway?", and stop.
-
-For case 3, the user's original "don't ask" / "just make it" message is not confirmation. Confirmation must be a separate later user reply after the warning. Until that later reply arrives, do not create staging directories, write files, inspect global skill locations, launch evals, or call validation tools.
 
 A skill for creating new skills and iteratively improving them.
 
@@ -36,49 +19,20 @@ At a high level, the process of creating a skill goes like this:
   - While the runs happen in the background, draft some quantitative evals if there aren't any (if there are some, you can either use as is or modify if you feel something needs to change about them). Then explain them to the user (or if they already existed, explain the ones that already exist)
   - Use the `skill_serve_review` tool to show the user the results for them to look at, and also let them look at the quantitative metrics
 - Rewrite the skill based on feedback from the user's evaluation of the results (and also if there are any glaring flaws that become apparent from the quantitative benchmarks)
-- Iterate after user feedback, stopping at each review or approval gate
+- Repeat until you're satisfied
 - Expand the test set and try again at larger scale
 
-Your job when using this skill is to figure out where the user is in this process and then help them progress to the next appropriate decision point. So for instance, maybe they're like "I want to make a skill for X". First help narrow down what they mean and ask the intake questions. Only after they confirm should you draft, propose test cases, ask how they want to evaluate, run approved prompts, or iterate.
+Your job when using this skill is to figure out where the user is in this process and then jump in and help them progress through these stages. So for instance, maybe they're like "I want to make a skill for X". You can help narrow down what they mean, write a draft, write the test cases, figure out how they want to evaluate, run all the prompts, and repeat.
 
-On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the relevant review, eval, or iteration planning step, but still stop for any user approval required by the handoff gates below.
+On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the eval/iterate part of the loop.
 
 For new skill creation, the intake interview is mandatory. Ask at least 3-5 targeted questions before drafting anything (ask more if the workflow is complex). Treat this as shadowing a teammate: the user is the domain expert and existing employee, and the agent is the new hire that must learn and mirror the real workflow.
 
-You can still be flexible about eval depth and iteration speed after intake. If the user asks to skip intake, warn once that skill quality and workflow match will be worse, then stop and wait for a separate confirmation before proceeding best-effort.
+You can still be flexible about eval depth and iteration speed after intake. If the user asks to skip intake, warn once that skill quality and workflow match will be worse, get explicit confirmation, and then proceed with best effort.
 
 Then after the skill is done (but again, the order is flexible), you can also run the skill description optimizer (`skill_optimize_loop` tool), which we have a whole separate tool for, to optimize the triggering of the skill.
 
 Cool? Cool.
-
-## Human handoff and stop gates
-
-This skill is collaborative by design. Optimize for reaching the next user decision point, not for running the whole lifecycle autonomously.
-
-Use interactive question widgets for handoffs whenever the runtime/client provides a `question` tool or equivalent UI. Prefer widgets over plain numbered text for intake questions, approve/decline gates, and multi-choice decisions because they make it obvious that the agent is waiting for the user. Use plain text only as a fallback when no widget tool is available or when the question requires a long free-form answer that cannot fit a widget.
-
-Widget-first defaults:
-
-- **New skill intake** — ask the 3-5 targeted intake questions through widgets when possible. Use concise options plus a custom/free-form path for details.
-- **Skip-intake confirmation** — show a yes/no widget after the warning; do not treat the original "just make it" request as confirmation.
-- **Eval prompt approval** — show approve/edit/add-more choices before launching evals.
-- **Review/iteration gates** — show choices like iterate again, install, optimize description, or stop.
-- **Install/config writes** — show an explicit permission widget before touching installed OpenCode skill/config locations.
-
-Stop and wait for the user whenever you need one of these inputs:
-
-- confirmation of the intake summary before drafting a new skill;
-- explicit confirmation after the user asks to skip questions, skip intake, "just make it", or otherwise proceed without the required interview;
-- approval of proposed test prompts before launching eval runs;
-- human review of outputs in the review viewer;
-- feedback on whether to iterate again, install the skill, or optimize the description;
-- permission to write into an installed OpenCode skill/config location.
-
-When you stop, ask the smallest useful question or present the specific choice the user must make. Do not continue into evals, iteration, viewer launch, install, or description optimization while waiting for that answer.
-
-If the user says something like "don't ask questions", "skip intake", "just make it", or "do it without questions" while requesting a new skill, treat that as a request to bypass the mandatory intake. Warn once that the skill will likely be generic and less faithful to their workflow, then ask for explicit confirmation to proceed best-effort. Stop there. Do not draft files, inspect install locations, launch evals, or create staging directories until the user confirms.
-
-Treat phrases like "repeat until you're satisfied", "continuous sequence", and "the iteration loop" as scoped to a user-approved phase that is already in progress. They do not override the stop gates above and they do not authorize an infinite autonomous loop.
 
 ## Communicating with the user
 
@@ -150,7 +104,6 @@ The skill directory name must match the `name` field in the frontmatter.
 #### Progressive Disclosure
 
 Skills use a three-level loading system:
-
 1. **Metadata** (name + description) — Always in context (~100 words)
 2. **SKILL.md body** — In context whenever skill triggers (<500 lines ideal)
 3. **Bundled resources** — As needed (unlimited, scripts can execute without loading)
@@ -158,13 +111,11 @@ Skills use a three-level loading system:
 These word counts are approximate and you can feel free to go longer if needed.
 
 **Key patterns:**
-
 - Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
 - Reference files clearly from SKILL.md with guidance on when to read them
 - For large reference files (>300 lines), include a table of contents
 
 **Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
-
 ```
 cloud-deploy/
 ├── SKILL.md (workflow + selection)
@@ -173,7 +124,6 @@ cloud-deploy/
     ├── gcp.md
     └── azure.md
 ```
-
 OpenCode reads only the relevant reference file.
 
 #### Principle of Lack of Surprise
@@ -185,7 +135,6 @@ This goes without saying, but skills must not contain malware, exploit code, or 
 Prefer using the imperative form in instructions.
 
 **Defining output formats** — You can do it like this:
-
 ```markdown
 ## Report structure
 ALWAYS use this exact template:
@@ -196,7 +145,6 @@ ALWAYS use this exact template:
 ```
 
 **Examples pattern** — It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
-
 ```markdown
 ## Commit message format
 **Example 1:**
@@ -210,7 +158,7 @@ Try to explain to the model why things are important in lieu of heavy-handed mus
 
 ### Test Cases
 
-After writing the skill draft, come up with 2–3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then stop and wait for approval before running them.
+After writing the skill draft, come up with 2–3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then run them.
 
 Save test cases to `evals/evals.json`. Don't write assertions yet — just the prompts. You'll draft assertions in the next step while the runs are in progress.
 
@@ -232,7 +180,7 @@ See `references/schemas.md` for the full schema (including the `assertions` fiel
 
 ## Running and evaluating test cases
 
-This section is one continuous sequence after the user has approved the eval prompts and asked you to run them. Do not enter this section just because evals might be useful later. Do NOT use `/skill-test` or any other testing skill.
+This section is one continuous sequence — don't stop partway through. Do NOT use `/skill-test` or any other testing skill.
 
 Put results in `<skill-name>-workspace/` next to the staged skill directory in the system temp area (for example: Unix/macOS `/tmp/opencode-skills/<skill-name>-workspace/`; Windows `%TEMP%\\opencode-skills\\<skill-name>-workspace\\`). Within the workspace, organize results by iteration (`iteration-1/`, `iteration-2/`, etc.) and within that, each test case gets a directory (`eval-0/`, `eval-1/`, etc.). Don't create all of this upfront — just create directories as you go.
 
@@ -252,7 +200,6 @@ Execute this task:
 ```
 
 **Baseline run** (same prompt, but the baseline depends on context):
-
 - **Creating a new skill**: no skill at all. Same prompt, no skill path, save to `without_skill/outputs/`.
 - **Improving an existing skill**: the old version. Before editing, snapshot the skill (`cp -r <skill-path> <workspace>/skill-snapshot/`), then point the baseline Task tool invocation at the snapshot. Save to `old_skill/outputs/`.
 
@@ -298,20 +245,17 @@ Before launching review, enforce this gate: every eval must have paired comparis
 1. **Grade each run** — spawn a grader Task (using `general` subagent type), or grade inline, that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
 
 2. **Aggregate into benchmark** — use the `skill_aggregate_benchmark` tool:
-
    ```
    Call skill_aggregate_benchmark with:
      benchmarkDir: <workspace>/iteration-N
      skillName: <name>
    ```
-
    This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
 Put each with_skill version before its baseline counterpart.
 
 3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
 
 4. **Launch the viewer** with both qualitative outputs and quantitative data using the `skill_serve_review` tool:
-
    ```
    Call skill_serve_review with:
      workspace: <workspace>/iteration-N
@@ -319,7 +263,6 @@ Put each with_skill version before its baseline counterpart.
      benchmarkPath: <workspace>/iteration-N/benchmark.json
      allowPartial: false
    ```
-
    For iteration 2+, also pass `previousWorkspace: <workspace>/iteration-<N-1>`.
 
    If `benchmarkPath` is omitted, the tool auto-generates `benchmark.json` and `benchmark.md` inside the workspace before opening the viewer.
@@ -330,12 +273,11 @@ Put each with_skill version before its baseline counterpart.
 
 Note: please use the `skill_serve_review` or `skill_export_static_review` tools to create the viewer; there's no need to write custom HTML.
 
-1. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
+5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
 
 ### What the user sees in the viewer
 
 The "Outputs" tab shows one test case at a time:
-
 - **Prompt**: the task that was given
 - **Output**: the files the skill produced, rendered inline where possible
 - **Previous Output** (iteration 2+): collapsed section showing last iteration's output
@@ -386,7 +328,7 @@ This task is pretty important (we are trying to create billions a year in econom
 
 ### The iteration loop
 
-After improving the skill, stop if the next step needs user feedback or approval. If the user has explicitly asked for another full eval iteration, continue with this loop:
+After improving the skill:
 
 1. Apply your improvements to the skill
 2. Rerun all test cases into a new `iteration-<N+1>/` directory, including baseline runs. If you're creating a new skill, the baseline is always `without_skill` (no skill) — that stays the same across iterations. If you're improving an existing skill, use your judgment on what makes sense as the baseline: the original version the user came in with, or the previous iteration.
@@ -395,11 +337,9 @@ After improving the skill, stop if the next step needs user feedback or approval
 5. Read the new feedback, improve again, repeat
 
 Keep going until:
-
 - The user says they're happy
 - The feedback is all empty (everything looks good)
 - You're not making meaningful progress
-- You reach a decision point that requires user review or approval
 
 ---
 
@@ -524,12 +464,11 @@ The agents/ directory contains instructions for specialized tasks (used via the 
 - `agents/analyzer.md` — How to analyze why one version beat another
 
 The references/ directory has additional documentation:
-
 - `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
 
 ---
 
-Repeating one more time the core lifecycle here for emphasis. This is not a single-turn mandate; follow the handoff gates above between phases:
+Repeating one more time the core loop here for emphasis:
 
 - Figure out what the skill is about
 - Draft or edit the skill
@@ -540,6 +479,6 @@ Repeating one more time the core lifecycle here for emphasis. This is not a sing
 - Repeat until you and the user are satisfied
 - Install the final skill for the user.
 
-When the user has approved running evals, add steps to your TodoList (using the todowrite tool), if you have such a thing, to make sure you don't forget. At that point, specifically put "Create evals JSON and launch the eval viewer (via skill_serve_review) so human can review test cases" in your TodoList. Do not add or execute that viewer step during intake, drafting, diagnosis, or any other phase before evals are user-approved.
+Please add steps to your TodoList (using the todowrite tool), if you have such a thing, to make sure you don't forget. Please specifically put "Create evals JSON and launch the eval viewer (via skill_serve_review) so human can review test cases" in your TodoList to make sure it happens.
 
 Good luck!

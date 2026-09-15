@@ -1,6 +1,6 @@
 ---
 targets:
-  - '*'
+  - 'opencode'
 description: >-
   Analyze token usage across the current session with detailed breakdowns by
   category
