@@ -64,7 +64,7 @@ in the filename so the name still means something when read outside its folder.
 - Links live in the body, never in frontmatter. Frontmatter holds state; the graph holds structure.
 - A `## Related` section at the end of an entry note carries one line per link saying *why* the two are related. An unexplained link is a dead one.
 - A broken `[[link]]` is a warning — it marks something worth writing. A note nobody links to is an error: it has fallen out of the tree and no reader will ever reach it.
-- `[[ ]]` resolves inside this repository's `.agents/` only. It never points into the Claude memory vault, which uses the same syntax for a different realm.
+- `[[ ]]` resolves inside this repository's `.agents/` only. Other realms that use the same syntax — an agent's own memory vault, a personal notes vault — are never link targets from here.
 - Not every context has relatives. An honest orphan beats a manufactured link.
 
 ## Rules
@@ -75,4 +75,4 @@ in the filename so the name still means something when read outside its folder.
 - Directory and note names are derived. Never rename them by hand.
 - `dot-agents-ctl check` is the authority on the schema — run it after touching anything here.
 - Watch which realm you write to. No `.agents/`, no writing — a context belongs to the repository it describes.
-- No secrets, tokens, full transcripts, or raw logs. Transient material goes to `.omo/` or another ignored location.
+- No secrets, tokens, full transcripts, or raw logs. Transient material belongs in a git-ignored scratch location, not here.

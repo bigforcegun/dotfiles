@@ -4,7 +4,7 @@
 Корпус — всегда ./.agents относительно текущей директории.
 Читающие глаголы: load, list, check. Пишущие: new, set.
 Мутация всегда влечёт проверку. Индекс не генерируется: дерево держится
-на ссылке [[DOTFILES]] из каждой входной заметки.
+на ссылке [[<HUB>]] из каждой входной заметки.
 """
 
 import argparse
@@ -12,12 +12,14 @@ import datetime as dt
 import os
 import pathlib
 import re
+import subprocess
 import sys
 
 STATUSES = ("active", "paused", "blocked", "done", "archived")
 REQUIRED = ("updated", "status")  # слаг и дата рождения — это имя папки
 FM_ORDER = ("updated", "status", "next", "tags")
 ENTRY = "{dir}.md"  # входная заметка называется как её папка
+RULEBOOK = "-CONTEXTS-RULES"  # <HUB>-CONTEXTS-RULES.md — по нему и опознаётся хаб
 STALE_DAYS = 90
 PROFILES = "~/.dotfiles/.rulesync-templates"  # пресеты rulesync, берутся прямо из дотфайлов
 
@@ -33,11 +35,33 @@ def fail(msg):
 
 
 def find_root():
-    root = pathlib.Path.cwd() / ".agents"
-    if not root.is_dir():
-        fail(".agents/ не найдена в текущей директории.\n"
-             "  mkdir -p .agents/contexts && dot-agents-ctl check")
-    return root
+    """Корпус — ближайший .agents/ вверх от текущей директории. Вложенные
+    корпуса разрешаются в пользу ближайшего: у монорепозитория их бывает
+    несколько на разной глубине, и границы корпусов не совпадают с
+    границами репозитория ни сверху, ни снизу — поэтому git здесь не
+    спрашивается. Подъём не доходит до $HOME: ~/.agents — глобальное
+    хранилище скиллов Codex, а не корпус."""
+    cwd = pathlib.Path.cwd().resolve()
+    home = pathlib.Path.home().resolve()
+    skipped = None
+    for d in (cwd, *cwd.parents):
+        if d == home:
+            break
+        root = d / ".agents"
+        if not root.is_dir():
+            continue
+        if not (root / "contexts").is_dir():
+            # имя .agents/ занято и хранилищами скиллов, и свалками планов.
+            # Корпус опознаётся по contexts/, а не по имени каталога.
+            skipped = skipped or root
+            continue
+        if d != cwd:
+            # корпус не под ногами — говорим вслух, молча писать чужой нельзя
+            print(f"корпус: {root}", file=sys.stderr)
+        return root
+    fail(".agents/contexts не найдена ни здесь, ни выше."
+         + (f"\n  {skipped} — не корпус: нет contexts/" if skipped else "")
+         + "\n  dot-agents-ctl init --templates <скилл>/templates")
 
 
 def render(text, **vars):
@@ -54,15 +78,35 @@ def read_template(templates, name):
     return path.read_text(encoding="utf-8")
 
 
-def hub_name():
-    """Имя индексной заметки — имя репозитория без ведущей точки."""
-    return pathlib.Path.cwd().name.lstrip(".")
+def repo_name():
+    """Имя для НОВОГО корпуса — имя репозитория, а не текущего каталога.
+    В worktree каталог зовётся как угодно ('colossal-goose'), репозиторий —
+    нет. Спрашиваем git; вне репозитория честно падаем обратно на каталог."""
+    try:
+        out = subprocess.run(["git", "rev-parse", "--git-common-dir"],
+                             capture_output=True, text=True,
+                             check=True).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return pathlib.Path.cwd().name.lstrip(".")
+    common = pathlib.Path(out)
+    if not common.is_absolute():
+        common = pathlib.Path.cwd() / common
+    return common.resolve().parent.name.lstrip(".")
 
 
 def find_hub(root):
-    """Ищем её в корне корпуса, не придираясь к регистру."""
-    want = hub_name().lower()
-    return next((p.stem for p in root.glob("*.md") if p.stem.lower() == want), None)
+    """Имя хаба записано в самом корпусе, а не в имени каталога: рулбук
+    всегда зовётся <HUB>-CONTEXTS-RULES.md. Поэтому корпус переживает
+    worktree, клон под другим именем и переименование каталога."""
+    books = sorted(root.glob(f"*{RULEBOOK}.md"))
+    if len(books) == 1:
+        stem = books[0].stem[:-len(RULEBOOK)]
+        if stem and (root / f"{stem}.md").is_file():
+            return stem
+    # корпус без рулбука: хаб — единственная заметка в корне корпуса
+    notes = [p.stem for p in sorted(root.glob("*.md"))
+             if not p.stem.endswith(RULEBOOK)]
+    return notes[0] if len(notes) == 1 else None
 
 
 def strip_date(name):
@@ -154,7 +198,7 @@ class Context:
 def load_contexts(root):
     base = root / "contexts"
     if not base.is_dir():
-        fail(f"{base} не найдена. Создай её или проверь, что ты в корне репозитория.")
+        fail(f"{base} не найдена — корпус без contexts/ не корпус.")
     return [Context(p) for p in sorted(base.iterdir())
             if p.is_dir() and not p.name.startswith("_")]
 
@@ -206,7 +250,8 @@ def check_contexts(root, contexts, report, stale_days):
     targets = link_targets(root, contexts, report)
     hub = find_hub(root)
     if hub is None:
-        report.error(".agents", f"нет индексной заметки {hub_name()}.md — дерево без корня")
+        report.error(".agents", "нет индексной заметки — дерево без корня; "
+                     "ожидается <HUB>.md рядом с <HUB>-CONTEXTS-RULES.md")
     seen = {}
 
     for ctx in contexts:
@@ -301,8 +346,8 @@ def cmd_new(args):
 
     hub = find_hub(root)
     if hub is None:
-        fail(f"нет индексной заметки {hub_name()}.md; разверни корпус через "
-             f"`dot-agents-ctl init`")
+        fail("нет индексной заметки; разверни корпус через "
+             "`dot-agents-ctl init`")
 
     today = dt.date.today().isoformat()
     path = root / "contexts" / f"{today}-{args.slug}"
@@ -322,14 +367,14 @@ def cmd_new(args):
                 f"## Purpose\n\n{args.purpose or 'TODO'}\n")
     (path / f"{today}-{args.slug}.md").write_text(note, encoding="utf-8")
 
-    print(f"создан {path.relative_to(pathlib.Path.cwd())}")
+    print(f"создан {os.path.relpath(path)}")
     return 0
 
 
 def cmd_init(args):
     """Разворачивает недостающее. Существующее не трогает."""
     root = pathlib.Path.cwd() / ".agents"
-    hub = hub_name()
+    hub = args.hub or repo_name()
     added = []
 
     contexts = root / "contexts"
@@ -338,7 +383,7 @@ def cmd_init(args):
         added.append(str(contexts.relative_to(pathlib.Path.cwd())))
 
     for name, template in ((f"{hub}.md", "index.md"),
-                           (f"{hub}-CONTEXTS-RULES.md", "rules.md")):
+                           (f"{hub}{RULEBOOK}.md", "rules.md")):
         target = root / name
         if target.exists():
             continue
@@ -463,6 +508,7 @@ def main():
 
     init = sub.add_parser("init", help="развернуть недостающее в ./.agents")
     init.add_argument("--templates", required=True, help="директория templates/ из скилла")
+    init.add_argument("--hub", help="имя хаба (по умолчанию — имя репозитория)")
     init.set_defaults(func=cmd_init)
 
     load = sub.add_parser("load", help="напечатать входную заметку контекста")

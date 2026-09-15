@@ -22,9 +22,10 @@ One workstream is one folder under `.agents/contexts/`. Its entry note holds the
 state; `[[links]]` hold the structure. There is no generated index — the corpus is
 whatever links back to the hub note.
 
-`dot-agents-ctl` operates on `./.agents` in the current directory; run it from the
-repository root. Templates live in `templates/` next to this file — pass their paths
-where the commands below ask for them.
+`dot-agents-ctl` finds the nearest `.agents/contexts` at or above the current
+directory, so any subdirectory works; it names the corpus on stderr when that is
+not the one under your feet. Templates live in `templates/` next to this file —
+pass their paths where the commands below ask for them.
 
 ## The corpus is missing
 
