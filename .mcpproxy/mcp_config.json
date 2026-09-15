@@ -328,7 +328,7 @@
     {
       "name": "salotech-slack",
       "protocol": "streamable-http",
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "url": "https://mcp.slack.com/mcp",
       "oauth": {
@@ -347,38 +347,22 @@
     },
     {
       "name": "salotech-atlassian",
-      "protocol": "stdio",
-      "command": "/opt/homebrew/bin/node",
-      "args": [
-        "/Users/bigforcegun/Sources/mcp-remote/dist/proxy.js",
-        "https://mcp.atlassian.com/v1/mcp"
-      ],
-      "env": {
-        "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
-      },
+      "protocol": "streamable-http",
+      "url": "https://mcp.atlassian.com/v1/mcp",
       "oauth": null,
       "enabled": true,
       "quarantined": false,
       "disabled_tools": [
-        "createConfluencePage",
-        "updateConfluencePage",
         "createConfluenceFooterComment",
         "createConfluenceInlineComment"
       ]
     },
     {
       "name": "salotech-miro-isa",
-      "protocol": "stdio",
-      "command": "/opt/homebrew/bin/node",
-      "args": [
-        "/Users/bigforcegun/Sources/mcp-remote/dist/proxy.js",
-        "https://mcp.miro.com/"
-      ],
-      "env": {
-        "MCP_REMOTE_CONFIG_DIR": "/Users/bigforcegun/.mcp-auth"
-      },
+      "protocol": "streamable-http",
+      "url": "https://mcp.miro.com/",
       "oauth": null,
-      "enabled": false,
+      "enabled": true,
       "quarantined": false
     },
     {
