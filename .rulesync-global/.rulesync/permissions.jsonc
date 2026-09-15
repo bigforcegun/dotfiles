@@ -14,7 +14,9 @@
       "*mas uninstall*": "deny",
       "*installer *": "deny",
       "*softwareupdate --install*": "deny",
-      "*pkgutil --forget*": "deny"
+      "*pkgutil --forget*": "deny",
+      "*rulesync generate*": "deny",
+      "*rulesync*generate*": "deny"
     },
     "edit": {
       "*": "allow",
