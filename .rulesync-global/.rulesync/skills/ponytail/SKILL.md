@@ -16,6 +16,10 @@ targets:
   - '*'
 opencode:
   license: MIT
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # Ponytail
 

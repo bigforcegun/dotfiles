@@ -9,6 +9,10 @@ description: >-
   breakpoint / step / inspect tools.
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # DebugMCP — Interactive Debugging Skill
 

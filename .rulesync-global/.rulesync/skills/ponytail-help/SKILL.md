@@ -6,6 +6,10 @@ description: >
   "what ponytail commands", "how do I use ponytail".
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # Ponytail Help
 

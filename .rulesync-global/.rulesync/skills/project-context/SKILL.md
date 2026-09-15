@@ -2,6 +2,10 @@
 name: project-context
 description: "Summarize the project context and key constraints"
 targets: ["*"]
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 Summarize the project goals, core constraints, and relevant dependencies.

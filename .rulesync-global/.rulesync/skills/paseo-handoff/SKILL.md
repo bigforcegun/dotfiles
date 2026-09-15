@@ -3,6 +3,10 @@ name: paseo-handoff
 description: "Hand off the current task to another agent with full context. Use when the user says \"handoff\", \"hand off\", \"hand this to\", or wants to pass work to another agent."
 targets: ["*"]
 user-invocable: true
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 # Handoff Skill

@@ -6,6 +6,10 @@ description: >-
   сессию); always route through oc-session.
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # OpenCode session transfer
 

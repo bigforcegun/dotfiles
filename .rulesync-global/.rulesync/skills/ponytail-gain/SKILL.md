@@ -7,6 +7,10 @@ description: >
   "what does ponytail save", "show ponytail impact", "ponytail scoreboard".
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # Ponytail Gain
 

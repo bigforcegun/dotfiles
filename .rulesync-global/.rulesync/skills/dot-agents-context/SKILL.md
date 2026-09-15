@@ -10,6 +10,10 @@ description: >-
   happens to touch `.agents/`.
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 # Agent contexts

@@ -17,6 +17,7 @@ env
 .DS_Store
 *.bak
 *.bak-*
+.backups/
 token-usage-output.txt
 *.zwc
 *.tar

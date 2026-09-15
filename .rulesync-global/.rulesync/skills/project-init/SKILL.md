@@ -9,6 +9,10 @@ description: >-
   work needs `.agents/` or `.rulesync/` in a repository that has neither.
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 # Project init

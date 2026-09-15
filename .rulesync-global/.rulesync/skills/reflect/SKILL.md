@@ -8,6 +8,10 @@ description: >-
   "подведи итоги сессии", or asks to wrap up a coding session.
 targets:
   - '*'
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 # Reflect
 

@@ -11,7 +11,7 @@ description: >-
   drafting. Do not use for generic Claude Code or Superpowers skill creation
   unless the user asks to port that workflow to OpenCode.
 targets:
-  - '*'
+  - 'opencode'
 ---
 # OpenCode Skill Creator
 
@@ -150,6 +150,7 @@ The skill directory name must match the `name` field in the frontmatter.
 #### Progressive Disclosure
 
 Skills use a three-level loading system:
+
 1. **Metadata** (name + description) — Always in context (~100 words)
 2. **SKILL.md body** — In context whenever skill triggers (<500 lines ideal)
 3. **Bundled resources** — As needed (unlimited, scripts can execute without loading)
@@ -157,11 +158,13 @@ Skills use a three-level loading system:
 These word counts are approximate and you can feel free to go longer if needed.
 
 **Key patterns:**
+
 - Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
 - Reference files clearly from SKILL.md with guidance on when to read them
 - For large reference files (>300 lines), include a table of contents
 
 **Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
+
 ```
 cloud-deploy/
 ├── SKILL.md (workflow + selection)
@@ -170,6 +173,7 @@ cloud-deploy/
     ├── gcp.md
     └── azure.md
 ```
+
 OpenCode reads only the relevant reference file.
 
 #### Principle of Lack of Surprise
@@ -181,6 +185,7 @@ This goes without saying, but skills must not contain malware, exploit code, or 
 Prefer using the imperative form in instructions.
 
 **Defining output formats** — You can do it like this:
+
 ```markdown
 ## Report structure
 ALWAYS use this exact template:
@@ -191,6 +196,7 @@ ALWAYS use this exact template:
 ```
 
 **Examples pattern** — It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
+
 ```markdown
 ## Commit message format
 **Example 1:**
@@ -246,6 +252,7 @@ Execute this task:
 ```
 
 **Baseline run** (same prompt, but the baseline depends on context):
+
 - **Creating a new skill**: no skill at all. Same prompt, no skill path, save to `without_skill/outputs/`.
 - **Improving an existing skill**: the old version. Before editing, snapshot the skill (`cp -r <skill-path> <workspace>/skill-snapshot/`), then point the baseline Task tool invocation at the snapshot. Save to `old_skill/outputs/`.
 
@@ -291,17 +298,20 @@ Before launching review, enforce this gate: every eval must have paired comparis
 1. **Grade each run** — spawn a grader Task (using `general` subagent type), or grade inline, that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
 
 2. **Aggregate into benchmark** — use the `skill_aggregate_benchmark` tool:
+
    ```
    Call skill_aggregate_benchmark with:
      benchmarkDir: <workspace>/iteration-N
      skillName: <name>
    ```
+
    This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
 Put each with_skill version before its baseline counterpart.
 
 3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
 
 4. **Launch the viewer** with both qualitative outputs and quantitative data using the `skill_serve_review` tool:
+
    ```
    Call skill_serve_review with:
      workspace: <workspace>/iteration-N
@@ -309,6 +319,7 @@ Put each with_skill version before its baseline counterpart.
      benchmarkPath: <workspace>/iteration-N/benchmark.json
      allowPartial: false
    ```
+
    For iteration 2+, also pass `previousWorkspace: <workspace>/iteration-<N-1>`.
 
    If `benchmarkPath` is omitted, the tool auto-generates `benchmark.json` and `benchmark.md` inside the workspace before opening the viewer.
@@ -319,11 +330,12 @@ Put each with_skill version before its baseline counterpart.
 
 Note: please use the `skill_serve_review` or `skill_export_static_review` tools to create the viewer; there's no need to write custom HTML.
 
-5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
+1. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
 
 ### What the user sees in the viewer
 
 The "Outputs" tab shows one test case at a time:
+
 - **Prompt**: the task that was given
 - **Output**: the files the skill produced, rendered inline where possible
 - **Previous Output** (iteration 2+): collapsed section showing last iteration's output
@@ -383,6 +395,7 @@ After improving the skill, stop if the next step needs user feedback or approval
 5. Read the new feedback, improve again, repeat
 
 Keep going until:
+
 - The user says they're happy
 - The feedback is all empty (everything looks good)
 - You're not making meaningful progress
@@ -511,6 +524,7 @@ The agents/ directory contains instructions for specialized tasks (used via the 
 - `agents/analyzer.md` — How to analyze why one version beat another
 
 The references/ directory has additional documentation:
+
 - `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
 
 ---

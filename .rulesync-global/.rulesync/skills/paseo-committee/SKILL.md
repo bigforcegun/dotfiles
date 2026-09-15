@@ -3,6 +3,10 @@ name: paseo-committee
 description: "Form a committee of two high-reasoning agents to step back, do root cause analysis, and produce a plan. Use when stuck, looping, tunnel-visioning, or facing a hard planning problem."
 targets: ["*"]
 user-invocable: true
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 # Committee Skill

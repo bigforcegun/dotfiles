@@ -5,6 +5,10 @@ targets: ["*"]
 user-invocable: true
 claudecode:
   argument-hint: "[--profile <name>] <question or topic>"
+disable-model-invocation: true
+codexcli:
+  policy:
+    allow_implicit_invocation: false
 ---
 
 # Paseo Advisor
