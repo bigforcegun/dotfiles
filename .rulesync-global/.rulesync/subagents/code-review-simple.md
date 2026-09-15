@@ -7,7 +7,7 @@ opencode:
   mode: subagent
   model: openai/gpt-5.3-codex
   temperature: 0.1
-  disable: false
+  disable: true
   tools:
     write: false
     edit: false

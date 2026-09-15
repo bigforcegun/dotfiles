@@ -47,20 +47,6 @@
     "openai": {},
     "openrouter": {}
   },
-  "instructions": [
-    "~/.config/opencode/instructions/SOUL-HK-47-RU.md",
-    "~/.config/opencode/instructions/agent-identity.md",
-    "~/.config/opencode/instructions/common.md",
-    "~/.config/opencode/instructions/communication.md",
-    "~/.config/opencode/instructions/opencode.md",
-    "~/.config/opencode/instructions/git.md"
-  ],
-  "command": {
-    "agent-install-hooks2": {
-      "description": "Install repository Git hooks",
-      "template": "Run `./scripts/install-hooks.sh` from the project root and report the resulting local Git config values."
-    }
-  },
   "permission": {
     "*": "allow",
     "external_directory": "ask",
@@ -78,7 +64,9 @@
       "*mas uninstall*": "deny",
       "*installer *": "deny",
       "*softwareupdate --install*": "deny",
-      "*pkgutil --forget*": "deny"
+      "*pkgutil --forget*": "deny",
+      "*rulesync generate*": "deny",
+      "*rulesync*generate*": "deny"
     },
     "edit": {
       "*": "allow",
@@ -88,11 +76,16 @@
       ".gitconfig": "deny",
       ".gitmessage": "deny",
       ".githooks/**": "deny",
-      ".gitignore": "deny",
-      ".gitattributes": "deny",
-      ".gitmodules": "deny",
+      ".gitignore": "ask",
+      ".gitattributes": "ask",
+      ".gitmodules": "ask",
       ".opencode/**": "deny",
       "~/.config/opencode/**": "deny"
+    },
+    "read": {
+      "*.local.json": "deny",
+      ".env": "deny",
+      "credentials/": "deny"
     }
   },
   "plugin": [
@@ -103,19 +96,5 @@
     "opencode-rules@0.6.4"
   ],
   "mcp": {
-    "agentcairn": {
-      "type": "local",
-      "command": [
-        "uv",
-        "run",
-        "--project",
-        "/Users/bigforcegun/Sources/agentcairn",
-        "agentcairn"
-      ],
-      "enabled": false,
-      "environment": {
-        "CAIRN_VAULT": "/Users/bigforcegun/Nextcloud/documents/notes/LLM/Memory"
-      }
-    }
   }
 }
