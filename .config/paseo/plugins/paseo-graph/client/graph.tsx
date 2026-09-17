@@ -62,6 +62,7 @@ interface AgentInfo {
   status: string;
   workspaceId: string | null;
   parentId: string | null;
+  archived: boolean;
 }
 
 /**
@@ -99,6 +100,7 @@ interface RawAgentEntry {
     title: string | null;
     workspaceId?: string;
     labels?: Record<string, string>;
+    archivedAt?: string | null;
   };
 }
 
@@ -166,7 +168,7 @@ function buildGraph(
       refId: agent.id,
       label: agent.label,
       sublabel: agent.provider,
-      status: agent.status,
+      status: agent.archived ? "archived" : agent.status,
     });
   }
 
@@ -250,11 +252,14 @@ async function fetchAllWorkspaces(paseo: PaseoApi): Promise<WorkspaceCatalogue> 
   return { workspaces, emptyProjects };
 }
 
-async function fetchAllAgents(paseo: PaseoApi): Promise<RawAgentEntry[]> {
+async function fetchAllAgents(paseo: PaseoApi, includeArchived: boolean): Promise<RawAgentEntry[]> {
   const all: RawAgentEntry[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page += 1) {
-    const result = await paseo.agents.list({ page: { limit: PAGE_LIMIT, cursor } });
+    const result = await paseo.agents.list({
+      page: { limit: PAGE_LIMIT, cursor },
+      ...(includeArchived ? { filter: { includeArchived: true } } : {}),
+    });
     all.push(...((result.entries ?? []) as RawAgentEntry[]));
     const info = result.pageInfo as PageInfo | undefined;
     if (!info?.hasMore || !info.nextCursor) break;
@@ -272,18 +277,21 @@ interface Body {
   vy: number;
 }
 
-const REPULSION = 81000;
-const REPULSION_RANGE_SQUARED = 1560 * 1560;
+const REPULSION = 324000;
+/** Also the spatial grid's cell size: beyond it repulsion is under 1% of the
+ * spring force, so ignoring those pairs costs nothing and saves the O(n²). */
+const REPULSION_RANGE = 1600;
+const REPULSION_RANGE_SQUARED = REPULSION_RANGE * REPULSION_RANGE;
 const SPRING = 0.035;
-const CONTAINS_LENGTH = 286;
-const SPAWN_LENGTH = 450;
-const GRAVITY = 0.004;
-const DAMPING = 0.82;
+const CONTAINS_LENGTH = 572;
+const SPAWN_LENGTH = 900;
+const GRAVITY = 0.002;
+const DAMPING = 0.9;
 const MAX_STEP = 22;
 /** Halves how far a node travels per frame; the layout drifts into place
  * instead of snapping there. */
 const MOTION_SCALE = 0.5;
-const ALPHA_DECAY = 0.992;
+const ALPHA_DECAY = 0.988;
 const ALPHA_FLOOR = 0.004;
 
 function hashSeed(value: string): number {
@@ -306,30 +314,55 @@ function simulate(
   alpha: number,
   pinned: string | null,
 ): void {
-  for (let i = 0; i < nodes.length; i += 1) {
-    const a = bodies.get(nodes[i].id);
-    if (!a) continue;
-    for (let j = i + 1; j < nodes.length; j += 1) {
-      const b = bodies.get(nodes[j].id);
-      if (!b) continue;
-      let dx = a.x - b.x;
-      let dy = a.y - b.y;
-      let distanceSquared = dx * dx + dy * dy;
-      if (distanceSquared < 0.01) {
-        dx = 0.7;
-        dy = -0.7;
-        distanceSquared = 0.98;
-      }
-      if (distanceSquared > REPULSION_RANGE_SQUARED) continue;
-      const distance = Math.sqrt(distanceSquared);
-      const force = (REPULSION / distanceSquared) * alpha;
-      a.vx += (dx / distance) * force;
-      a.vy += (dy / distance) * force;
-      b.vx -= (dx / distance) * force;
-      b.vy -= (dy / distance) * force;
+  // Bucket the bodies so repulsion only compares a node with its own cell and
+  // the four forward neighbours. Every pair closer than one cell width is still
+  // visited exactly once, and the distant ones are never touched.
+  const grid = new Map<string, Body[]>();
+  for (const node of nodes) {
+    const body = bodies.get(node.id);
+    if (!body) continue;
+    const key = `${Math.floor(body.x / REPULSION_RANGE)},${Math.floor(body.y / REPULSION_RANGE)}`;
+    const cell = grid.get(key);
+    if (cell) cell.push(body);
+    else grid.set(key, [body]);
+    body.vx -= body.x * GRAVITY * alpha;
+    body.vy -= body.y * GRAVITY * alpha;
+  }
+
+  const repel = (a: Body, b: Body) => {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    let distanceSquared = dx * dx + dy * dy;
+    if (distanceSquared < 0.01) {
+      dx = 0.7;
+      dy = -0.7;
+      distanceSquared = 0.98;
     }
-    a.vx -= a.x * GRAVITY * alpha;
-    a.vy -= a.y * GRAVITY * alpha;
+    if (distanceSquared > REPULSION_RANGE_SQUARED) return;
+    const distance = Math.sqrt(distanceSquared);
+    const force = (REPULSION / distanceSquared) * alpha;
+    a.vx += (dx / distance) * force;
+    a.vy += (dy / distance) * force;
+    b.vx -= (dx / distance) * force;
+    b.vy -= (dy / distance) * force;
+  };
+
+  const FORWARD_NEIGHBOURS = [
+    [1, 0],
+    [-1, 1],
+    [0, 1],
+    [1, 1],
+  ];
+  for (const [key, cell] of grid) {
+    for (let i = 0; i < cell.length; i += 1) {
+      for (let j = i + 1; j < cell.length; j += 1) repel(cell[i], cell[j]);
+    }
+    const [cx, cy] = key.split(",").map(Number);
+    for (const [ox, oy] of FORWARD_NEIGHBOURS) {
+      const other = grid.get(`${cx + ox},${cy + oy}`);
+      if (!other) continue;
+      for (const a of cell) for (const b of other) repel(a, b);
+    }
   }
 
   for (const edge of edges) {
@@ -376,7 +409,7 @@ const INITIAL_SCALE = 0.2;
 /** `userSelect` is a web-only style; React Native's ViewStyle has no such key. */
 const NO_TEXT_SELECTION = { userSelect: "none" } as unknown as ViewStyle;
 
-const MIN_SCALE = 0.2;
+const MIN_SCALE = 0.1;
 const MAX_SCALE = 16;
 
 /**
@@ -420,6 +453,9 @@ function nodeColor(node: GraphNode, theme: PluginSurfaceProps["theme"]): string 
       return theme.colors.statusDanger;
     case "done":
       return theme.colors.statusSuccess;
+    case "archived":
+      // Dimmer than idle, otherwise the archive is indistinguishable from live work.
+      return theme.colors.border;
     default:
       return theme.colors.foregroundMuted;
   }
@@ -517,6 +553,91 @@ function NodeView({
   );
 }
 
+
+/* ----------------------------------------------------------------- legend */
+
+interface LegendProps {
+  theme: PluginSurfaceProps["theme"];
+  compact: boolean;
+}
+
+/** Size encodes what a node is, colour encodes how it is doing; the legend has
+ * to say both, because neither is guessable from the graph alone. */
+function Legend({ theme, compact }: LegendProps) {
+  const kinds: Array<{ kind: NodeKind; label: string }> = [
+    { kind: "project", label: "project" },
+    { kind: "workspace", label: "workspace" },
+    { kind: "agent", label: "agent" },
+  ];
+  const statuses: Array<{ label: string; color: string }> = [
+    { label: "running", color: theme.colors.accent },
+    { label: "attention", color: theme.colors.statusWarning },
+    { label: "failed", color: theme.colors.statusDanger },
+    { label: "done", color: theme.colors.statusSuccess },
+    { label: "idle", color: theme.colors.foregroundMuted },
+    { label: "archived", color: theme.colors.border },
+  ];
+  const caption = { color: theme.colors.foregroundMuted, fontSize: compact ? 9 : 10 };
+  const group = { flexDirection: "row" as const, alignItems: "center" as const, gap: 6 };
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+        columnGap: 14,
+        rowGap: 6,
+        paddingHorizontal: compact ? 12 : 16,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+      }}
+    >
+      <View style={group}>
+        {kinds.map((entry) => (
+          <View key={entry.kind} style={group}>
+            <View
+              style={{
+                width: RADIUS[entry.kind],
+                height: RADIUS[entry.kind],
+                borderRadius: RADIUS[entry.kind] / 2,
+                backgroundColor:
+                  entry.kind === "project" ? PROJECT_COLOR : theme.colors.foregroundMuted,
+                borderWidth: 1,
+                borderColor: theme.colors.foregroundMuted,
+              }}
+            />
+            <Text style={caption}>{entry.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={group}>
+        {statuses.map((entry) => (
+          <View key={entry.label} style={group}>
+            <View
+              style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: entry.color }}
+            />
+            <Text style={caption}>{entry.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={group}>
+        <View style={group}>
+          <View style={{ width: 20, height: 1.5, backgroundColor: theme.colors.foregroundMuted }} />
+          <Text style={caption}>contains</Text>
+        </View>
+        <View style={group}>
+          <View style={{ width: 20, height: 1.5, backgroundColor: theme.colors.accent }} />
+          <Text style={caption}>spawned</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 /* ---------------------------------------------------------------- surface */
 
 export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) {
@@ -525,6 +646,10 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   const [scale, setScale] = useState(INITIAL_SCALE);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  // While a drag is in flight the pointer sweeps across unrelated nodes; their
+  // hover events would otherwise steal the highlight from under the gesture.
+  const gestureRef = useRef(false);
   const [, setFrame] = useState(0);
 
   const bodiesRef = useRef(new Map<string, Body>());
@@ -545,8 +670,8 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     refetchInterval: 5000,
   });
   const agentsQuery = useQuery({
-    queryKey: ["paseo-graph", "agents"],
-    queryFn: () => fetchAllAgents(paseo),
+    queryKey: ["paseo-graph", "agents", showArchived],
+    queryFn: () => fetchAllAgents(paseo, showArchived),
     refetchInterval: 5000,
   });
 
@@ -581,6 +706,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         status: entry.agent.status,
         workspaceId: entry.agent.workspaceId ?? null,
         parentId: parentFromLabels(entry.agent.labels),
+        archived: Boolean(entry.agent.archivedAt),
       })),
     [agentsQuery.data],
   );
@@ -649,7 +775,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
       if (bodies.has(node.id)) continue;
       topologyChanged = true;
       const angle = hashSeed(node.id) * Math.PI * 2;
-      const radius = 240 + hashSeed(`${node.id}:r`) * 780;
+      const radius = 480 + hashSeed(`${node.id}:r`) * 1560;
       bodies.set(node.id, {
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
@@ -661,30 +787,60 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     return bodies;
   }, [nodes]);
 
-  useEffect(() => {
-    let raf = 0;
+  // The loop stops dead once the layout settles instead of burning a frame
+  // forever, and is woken only by a drag or a real topology change.
+  const graphRef = useRef({ nodes, edges });
+  graphRef.current = { nodes, edges };
+  const rafRef = useRef(0);
+  const runningRef = useRef(false);
+
+  const wake = useCallback((alpha: number) => {
+    alphaRef.current = Math.max(alphaRef.current, alpha);
+    if (runningRef.current) return;
+    if (alphaRef.current <= ALPHA_FLOOR && !pinnedRef.current) return;
+    runningRef.current = true;
     const step = () => {
-      if (alphaRef.current > ALPHA_FLOOR || pinnedRef.current) {
-        simulate(bodiesRef.current, nodes, edges, alphaRef.current, pinnedRef.current);
-        alphaRef.current = pinnedRef.current
-          ? Math.max(alphaRef.current, 0.3)
-          : alphaRef.current * ALPHA_DECAY;
-        setFrame((frame) => (frame + 1) % 1000000);
+      const graph = graphRef.current;
+      simulate(bodiesRef.current, graph.nodes, graph.edges, alphaRef.current, pinnedRef.current);
+      alphaRef.current = pinnedRef.current
+        ? Math.max(alphaRef.current, 0.3)
+        : alphaRef.current * ALPHA_DECAY;
+      setFrame((frame) => (frame + 1) % 1000000);
+      if (alphaRef.current <= ALPHA_FLOOR && !pinnedRef.current) {
+        runningRef.current = false;
+        return;
       }
-      raf = requestAnimationFrame(step);
+      rafRef.current = requestAnimationFrame(step);
     };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [nodes, edges]);
+    rafRef.current = requestAnimationFrame(step);
+  }, []);
+
+  useEffect(() => {
+    wake(alphaRef.current);
+  }, [nodes, edges, wake]);
+
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(rafRef.current);
+      runningRef.current = false;
+    },
+    [],
+  );
+
+  const handleHover = useCallback((nodeId: string | null) => {
+    if (gestureRef.current) return;
+    setHovered(nodeId);
+  }, []);
 
   const handleGrab = useCallback((nodeId: string) => {
     const body = bodiesRef.current.get(nodeId);
     if (!body) return;
+    gestureRef.current = true;
     pinnedRef.current = nodeId;
     grabOriginRef.current = { ...body };
     setHovered(nodeId);
-    alphaRef.current = Math.max(alphaRef.current, 0.5);
-  }, []);
+    wake(0.5);
+  }, [wake]);
 
   const handleMove = useCallback((nodeId: string, dx: number, dy: number) => {
     const body = bodiesRef.current.get(nodeId);
@@ -697,10 +853,11 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   }, []);
 
   const handleRelease = useCallback(() => {
+    gestureRef.current = false;
     pinnedRef.current = null;
     grabOriginRef.current = null;
-    alphaRef.current = Math.max(alphaRef.current, 0.4);
-  }, []);
+    wake(0.4);
+  }, [wake]);
 
   const handleActivate = useCallback(
     (node: GraphNode) => {
@@ -718,9 +875,17 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
           panOriginRef.current = panRef.current;
+          gestureRef.current = true;
+          setHovered(null);
         },
         onPanResponderMove: (_event, gesture) => {
           setPan({ x: panOriginRef.current.x + gesture.dx, y: panOriginRef.current.y + gesture.dy });
+        },
+        onPanResponderRelease: () => {
+          gestureRef.current = false;
+        },
+        onPanResponderTerminate: () => {
+          gestureRef.current = false;
         },
         onPanResponderTerminationRequest: () => false,
       }),
@@ -790,7 +955,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   const centerX = size.width / 2 + pan.x;
   const centerY = size.height / 2 + pan.y;
   const bodies = bodiesRef.current;
-  const showLabels = scale >= 0.15;
+  const showLabels = scale >= 0.05;
   const loading = workspacesQuery.isPending || agentsQuery.isPending;
   const error = workspacesQuery.error ?? agentsQuery.error;
 
@@ -819,6 +984,11 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
           { label: "−", action: () => setScale((value) => clamp(value / 1.25, MIN_SCALE, MAX_SCALE)) },
           { label: "+", action: () => setScale((value) => clamp(value * 1.25, MIN_SCALE, MAX_SCALE)) },
           { label: "fit", action: fitToContent },
+          {
+            label: "archive",
+            action: () => setShowArchived((value) => !value),
+            active: showArchived,
+          },
         ].map((control) => (
           <Pressable
             key={control.label}
@@ -829,13 +999,26 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               paddingHorizontal: 10,
               paddingVertical: 6,
               borderRadius: 8,
-              backgroundColor: theme.colors.surface2,
+              backgroundColor:
+                "active" in control && control.active ? theme.colors.accent : theme.colors.surface2,
             }}
           >
-            <Text style={{ color: theme.colors.foreground, fontSize: 13 }}>{control.label}</Text>
+            <Text
+              style={{
+                color:
+                  "active" in control && control.active
+                    ? theme.colors.accentForeground
+                    : theme.colors.foreground,
+                fontSize: 13,
+              }}
+            >
+              {control.label}
+            </Text>
           </Pressable>
         ))}
       </View>
+
+      <Legend theme={theme} compact={layout.compact} />
 
       <View
         {...canvasResponder.panHandlers}
@@ -897,7 +1080,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               theme={theme}
               hovered={activeHover === node.id}
               opacity={neighbourhood ? (near ? NODE_OPACITY.active : NODE_OPACITY.faded) : NODE_OPACITY.resting}
-              onHover={setHovered}
+              onHover={handleHover}
               onGrab={handleGrab}
               onMove={handleMove}
               onRelease={handleRelease}
