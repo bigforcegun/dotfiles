@@ -1,5 +1,11 @@
 {
-  "plugins": ["react", "react-perf", "typescript", "unicorn", "oxc"],
+  "plugins": [
+    "react",
+    "react-perf",
+    "typescript",
+    "unicorn",
+    "oxc"
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -18,7 +24,11 @@
     "react/void-use-memo": "error",
     "no-shadow": "error",
     "react/react-in-jsx-scope": "off",
-    "no-console": "warn"
+    "no-console": "warn",
+    "react/memo-dependencies": "off",
+    "unicorn/no-array-sort": "off"
   },
-  "ignorePatterns": ["node_modules"]
+  "ignorePatterns": [
+    "node_modules"
+  ]
 }
