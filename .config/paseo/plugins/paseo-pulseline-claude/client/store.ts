@@ -1,13 +1,17 @@
 // Per-agent store: paged history bootstrap, epoch-aware buffering of live
 // events, a ticker that runs only while the agent is busy, and leak-free
 // teardown. Every commit is guarded by the epoch generation it was issued for.
+import { createAbandonment } from "./abandon.ts";
+import { PULSE_PHASES } from "./pulse-segments.ts";
+import { createDeadlineKeeper } from "./deadline.ts";
 import { HISTORY_LIMIT, loadHistoryPages, type HistoryFetch } from "./history.ts";
-import { PULSELINE_FALLBACK_LABEL, renderPulseLabel } from "./label.ts";
+import { PULSE_IDLE_LABEL, renderPulseLabel } from "./label.ts";
 import { derivePulseMetrics, type PulseMetrics } from "./metrics.ts";
 import { initialPulseState, reducePulse, type PulseInput, type PulseModelState } from "./model.ts";
 import { normalizeAgentSnapshot, normalizeTimelineEvent } from "./normalize.ts";
 
-const TICK_MS = 1_000;
+/** The original TUI advances the active block every 450 ms (tui.js:1026). */
+export const PULSE_TICK_MS = 450;
 /** The daemon answered timeline pages in ~3s under load and 7s at the tail; a
  *  request slower than this is treated as failed rather than waited on forever. */
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -30,10 +34,14 @@ export interface PulseView {
   readonly state: PulseModelState;
   readonly metrics: PulseMetrics;
   readonly label: string;
+  /** Active-tail pulse phase; 0 whenever the agent is not busy. */
+  readonly phase: number;
 }
 
 export interface PulseStore {
   getView(): PulseView;
+  /** Resolves when the in-flight history load has finished; for teardown tests. */
+  whenIdle(): Promise<void>;
   subscribe(listener: () => void): () => void;
   stop(): void;
 }
@@ -73,9 +81,16 @@ export function createPulseStore(options: PulseStoreOptions): PulseStore {
   let state = initialPulseState;
   let view: PulseView | null = null;
   let timer: unknown = null;
+  let phase = 0;
+  /** Every armed request deadline, so unmount can cancel them all at once. */
+  const deadlines = createDeadlineKeeper(schedule, cancel);
   let stopped = false;
   let loading = false;
   let queued = false;
+  let inFlight: Promise<void> = Promise.resolve();
+  let readinessWait: Promise<unknown> = Promise.resolve();
+  /** Settles our own readiness wait when the store stops. */
+  const abandonment = createAbandonment();
   /** Bumped by every replacement; a page issued for an older value is dropped. */
   let generation = 0;
 
@@ -84,27 +99,27 @@ export function createPulseStore(options: PulseStoreOptions): PulseStore {
     for (const listener of [...listeners]) listener();
   }
 
+  function advancePhase(): void {
+    // Only three phases exist; the pulse cycles 0 -> 1 -> 2 -> 0.
+    phase = (phase + 1) % PULSE_PHASES;
+    notify();
+  }
+
   function syncTicker(): void {
     if (state.busy && !stopped && timer === null) {
-      timer = schedule(notify, options.tickMs ?? TICK_MS);
+      timer = schedule(advancePhase, options.tickMs ?? PULSE_TICK_MS);
       return;
     }
     if ((!state.busy || stopped) && timer !== null) {
       cancel(timer);
       timer = null;
+      // An idle pulse resets instead of freezing mid-beat.
+      phase = 0;
     }
   }
 
-  /** Rejects when the daemon does not answer in time; clears its timer either way. */
   function withDeadline<Value>(work: Promise<Value>): Promise<Value> {
-    const ms = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
-    let timer: unknown = null;
-    const deadline = new Promise<never>((_resolve, reject) => {
-      timer = schedule(() => reject(new Error("timeline request timed out")), ms);
-    });
-    return Promise.race([work, deadline]).finally(() => {
-      if (timer !== null) cancel(timer);
-    });
+    return deadlines.run(work, options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS);
   }
 
   function commit(input: PulseInput): void {
@@ -216,25 +231,30 @@ export function createPulseStore(options: PulseStoreOptions): PulseStore {
   // resolving (packages/client/src/daemon-client.ts:1082,
   // packages/client/src/connection/index.ts:92-98). Gating history on it hangs the
   // pill forever, so fetch first and use readiness as a single catch-up refresh.
-  void loadHistory();
+  inFlight = loadHistory();
   let refreshedOnReady = false;
   if (subscription.ready) {
-    void subscription.ready
+    readinessWait = abandonment
+      .race(subscription.ready)
       .then(() => {
         // Only catch up when demand was acknowledged after the page had already
         // landed; a load still in flight is covered by that same acknowledgement.
         if (stopped || refreshedOnReady || !state.historyLoaded) return undefined;
         refreshedOnReady = true;
-        return loadHistory();
+        inFlight = loadHistory();
+        return inFlight;
       })
       .catch(() => undefined);
   }
 
   return {
+    whenIdle() {
+      return Promise.allSettled([inFlight, readinessWait]).then(() => undefined);
+    },
     getView() {
       if (!view) {
         const metrics = derivePulseMetrics(state, now());
-        view = { state, metrics, label: renderPulseLabel(state, metrics) };
+        view = { state, metrics, phase, label: renderPulseLabel(state, { phase }) };
       }
       return view;
     },
@@ -253,10 +273,13 @@ export function createPulseStore(options: PulseStoreOptions): PulseStore {
         cancel(timer);
         timer = null;
       }
+      deadlines.clear();
+      abandonment.abandon();
+      phase = 0;
       buffered = [];
       listeners.clear();
     },
   };
 }
 
-export { HISTORY_LIMIT, PULSELINE_FALLBACK_LABEL };
+export { HISTORY_LIMIT, PULSE_IDLE_LABEL };

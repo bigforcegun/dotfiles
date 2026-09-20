@@ -127,7 +127,7 @@ describe("Pulseline client contribution", () => {
       true,
     );
     expect(fixture.contributions.every(({ button }) => button.title === "Pulseline · OpenCode")).toBe(true);
-    expect(fixture.contributions.every(({ button }) => button.label === "Pulseline · OpenCode")).toBe(true);
+    expect(fixture.contributions.every(({ button }) => button.label === "⣀")).toBe(true);
     cleanup();
   });
 
@@ -157,9 +157,10 @@ describe("Pulseline client contribution", () => {
       agent({ id: "opencode-1", provider: "opencode", workspaceId: "workspace-1" }),
     ]);
     let presentation: PulselinePresentation | undefined;
+    let tick: (() => void) | undefined;
     const cleanup = createPulselineRegistry(
       fixture.client,
-      () => () => {},
+      (callback) => { tick = callback; return () => {}; },
       (item) => { presentation = item; },
     );
     await Promise.resolve();
@@ -179,10 +180,11 @@ describe("Pulseline client contribution", () => {
         activeTurn: { turnId: "turn-1", startedAt: null },
       }),
     });
+    tick?.();
 
     // Then
     expect(behavior?.kind).toBe("popover");
-    expect(fixture.updates.at(-1)).toEqual({ label: "Pulseline · OpenCode · busy" });
+    expect(fixture.updates.at(-1)).toEqual({ label: "⣤" });
     expect(fixture.updates.every((patch) => Object.keys(patch).join() === "label")).toBe(true);
     expect(fixture.contributions[0]?.button.behavior).toBe(behavior);
     unmount();

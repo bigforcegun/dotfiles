@@ -1,7 +1,7 @@
 import type { AgentStreamEvent, AgentTimelineItem } from "@getpaseo/protocol/agent-types";
 import { describe, expect, it } from "vitest";
 import {
-  formatMetric,
+  heightIndexForTokens,
   normalizeStreamEvent,
   normalizeTimelineItem,
   usageMetrics,
@@ -15,6 +15,43 @@ function block(item: TimelineSourceItem, provider: string, order = 1) {
 }
 
 describe("normalized timeline model", () => {
+  it("uses the original eight token-volume thresholds", () => {
+    // Given
+    const volumes = [16, 17, 64, 65, 128, 129, 256, 257, 512, 513, 1_024, 1_025, 2_048, 2_049];
+
+    // When
+    const heights = volumes.map(heightIndexForTokens);
+
+    // Then
+    expect(heights).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7]);
+  });
+
+  it("persists volume-derived heights for same-kind text and available tool payloads", () => {
+    // Given
+    const shortText = block({ type: "assistant_message", text: "tiny" }, "opencode");
+    const longText = block({ type: "assistant_message", text: "x".repeat(2_052) }, "opencode", 2);
+    const toolOutput = block({
+      type: "tool_call", callId: "shell", name: "Shell", status: "completed", error: null,
+      detail: { type: "shell", command: "run", output: "x".repeat(8_200) },
+    }, "opencode", 3);
+    const toolError = block({
+      type: "tool_call", callId: "failed", name: "Read", status: "failed", error: "x".repeat(260),
+      detail: { type: "read", filePath: "missing" },
+    }, "opencode", 4);
+    const payloadMissing = block({
+      type: "tool_call", callId: "fallback", name: "Read", status: "completed", error: null,
+      detail: { type: "read", filePath: "small" },
+    }, "opencode", 5);
+
+    // Then
+    expect([shortText?.kind, longText?.kind]).toEqual(["text", "text"]);
+    expect([shortText?.volumeTokens, shortText?.heightIndex]).toEqual([1, 0]);
+    expect([longText?.volumeTokens, longText?.heightIndex]).toEqual([513, 5]);
+    expect([toolOutput?.volumeTokens, toolOutput?.heightIndex]).toEqual([2_050, 7]);
+    expect([toolError?.volumeTokens, toolError?.heightIndex]).toEqual([65, 2]);
+    expect([payloadMissing?.volumeTokens, payloadMissing?.heightIndex]).toEqual([1, 0]);
+  });
+
   it.each(providers)("maps the shared timeline contract for provider=%s", (provider) => {
     // Given
     const items: readonly TimelineSourceItem[] = [
@@ -70,14 +107,7 @@ describe("normalized timeline model", () => {
       contextWindowUsedTokens: 140,
     });
 
-    // When
-    const displays = {
-      exact: formatMetric(reported.inputTokens),
-      observed: formatMetric({ value: 320, approximate: true }),
-    };
-
     // Then
-    expect(displays).toEqual({ exact: "100", observed: "~320" });
     expect(Object.keys(reported).sort()).toEqual([
       "cachedInputTokens", "contextWindowMaxTokens", "contextWindowUsedTokens", "inputTokens", "outputTokens", "totalCostUsd",
     ]);

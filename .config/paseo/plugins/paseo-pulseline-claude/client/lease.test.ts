@@ -61,14 +61,14 @@ test("the handle factory is only consulted when a store is actually built", asyn
 
 test("the mounted hook keys its lease on the agent, never on the api object", () => {
   const source = readFileSync(new URL("./use-pulse-view.ts", import.meta.url).pathname, "utf8");
-  const deps = source.match(/\}, \[([^\]]*)\]\);/g) ?? [];
-  const effectDeps = deps.find((entry: string) => entry.includes("agentId"));
-  assert.ok(effectDeps, "the lease effect exists");
-  assert.equal(
-    /paseo/.test(effectDeps as string),
-    false,
-    "a per-render api object must not be an effect dependency",
+  const dependencyArrays = source.match(/\[[^\]]*\],?\s*\)/g) ?? [];
+  assert.ok(
+    dependencyArrays.some((entry: string) => entry.includes("agentId")),
+    "the lease effect is keyed on the agent",
   );
+  for (const entry of dependencyArrays) {
+    assert.equal(/paseo/.test(entry), false, `a per-render api object leaked into ${entry}`);
+  }
   assert.match(source, /useRef\(/, "the api is read through a ref instead");
-  assert.match(source, /leasePulseStore\(/);
+  assert.match(source, /openPulseLease\(/);
 });

@@ -6,11 +6,11 @@
 // A store is leased by the mounted icon or popover instead; this module only
 // publishes the label of agents that already have one.
 import type { PluginCleanup } from "@getpaseo/plugin";
+import { createAbandonment } from "./abandon.ts";
 import type { PluginButtonRegistration } from "@getpaseo/plugin/client";
 import {
   PULSELINE_PILL_LABEL,
   PULSELINE_PILL_TITLE,
-  buildPillLabel,
   pulselineButton,
   type PulselineUiParts,
 } from "./descriptor.ts";
@@ -125,6 +125,8 @@ export function createPulselinePills(
   const mounted = new Map<string, MountedPill>();
   /** Agents a live event already decided; a slower bootstrap page must not undo it. */
   const decided = new Set<string>();
+  /** Settles our own listing waits when the plugin goes away. */
+  const abandonment = createAbandonment();
   let stopped = false;
 
   function unmount(agentId: string): void {
@@ -163,8 +165,9 @@ export function createPulselinePills(
     const pill = mounted.get(agentId);
     if (!pill) return;
     const store = getPulseStore(agentId);
-    const view = store?.getView();
-    const label = view ? buildPillLabel(view.state, view.metrics) : PULSELINE_PILL_LABEL;
+    // The store already rendered the animated label for the current phase; taking
+    // it verbatim keeps the pill and the popover on the same frame.
+    const label = store?.getView().label ?? PULSELINE_PILL_LABEL;
     if (label === pill.published) return;
     pill.published = label;
     // Label only: resupplying the behavior would close an open popover.
@@ -186,6 +189,7 @@ export function createPulselinePills(
   function teardown(): void {
     if (stopped) return;
     stopped = true;
+    abandonment.abandon();
     unwatchStores();
     unsubscribe();
     for (const agentId of [...mounted.keys()]) unmount(agentId);
@@ -197,13 +201,15 @@ export function createPulselinePills(
     let cursor: string | undefined;
     let first = true;
     do {
-      const page = await host.paseo.agents.list({
+      const page = await abandonment.race(
+        host.paseo.agents.list({
         filter: { includeArchived: false },
         page: cursor ? { limit: LIST_PAGE_LIMIT, cursor } : { limit: LIST_PAGE_LIMIT },
         // The daemon only streams agent_update to a session that asked for the
         // directory; the SDK's `agents.subscribe` is a local listener on top.
-        ...(first ? { subscribe: { subscriptionId: PULSELINE_SUBSCRIPTION_ID } } : {}),
-      });
+          ...(first ? { subscribe: { subscriptionId: PULSELINE_SUBSCRIPTION_ID } } : {}),
+        }),
+      );
       first = false;
       if (stopped) return;
       for (const entry of page.entries) {
@@ -237,9 +243,11 @@ export function createPulselinePills(
   })();
 
   return () => {
-    // `stopped` also stops an in-flight bootstrap at its next await; unload must
-    // not block on a directory listing that may never answer.
+    // Teardown abandons our own waits, so the bootstrap continuation resumes even
+    // when the host's listing never settles. Awaiting it is therefore safe, and a
+    // terminal failure was already reported through onBootstrapError before this.
     teardown();
-    void bootstrap;
+    const ignore = (): undefined => undefined;
+    return bootstrap.then(ignore, ignore);
   };
 }

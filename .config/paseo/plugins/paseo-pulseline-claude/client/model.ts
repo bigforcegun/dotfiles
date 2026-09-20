@@ -124,7 +124,6 @@ function applyEntry(next: Draft, entry: PulseTimelineEntry): void {
       ...previous,
       kind: block.kind,
       label: block.label ?? previous.label,
-      weight: Math.max(previous.weight, block.weight),
       endedAt: block.endedAt,
       pending: block.pending,
     };

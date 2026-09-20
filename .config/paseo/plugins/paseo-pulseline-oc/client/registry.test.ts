@@ -157,8 +157,12 @@ describe("Pulseline registry", () => {
     host.emitAgent({ kind: "upsert", agent: agent({ id: "agent-1", provider: "claude", workspaceId: "workspace-1", activeTurn: { turnId: "turn-1", startedAt: null } }) });
 
     // Then
-    expect(host.created[0]?.labels).toContain("Pulseline · OpenCode · 15 tok");
-    expect(host.created[0]?.labels.at(-1)).toBe("Pulseline · OpenCode · busy");
+    expect(host.created[0]?.labels).toContain("⣀");
+    expect(host.created[0]?.labels.at(-1)).toBe("⣀");
+    expect(host.created[0]?.contribution.button).toMatchObject({
+      label: "⣀",
+      Label: expect.any(Function),
+    });
     unmount();
     cleanup();
   });

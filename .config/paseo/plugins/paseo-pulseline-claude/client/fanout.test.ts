@@ -80,9 +80,9 @@ test("mounting one pill creates exactly one store, subscription and history fetc
   assert.deepEqual(daemonWork(host), { subscriptions: 2, refetches: 1 }, "the other 89 stay cold");
 
   const mounted = host.created.find((record) => record.contribution.agentId === "agent-7");
-  assert.match(mounted?.label ?? "", /^plc [▁▂▃▄▅▆▇█]/, "the mounted pill shows live state");
+  assert.match(mounted?.label ?? "", /^[⣀⣤⣶⣿]+$/, "the mounted pill shows live state");
   const idle = host.created.find((record) => record.contribution.agentId === "agent-8");
-  assert.equal(idle?.label, "plc Pulseline · Claude", "unmounted pills keep the stable label");
+  assert.equal(idle?.label, "⣀", "unmounted pills keep the neutral placeholder");
 
   lease.release();
   await cleanup();
@@ -128,7 +128,7 @@ test("unmounting releases the store, its subscriptions and its timers", async ()
   assert.equal(clock.pending(), 0);
   assert.deepEqual(daemonWork(host), { subscriptions: 0, refetches: 1 });
   const record = host.created.find((entry) => entry.contribution.agentId === "agent-11");
-  assert.equal(record?.label, "plc Pulseline · Claude", "the label falls back when nothing is mounted");
+  assert.equal(record?.label, "⣀", "the label falls back when nothing is mounted");
   await cleanup();
 });
 
