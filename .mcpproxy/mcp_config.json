@@ -222,7 +222,7 @@
       "quarantined": false
     },
     {
-      "name": "salotech-mongodb-sisa",
+      "name": "salotech-mongodb-watcher",
       "protocol": "stdio",
       "command": "npx",
       "args": [
@@ -231,7 +231,25 @@
         "--readOnly"
       ],
       "env": {
-        "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_SISA_URI}"
+        "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_WATCHER_URI}"
+      },
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": [
+        "export"
+      ]
+    },
+    {
+      "name": "salotech-mongodb-ticket-monitor",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server",
+        "--readOnly"
+      ],
+      "env": {
+        "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_MONITOR_URI}"
       },
       "enabled": true,
       "quarantined": false,
@@ -612,7 +630,8 @@
         "salotech-atlassian",
         "salotech-freshdesk",
         "salotech-freshdesk-direct",
-        "salotech-mongodb-sisa",
+        "salotech-mongodb-watcher",
+        "salotech-mongodb-ticket-monitor",
         "salotech-grafana",
         "salotech-opensearch",
         "endless-library",
@@ -626,7 +645,7 @@
         "salotech-atlassian",
         "salotech-freshdesk",
         "salotech-freshdesk-direct",
-        "salotech-mongodb-sisa",
+        "salotech-mongodb-watcher",
         "salotech-opensearch",
         "salotech-redash"
       ]

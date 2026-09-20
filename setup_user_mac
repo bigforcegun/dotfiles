@@ -88,9 +88,10 @@ link ".config/kilo"
 
 link ".mcpproxy"
 link "Library/LaunchAgents/com.bigforcegun.mcpproxy.plist"
-link "Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist"
-link "Library/LaunchAgents/dev.agentcairn.opencode-user.plist"
-link "Library/LaunchAgents/dev.agentcairn.opencode-research.plist"
+
+#link "Library/LaunchAgents/com.bigforcegun.endless-library-watch.plist"
+#link "Library/LaunchAgents/dev.agentcairn.opencode-user.plist"
+#link "Library/LaunchAgents/dev.agentcairn.opencode-research.plist"
 
 ## rulesync
 
@@ -102,6 +103,9 @@ link_as ".rulesync-global/.rulesync" ".rulesync"
 # TBXark mcp-proxy
 link ".config/mcp-proxy/config.json"
 link "Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist"
+
+# codex-oauth-proxy (dvcrn) — OpenAI-compatible API over ChatGPT Codex OAuth quota
+link "Library/LaunchAgents/com.bigforcegun.codex-oauth-proxy.plist"
 
 ## Yabay
 
@@ -175,6 +179,8 @@ else
 fi
 # TBXark
 # launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.mcp-proxy.plist
+# codex-oauth-proxy
+# launchctl load -w ~/Library/LaunchAgents/com.bigforcegun.codex-oauth-proxy.plist
 
 #systemctl --user daemon-reload
 

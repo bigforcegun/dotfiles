@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.bigforcegun.codex-oauth-proxy</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/com.bigforcegun.codex-oauth-proxy.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/com.bigforcegun.codex-oauth-proxy.out.log</string>
+    <key>ProgramArguments</key>
+    <array>
+       <string>/bin/zsh</string>
+       <string>-lc</string>
+       <string>set -a; [ -f ~/.config/codex-oauth-proxy/env ] &amp;&amp; . ~/.config/codex-oauth-proxy/env; set +a; exec codex-oauth-proxy</string>
+    </array>
+</dict>
+</plist>
