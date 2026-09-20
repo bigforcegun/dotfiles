@@ -157,7 +157,7 @@
       "quarantined": false
     },
     {
-      "name": "bfg-vault",
+      "name": "obsidian-bfg",
       "url": "${env:BFG_VAULT_MCP_URL}",
       "protocol": "http",
       "headers": {
@@ -448,7 +448,16 @@
         "REDASH_API_KEY": "${env:SALOTECH_REDASH_TOCKEN}"
       },
       "enabled": true,
-      "quarantined": false
+      "quarantined": false,
+      "disabled_tools": [
+        "archive_query",
+        "archive_dashboard",
+        "delete_alert",
+        "delete_widget",
+        "delete_visualization",
+        "delete_query_snippet",
+        "unshare_dashboard"
+      ]
     },
     {
       "name": "bfg-nextcloud",
@@ -620,7 +629,7 @@
       "name": "salotech",
       "servers": [
         "endless-library",
-        "bfg-vault",
+        "obsidian-bfg",
         "bfg-nextcloud",
         "playwright",
         "playwright-vivaldi-personal",
@@ -654,7 +663,7 @@
       "name": "dev",
       "servers": [
         "endless-library",
-        "bfg-vault",
+        "obsidian-bfg",
         "context7",
         "grep-app",
         "semble",
@@ -666,7 +675,7 @@
       "name": "gamedev",
       "servers": [
         "endless-library",
-        "bfg-vault",
+        "obsidian-bfg",
         "krita",
         "godot",
         "semble",
