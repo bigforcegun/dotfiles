@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "bunx --bun oxlint@1.83.0 .",
+    "lint:fix": "bunx --bun oxlint@1.83.0 --fix .",
+    "check": "npm run typecheck && npm run lint"
   },
   "devDependencies": {
     "@getpaseo/plugin": "0.8.0",

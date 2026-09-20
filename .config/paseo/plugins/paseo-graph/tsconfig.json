@@ -14,7 +14,13 @@
     "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true
+    // Next step: "noUncheckedIndexedAccess" — flags 5 spots in the
+    // spatial-grid hot loop (client/graph.tsx:373-377). Enable with that fix.
   },
   "include": [
     "**/*.ts",

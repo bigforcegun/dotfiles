@@ -1,0 +1,24 @@
+{
+  "plugins": ["react", "react-perf", "typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "pedantic": "off",
+    "style": "off"
+  },
+  "rules": {
+    "no-await-in-loop": "off",
+    "react/refs": "off",
+    "react-perf/jsx-no-new-object-as-prop": "warn",
+    "react-perf/jsx-no-new-function-as-prop": "warn",
+    "react-perf/jsx-no-new-array-as-prop": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/rules-of-hooks": "error",
+    "react/void-use-memo": "error",
+    "no-shadow": "error",
+    "react/react-in-jsx-scope": "off",
+    "no-console": "warn"
+  },
+  "ignorePatterns": ["node_modules"]
+}
