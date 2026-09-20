@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  PULSELINE_PILL_TITLE,
-  PULSELINE_VARIANT_TAG,
-  buildPillLabel,
-  pulselineButton,
-} from "./descriptor.ts";
+import { PULSELINE_PILL_TITLE, buildPillLabel, pulselineButton } from "./descriptor.ts";
+import { PULSE_IDLE_LABEL } from "./label.ts";
 import { derivePulseMetrics } from "./metrics.ts";
 import { initialPulseState, reducePulse } from "./model.ts";
 import { USAGE_FULL, at, conversation } from "./fixtures.ts";
@@ -23,11 +19,11 @@ function view(inputs: Parameters<typeof reducePulse>[1][] = []) {
   return { state, metrics: derivePulseMetrics(state, NOW) };
 }
 
-test("the descriptor carries a unique accessible title and a variant-tagged label", () => {
+test("the descriptor keeps the title accessible and the label pulse-only", () => {
   const button = pulselineButton(ui, { label: buildPillLabel(view().state, view().metrics) });
   assert.equal(button.title, PULSELINE_PILL_TITLE);
   assert.equal(PULSELINE_PILL_TITLE, "Pulseline · Claude");
-  assert.ok(button.label?.startsWith(`${PULSELINE_VARIANT_TAG} `), button.label);
+  assert.match(button.label ?? "", /^[⣀⣤⣶⣿]+$/, button.label);
   assert.notEqual(button.label, button.title, "the label is the live state, not the plugin name");
 });
 
@@ -50,33 +46,54 @@ test("two descriptors share one behavior instance so label updates never replace
   assert.equal(first.icon, second.icon);
 });
 
-test("the label carries the variant tag, the pulse and exact tokens", () => {
+test("the label never carries metrics or provider text", () => {
   const { state, metrics } = view([
     { type: "agent", status: "idle", activeTurn: null, usage: USAGE_FULL },
   ]);
   const label = buildPillLabel(state, metrics);
-  assert.match(label, /^plc [▁▂▃▄▅▆▇█]/);
-  assert.match(label, /↑2\.1k/);
-  assert.equal(label.includes("~↑"), false);
+  assert.match(label, /^[⣀⣤⣶⣿]+$/);
+  assert.equal(/plc|Pulseline|↑|↓|◇|~/.test(label), false, label);
 });
 
-test("the label degrades within the pill budget and keeps tag plus pulse", () => {
+test("the label degrades to the newest glyphs when narrowed", () => {
   const { state, metrics } = view([
     { type: "agent", status: "idle", activeTurn: null, usage: USAGE_FULL },
   ]);
-  const narrow = buildPillLabel(state, metrics, { maxLength: 20 });
-  assert.ok(narrow.length <= 20, narrow);
-  assert.match(narrow, /^plc [▁▂▃▄▅▆▇█]+$/);
+  const narrow = buildPillLabel(state, metrics, { width: 8 });
+  assert.equal(narrow.length, 8);
+  assert.match(narrow, /^[⣀⣤⣶⣿]+$/);
+  assert.equal(narrow, buildPillLabel(state, metrics, { width: 40 }).slice(-8));
 });
 
-test("an empty idle model still yields a tagged label", () => {
+test("an empty idle model yields the neutral mark", () => {
   const label = buildPillLabel(initialPulseState, derivePulseMetrics(initialPulseState, NOW));
-  assert.equal(label, `${PULSELINE_VARIANT_TAG} Pulseline · Claude`);
+  assert.equal(label, "⣀");
 });
 
-test("a busy model marks the label", () => {
+test("a busy model pulses its tail instead of prefixing text", () => {
   const { state, metrics } = view([
     { type: "agent", status: "running", activeTurn: { turnId: "t", startedAt: at(20) } },
   ]);
-  assert.match(buildPillLabel(state, metrics), /^plc ▶/);
+  const even = buildPillLabel(state, metrics, { phase: 0 });
+  const odd = buildPillLabel(state, metrics, { phase: 1 });
+  assert.match(even, /^[⣀⣤⣶⣿]+$/);
+  assert.equal(even.length, odd.length);
+  assert.notEqual(even.at(-1), odd.at(-1));
+  assert.equal(even.slice(0, -1), odd.slice(0, -1), "only the tail moves");
+});
+
+test("the optional component label rides along without disturbing the string one", () => {
+  const Label = () => null;
+  const plain = pulselineButton(ui, { label: "⣀" });
+  assert.equal("Label" in plain, false, "a host-only string pill stays exactly as before");
+
+  const labelled = { ...ui, Label };
+  const withLabel = pulselineButton(labelled, { label: "⣀" });
+  assert.equal(withLabel.Label, Label, "a host that renders a component label gets one");
+  assert.equal(withLabel.label, "⣀", "and the string stays as the fallback");
+  assert.equal(
+    withLabel.behavior,
+    pulselineButton(labelled, { label: "⣤" }).behavior,
+    "the behavior instance is still shared per ui object",
+  );
 });

@@ -39,14 +39,16 @@ test("client-observed metrics are always approximate", () => {
     activeTurn: { turnId: "t1", startedAt: at(20) },
   });
   const metrics = derivePulseMetrics(state, NOW);
-  assert.equal(metrics.turnSeconds?.approx, true);
+  assert.equal(metrics.turnSeconds?.approx, false, "the baseline renders the turn unmarked");
   assert.equal(metrics.turnSeconds?.value, 10);
-  assert.equal(metrics.toolCount?.approx, true);
+  assert.equal(metrics.toolCount?.approx, false, "counts are reported, not estimated");
   assert.equal(metrics.toolAvgSeconds?.approx, true);
   assert.equal(metrics.textCharsPerSecond?.approx, true);
 });
 
 test("the approximation policy holds for every emitted metric", () => {
+  // outputTokensPerSecond is provider output over an observed span; the agreed
+  // contract renders it unmarked next to the tilde-marked text rate.
   const exactKeys = new Set([
     "inputTokens",
     "outputTokens",
@@ -54,6 +56,9 @@ test("the approximation policy holds for every emitted metric", () => {
     "costUsd",
     "contextUsedTokens",
     "contextMaxTokens",
+    "outputTokensPerSecond",
+    "turnSeconds",
+    "toolCount",
   ]);
   const state = reducePulse(loaded("opencode"), {
     type: "agent",
@@ -125,5 +130,5 @@ test("a completed turn reports its observed duration, still approximate", () => 
   let state = reducePulse(initialPulseState, { type: "turn", phase: "started", at: at(0) });
   state = reducePulse(state, { type: "turn", phase: "completed", at: at(9) });
   const metrics = derivePulseMetrics(state, NOW);
-  assert.deepEqual(metrics.turnSeconds, { value: 9, approx: true });
+  assert.deepEqual(metrics.turnSeconds, { value: 9, approx: false });
 });

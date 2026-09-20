@@ -1,4 +1,5 @@
 // Timeline item -> pulse block. Pure, provider-neutral, no timing state.
+import { estimateItemTokens, heightIndexForTokens } from "./volume.ts";
 import type {
   PulseBlock,
   PulseBlockKind,
@@ -62,31 +63,22 @@ export function classifyItem(item: PulseTimelineItem): PulseClassification | nul
   }
 }
 
-function textLength(item: PulseTimelineItem): number {
-  const text = item["text"];
-  if (typeof text === "string") return text.length;
-  if (item.type === "tool_call") return 240;
-  return 80;
-}
-
-/** Log-scaled so one long answer cannot flatten every other block. */
-export function itemWeight(item: PulseTimelineItem): number {
-  const scaled = Math.log10(1 + textLength(item)) / 4;
-  return Math.min(1, Math.max(0.05, Number(scaled.toFixed(3))));
-}
-
 export function blockFromEntry(entry: PulseTimelineEntry): PulseBlock | null {
   const classified = classifyItem(entry.item);
   if (!classified) return null;
+  // Volume is measured once, here, and travels with the block: a passive row keeps
+  // the height its own payload earned, whatever its kind.
+  const volumeTokens = estimateItemTokens(entry.item);
   return {
     key: classified.key ?? `seq:${entry.seq}`,
     kind: classified.kind,
-    weight: itemWeight(entry.item),
     startedAt: entry.timestamp,
     endedAt: classified.pending ? undefined : entry.timestamp,
     turnId: entry.turnId,
     reason: classified.reason,
     label: classified.label,
+    volumeTokens,
+    heightIndex: heightIndexForTokens(volumeTokens),
     pending: classified.pending,
   };
 }
@@ -101,11 +93,12 @@ export function turnBlock(
   return {
     key: `turn:${turnId ?? "unknown"}:${phase}`,
     kind,
-    weight: 0.25,
     startedAt: at,
     endedAt: at,
     turnId,
     reason: phase === "canceled" ? "unknown" : undefined,
+    // A turn outcome carries no payload of its own.
+    heightIndex: 0,
     pending: false,
   };
 }

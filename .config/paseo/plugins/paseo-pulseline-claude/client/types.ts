@@ -30,14 +30,16 @@ export interface PulseBlock {
   /** Stable identity: a tool's callId, a turn outcome, or the row sequence. */
   readonly key: string;
   readonly kind: PulseBlockKind;
-  /** Relative visual weight in 0..1. Approximate by construction. */
-  readonly weight: number;
   readonly startedAt: string;
   readonly endedAt?: string | undefined;
   readonly turnId?: string | undefined;
   readonly reason?: PulseOtherReason | undefined;
   /** Tool name for tool rows; absent for everything else. */
   readonly label?: string | undefined;
+  /** Estimated payload size; undefined when the provider sent no payload at all. */
+  readonly volumeTokens?: number | undefined;
+  /** Volume bucket 0..7, persisted so a passive block keeps its own height. */
+  readonly heightIndex?: number | undefined;
   readonly pending: boolean;
 }
 

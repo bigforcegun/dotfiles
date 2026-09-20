@@ -3,6 +3,8 @@ import { TimelineStore, type TimelineAgentState, type TimelineSnapshot } from ".
 
 export type ScheduleRefresh = (callback: () => void) => () => void;
 
+export const PULSE_INTERVAL_MS = 450;
+
 export interface PulselineRuntimeInput {
   readonly label: string;
   readonly agent: TimelineAgentState;
@@ -35,22 +37,33 @@ export function createPulselineRuntime(input: PulselineRuntimeInput): PulselineR
   let disposed = false;
   let pulsePhase: 0 | 1 | 2 = 0;
 
-  const publish = (next: TimelineSnapshot) => {
-    const nextFingerprint = JSON.stringify(next);
-    if (nextFingerprint === fingerprint) return;
+  const notify = (next: TimelineSnapshot) => {
     current = next;
-    fingerprint = nextFingerprint;
     input.onSnapshot(next);
     for (const listener of listeners) listener();
   };
+  const publish = (next: TimelineSnapshot) => {
+    const nextFingerprint = JSON.stringify(next);
+    if (nextFingerprint === fingerprint) return;
+    fingerprint = nextFingerprint;
+    notify(next);
+  };
   const refresh = (advancePulse = false) => {
+    if (advancePulse) {
+      if (!current.busy) {
+        pulsePhase = 0;
+        return;
+      }
+      pulsePhase = pulsePhase === 0 ? 1 : pulsePhase === 1 ? 2 : 0;
+      notify({ ...current, pulsePhase });
+      return;
+    }
     const next = store?.snapshot() ?? cold;
     if (!next.busy) {
       pulsePhase = 0;
       publish(next);
       return;
     }
-    if (advancePulse) pulsePhase = pulsePhase === 0 ? 1 : pulsePhase === 1 ? 2 : 0;
     publish({ ...next, pulsePhase });
   };
   const stop = () => {

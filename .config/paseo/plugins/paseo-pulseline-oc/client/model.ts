@@ -1,5 +1,8 @@
 import type { PaseoAgentStream } from "@getpaseo/client";
 import type { AgentTimelineItem, AgentUsage } from "@getpaseo/protocol/agent-types";
+import { pulseVolume, textTokenEstimate, toolTokenEstimate, type PulseHeightIndex } from "./volume";
+
+export { heightIndexForTokens, type PulseHeightIndex } from "./volume";
 
 export type StreamEvent = PaseoAgentStream["event"];
 
@@ -21,6 +24,8 @@ export interface PulseBlock {
   readonly kind: PulseKind;
   readonly order: number;
   readonly timestamp: number;
+  readonly volumeTokens: number;
+  readonly heightIndex: PulseHeightIndex;
   readonly turnId?: string;
   readonly text?: string;
   readonly metadata?: PulseMetadata;
@@ -59,11 +64,12 @@ interface StreamInput {
   readonly timestamp: number;
 }
 
-function context(input: TimelineInput, id: string) {
+function context(input: TimelineInput, id: string, volumeTokens = 1) {
   return {
     id,
     order: input.order,
     timestamp: input.timestamp,
+    ...pulseVolume(volumeTokens),
     ...(input.turnId ? { turnId: input.turnId } : {}),
   };
 }
@@ -94,18 +100,18 @@ export function normalizeTimelineItem(input: TimelineInput): PulseBlock | undefi
     case "user_message":
       return undefined;
     case "assistant_message":
-      return { ...context(input, `text:${item.messageId ?? input.order}`), kind: "text", text: item.text };
+      return { ...context(input, `text:${item.messageId ?? input.order}`, textTokenEstimate(item.text)), kind: "text", text: item.text };
     case "reasoning":
-      return { ...context(input, `reasoning:${input.order}`), kind: "reasoning", text: item.text };
+      return { ...context(input, `reasoning:${input.order}`, textTokenEstimate(item.text)), kind: "reasoning", text: item.text };
     case "tool_call":
       return {
-        ...context(input, `tool:${item.callId}`),
+        ...context(input, `tool:${item.callId}`, toolTokenEstimate(item)),
         kind: toolKind(item),
         text: item.name,
         metadata: { type: "tool", name: item.name, detail: item.detail.type, status: item.status },
       };
     case "error":
-      return { ...context(input, `error:${input.order}`), kind: "error", text: item.message };
+      return { ...context(input, `error:${input.order}`, textTokenEstimate(item.message)), kind: "error", text: item.message };
     case "notification":
       return {
         ...context(input, `notification:${input.order}`),
@@ -151,6 +157,7 @@ export function normalizeStreamEvent(input: StreamInput): PulseBlock | undefined
         kind: "success",
         order: input.order,
         timestamp: input.timestamp,
+        ...pulseVolume(event.usage?.outputTokens ?? 1),
         ...(event.turnId ? { turnId: event.turnId } : {}),
         metadata: { type: "turn", outcome: "completed" },
       };
@@ -160,6 +167,7 @@ export function normalizeStreamEvent(input: StreamInput): PulseBlock | undefined
         kind: "error",
         order: input.order,
         timestamp: input.timestamp,
+        ...pulseVolume(textTokenEstimate(event.error)),
         ...(event.turnId ? { turnId: event.turnId } : {}),
         text: event.error,
         metadata: { type: "turn", outcome: "failed" },
@@ -170,6 +178,7 @@ export function normalizeStreamEvent(input: StreamInput): PulseBlock | undefined
         kind: "other",
         order: input.order,
         timestamp: input.timestamp,
+        ...pulseVolume(textTokenEstimate(event.reason)),
         ...(event.turnId ? { turnId: event.turnId } : {}),
         text: event.reason,
         metadata: { type: "turn", outcome: "canceled" },
@@ -198,9 +207,4 @@ export function usageMetrics(usage: AgentUsage): PulseMetrics {
       ? {}
       : { contextWindowUsedTokens: { value: usage.contextWindowUsedTokens } }),
   };
-}
-
-export function formatMetric(metric: MetricValue | undefined): string | undefined {
-  if (!metric) return undefined;
-  return `${metric.approximate ? "~" : ""}${metric.value}`;
 }

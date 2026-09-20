@@ -52,6 +52,8 @@ export interface FakeAgent {
   emitSnapshot(snapshot: Record<string, unknown>): void;
   /** Resolves a deferred `ready` promise. */
   settleReady(): Promise<void>;
+  /** Raw `ready` promises handed to the plugin that never settled. */
+  pendingReadyPromises(): number;
   /** Releases a deferred history fetch and drains the store's follow-up work. */
   settleHistory(): Promise<void>;
 }
@@ -61,6 +63,7 @@ export function createFakeAgent(agentId: string, state: FakeAgentState = {}): Fa
   const timelineHandlers = new Set<(event: unknown) => void>();
   const agentHandlers = new Set<(update: unknown) => void>();
   let refetchCalls = 0;
+  let readyHandedOut = 0;
   const seenOptions: unknown[] = [];
   let lastOptions: unknown;
   let releaseReady: (() => void) | undefined;
@@ -124,6 +127,7 @@ export function createFakeAgent(agentId: string, state: FakeAgentState = {}): Fa
         const unsubscribe = () => {
           timelineHandlers.delete(handler);
         };
+        if (state.neverReady) readyHandedOut += 1;
         return Object.assign(unsubscribe, { ready: readyGate });
       },
     },
@@ -132,6 +136,7 @@ export function createFakeAgent(agentId: string, state: FakeAgentState = {}): Fa
   return {
     handle,
     refetchCalls: () => refetchCalls,
+    pendingReadyPromises: () => readyHandedOut,
     lastRefetchOptions: () => lastOptions,
     refetchOptions: () => seenOptions,
     timelineSubscriptions: () => timelineHandlers.size,

@@ -17,9 +17,12 @@ export interface PulseMetrics {
   readonly costUsd?: PulseMetric;
   readonly contextUsedTokens?: PulseMetric;
   readonly contextMaxTokens?: PulseMetric;
+  /** Rendered unmarked: the baseline treats turn and tool count as reported values. */
   readonly turnSeconds?: PulseMetric;
   /** Span of the retained conversation, as this client observed it. */
   readonly chatSeconds?: PulseMetric;
+  /** Provider output tokens over that span. */
+  readonly outputTokensPerSecond?: PulseMetric;
   readonly toolCount?: PulseMetric;
   readonly toolAvgSeconds?: PulseMetric;
   readonly toolTotalSeconds?: PulseMetric;
@@ -93,9 +96,13 @@ export function derivePulseMetrics(state: PulseModelState, nowMs: number): Pulse
     costUsd: exact(usage.totalCostUsd),
     contextUsedTokens: exact(usage.contextWindowUsedTokens),
     contextMaxTokens: exact(usage.contextWindowMaxTokens),
-    turnSeconds: approximate(elapsedTurnMs === undefined ? undefined : elapsedTurnMs / 1000),
+    turnSeconds: exact(elapsedTurnMs === undefined ? undefined : elapsedTurnMs / 1000),
     chatSeconds: approximate(chatSpanMs === undefined ? undefined : chatSpanMs / 1000),
-    toolCount: approximate(toolBlocks.length),
+    outputTokensPerSecond:
+      chatSpanMs === undefined || usage.outputTokens === undefined
+        ? undefined
+        : exact(usage.outputTokens / (chatSpanMs / 1000)),
+    toolCount: exact(toolBlocks.length),
     toolAvgSeconds: approximate(averageMs === undefined ? undefined : averageMs / 1000, 1),
     toolTotalSeconds: approximate(totalToolMs === undefined ? undefined : totalToolMs / 1000, 1),
     textCharsPerSecond: approximate(textRate(state), 1),

@@ -113,10 +113,14 @@ test("counts drawn from a trimmed history are marked approximate", () => {
   const exact = buildDetailModel(complete, derivePulseMetrics(complete, START));
   const approx = buildDetailModel(trimmed, derivePulseMetrics(trimmed, START));
   const rowsOf = (model: typeof exact) =>
-    model.sections.find((section) => section.id === "activity")?.rows ?? [];
-  assert.equal(rowsOf(exact).every((row) => row.approx === false), true);
+    model.rows.filter((row) => ["⏱", "⌛"].includes(row.glyph));
+  // Tool figures are client-observed, so they are approximate either way; a gapped
+  // history must still surface the loss to the reader.
+  assert.equal(rowsOf(exact).every((row) => row.approx === true), true);
   assert.equal(rowsOf(approx).every((row) => row.approx === true), true);
   assert.match(rowsOf(approx)[0]?.value ?? "", /^~/);
+  assert.equal(approx.incomplete, true);
+  assert.equal(exact.incomplete, false);
 });
 
 test("the text rate covers the current turn only, or nothing at all", () => {

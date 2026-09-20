@@ -127,4 +127,35 @@ describe("timeline controller", () => {
     expect(source.removals).toBe(1);
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("caps a three-hundred-page history and marks the retained tail incomplete", async () => {
+    // Given
+    const source = new FakeTimeline();
+    for (let pageNumber = 1; pageNumber <= 300; pageNumber += 1) {
+      source.responses.push(Promise.resolve(timelinePage({
+        epoch: "e",
+        hasOlder: pageNumber < 300,
+        startCursor: pageNumber < 300 ? { epoch: "e", seq: 301 - pageNumber } : null,
+        entries: [{
+          provider: "opencode",
+          timestamp: new Date(pageNumber * 1_000).toISOString(),
+          seqStart: pageNumber,
+          seqEnd: pageNumber,
+          item: { type: "assistant_message", text: `page-${pageNumber}` },
+        }],
+      })));
+    }
+    const store = new TimelineStore("Pulseline · OpenCode");
+
+    // When
+    createTimelineController(source, store, vi.fn());
+    for (let index = 0; index < 10; index += 1) await setImmediate();
+
+    // Then
+    expect(source.requests).toHaveLength(8);
+    expect(store.snapshot().blocks).toHaveLength(8);
+    expect(store.snapshot().blocks.at(-1)?.text).toBe("page-8");
+    expect(store.snapshot().gap).toBe(true);
+    console.log(`F2_BOUNDS history.inputPages=300 requests=${source.requests.length} retained=${store.snapshot().blocks.length} gap=${store.snapshot().gap}`);
+  });
 });

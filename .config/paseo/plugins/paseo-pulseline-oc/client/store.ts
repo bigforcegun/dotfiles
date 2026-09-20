@@ -1,6 +1,5 @@
 import type { AgentUsage } from "@getpaseo/protocol/agent-types";
 import {
-  formatMetric,
   normalizeStreamEvent,
   normalizeTimelineItem,
   usageMetrics,
@@ -9,6 +8,10 @@ import {
   type StreamEvent,
   type TimelineSourceItem,
 } from "./model";
+import { TimelineAccounting } from "./store-accounting";
+import { MAX_BUFFERED_LIVE_EVENTS, setBoundedBlock } from "./store-bounds";
+
+export { MAX_BUFFERED_LIVE_EVENTS, MAX_RETAINED_BLOCKS } from "./store-bounds";
 
 export interface TimelineEntry {
   readonly provider: string;
@@ -59,15 +62,9 @@ export interface TimelineSnapshot {
 export class TimelineStore {
   readonly #label: string;
   readonly #blocks = new Map<string, PulseBlock>();
-  readonly #toolStarted = new Map<string, number>();
-  readonly #toolEnded = new Map<string, number>();
-  readonly #toolDurations = new Map<string, number>();
-  readonly #toolIds = new Set<string>();
-  readonly #turnStarted = new Map<string, number>();
-  readonly #turnEnded = new Map<string, number>();
-  readonly #turnDurations = new Map<string, number>();
-  readonly #turnText = new Map<string, number>();
+  readonly #accounting = new TimelineAccounting();
   #buffered: TimelineLiveEvent[] = [];
+  #bufferTruncated = false;
   #reported: PulseMetrics = {};
   #epoch: string | undefined;
   #activeTurnId: string | undefined;
@@ -76,13 +73,9 @@ export class TimelineStore {
   #sequenceHighWater: number | undefined;
   #nextOrder = 1;
 
-  constructor(label: string) {
-    this.#label = label;
-  }
+  constructor(label: string) { this.#label = label; }
 
-  beginBootstrap(): void {
-    this.#bootstrapping = true;
-  }
+  beginBootstrap(): void { this.#bootstrapping = true; }
 
   ingestPage(page: TimelinePage): void {
     if (this.#epoch !== page.epoch || page.reset) this.#resetTimeline(page.epoch);
@@ -93,6 +86,10 @@ export class TimelineStore {
   ingestLive(event: TimelineLiveEvent): void {
     if (this.#epoch && event.epoch && event.epoch !== this.#epoch) return;
     if (this.#bootstrapping) {
+      if (this.#buffered.length === MAX_BUFFERED_LIVE_EVENTS) {
+        this.#buffered.shift();
+        this.#bufferTruncated = true;
+      }
       this.#buffered.push(event);
       return;
     }
@@ -103,6 +100,8 @@ export class TimelineStore {
     this.#bootstrapping = false;
     const buffered = this.#buffered;
     this.#buffered = [];
+    this.#gap ||= this.#bufferTruncated;
+    this.#bufferTruncated = false;
     for (const event of buffered.sort((left, right) => (left.seq ?? 0) - (right.seq ?? 0))) {
       if (!event.epoch || !this.#epoch || event.epoch === this.#epoch) this.#applyLive(event);
     }
@@ -110,26 +109,26 @@ export class TimelineStore {
 
   replaceEpoch(epoch: string): void {
     this.#buffered = [];
+    this.#bufferTruncated = false;
     this.#resetTimeline(epoch);
     this.#bootstrapping = true;
   }
 
-  markIncomplete(): void {
-    this.#gap = true;
-  }
+  markIncomplete(): void { this.#gap = true; }
 
   updateAgent(agent: TimelineAgentState): void {
     this.#activeTurnId = agent.activeTurn?.turnId;
     if (agent.activeTurn?.startedAt) {
       const startedAt = Date.parse(agent.activeTurn.startedAt);
-      if (Number.isFinite(startedAt)) this.#turnStarted.set(agent.activeTurn.turnId, startedAt);
+      if (Number.isFinite(startedAt)) this.#accounting.startTurn(agent.activeTurn.turnId, startedAt);
     }
     this.#reported = agent.lastUsage ? usageMetrics(agent.lastUsage) : {};
+    this.#pruneAccounting();
   }
 
   snapshot(): TimelineSnapshot {
     const blocks = [...this.#blocks.values()].sort((left, right) => left.order - right.order);
-    const metrics = { ...this.#reported, ...this.#observedMetrics() };
+    const metrics = { ...this.#reported, ...this.#accounting.metrics(this.#gap) };
     const activeBlock = this.#activeTurnId
       ? blocks.findLast((entry) => entry.turnId === this.#activeTurnId)
       : undefined;
@@ -148,17 +147,17 @@ export class TimelineStore {
     };
   }
 
+  accountingSizes() {
+    return {
+      blocks: this.#blocks.size,
+      ...this.#accounting.sizes(),
+    };
+  }
+
   #resetTimeline(epoch: string): void {
     this.#epoch = epoch;
     this.#blocks.clear();
-    this.#toolStarted.clear();
-    this.#toolEnded.clear();
-    this.#toolDurations.clear();
-    this.#toolIds.clear();
-    this.#turnStarted.clear();
-    this.#turnEnded.clear();
-    this.#turnDurations.clear();
-    this.#turnText.clear();
+    this.#accounting.reset();
     this.#gap = false;
     this.#sequenceHighWater = undefined;
     this.#nextOrder = 1;
@@ -167,7 +166,7 @@ export class TimelineStore {
   #ingestEntry(entry: TimelineEntry): void {
     this.#sequenceHighWater = Math.max(this.#sequenceHighWater ?? entry.seqEnd, entry.seqEnd);
     this.#nextOrder = Math.max(this.#nextOrder, entry.seqEnd + 1);
-    this.#observeItem(entry.item, entry.turnId, entry.timestamp);
+    this.#accounting.observeItem(entry.item, entry.turnId, entry.timestamp);
     const block = normalizeTimelineItem({
       item: entry.item,
       provider: entry.provider,
@@ -176,6 +175,7 @@ export class TimelineStore {
       ...(entry.turnId ? { turnId: entry.turnId } : {}),
     });
     if (block) this.#setBlock(block);
+    this.#pruneAccounting();
   }
 
   #applyLive(input: TimelineLiveEvent): void {
@@ -190,18 +190,19 @@ export class TimelineStore {
     switch (event.type) {
       case "turn_started":
         this.#activeTurnId = event.turnId;
-        if (event.turnId) this.#turnStarted.set(event.turnId, input.timestamp);
+        this.#accounting.startTurn(event.turnId, input.timestamp);
         break;
       case "turn_completed":
       case "turn_failed":
       case "turn_canceled":
-        this.#completeTurn(event.turnId, input.timestamp);
+        this.#accounting.completeTurn(event.turnId, input.timestamp);
+        if (!event.turnId || this.#activeTurnId === event.turnId) this.#activeTurnId = undefined;
         if (event.type === "turn_completed" && event.usage) {
           this.#reported = { ...this.#reported, ...usageMetrics(event.usage) };
         }
         break;
       case "timeline":
-        this.#observeItem(event.item, event.turnId, input.timestamp);
+        this.#accounting.observeItem(event.item, event.turnId, input.timestamp);
         break;
       case "thread_started":
       case "permission_requested":
@@ -211,63 +212,12 @@ export class TimelineStore {
     }
     const block = normalizeStreamEvent({ event, order, timestamp: input.timestamp });
     if (block) this.#setBlock(block);
+    this.#pruneAccounting();
   }
 
-  #observeItem(item: TimelineSourceItem, turnId: string | undefined, timestamp: number): void {
-    if (turnId) {
-      const started = this.#turnStarted.get(turnId);
-      if (started === undefined || timestamp < started) this.#turnStarted.set(turnId, timestamp);
-      const ended = this.#turnEnded.get(turnId);
-      if (ended === undefined || timestamp > ended) this.#turnEnded.set(turnId, timestamp);
-      if (item.type === "assistant_message") {
-        this.#turnText.set(turnId, (this.#turnText.get(turnId) ?? 0) + item.text.length);
-      }
-      this.#recordTurnMetrics(turnId);
-    }
-    if (item.type !== "tool_call") return;
-    this.#toolIds.add(item.callId);
-    if (item.status === "running") {
-      const started = this.#toolStarted.get(item.callId);
-      if (started === undefined || timestamp < started) this.#toolStarted.set(item.callId, timestamp);
-    } else {
-      const ended = this.#toolEnded.get(item.callId);
-      if (ended === undefined || timestamp > ended) this.#toolEnded.set(item.callId, timestamp);
-    }
-    const started = this.#toolStarted.get(item.callId);
-    const ended = this.#toolEnded.get(item.callId);
-    if (started !== undefined && ended !== undefined) this.#toolDurations.set(item.callId, Math.max(0, ended - started));
-  }
+  #setBlock(block: PulseBlock): void { if (setBoundedBlock(this.#blocks, block, this.#activeTurnId)) this.#gap = true; }
 
-  #completeTurn(turnId: string | undefined, timestamp: number): void {
-    if (turnId) {
-      const ended = this.#turnEnded.get(turnId);
-      if (ended === undefined || timestamp > ended) this.#turnEnded.set(turnId, timestamp);
-      this.#recordTurnMetrics(turnId);
-    }
-    if (!turnId || this.#activeTurnId === turnId) this.#activeTurnId = undefined;
-  }
-
-  #recordTurnMetrics(turnId: string): void {
-    const started = this.#turnStarted.get(turnId);
-    const ended = this.#turnEnded.get(turnId);
-    if (started === undefined || ended === undefined || ended <= started) return;
-    this.#turnDurations.set(turnId, ended - started);
-  }
-
-  #observedMetrics(): PulseMetrics {
-    const chatDuration = [...this.#turnDurations.values()].reduce((total, value) => total + value, 0);
-    const toolTotal = [...this.#toolDurations.values()].reduce((total, value) => total + value, 0);
-    const characters = [...this.#turnText.values()].reduce((total, value) => total + value, 0);
-    return {
-      ...(chatDuration > 0 ? { chatDurationMs: { value: chatDuration, approximate: true } } : {}),
-      ...(this.#toolIds.size > 0 ? { toolCount: { value: this.#toolIds.size, ...(this.#gap ? { approximate: true } : {}) } } : {}),
-      ...(toolTotal > 0 ? { toolTotalDurationMs: { value: toolTotal, approximate: true }, toolAverageDurationMs: { value: toolTotal / this.#toolDurations.size, approximate: true } } : {}),
-      ...(characters > 0 && chatDuration > 0 ? { textRateCharsPerSecond: { value: (characters * 1_000) / chatDuration, approximate: true } } : {}),
-    };
-  }
-
-  #setBlock(block: PulseBlock): void {
-    const current = this.#blocks.get(block.id);
-    if (!current || block.order >= current.order) this.#blocks.set(block.id, block);
+  #pruneAccounting(): void {
+    if (this.#accounting.retain(this.#blocks.values(), this.#activeTurnId)) this.#gap = true;
   }
 }

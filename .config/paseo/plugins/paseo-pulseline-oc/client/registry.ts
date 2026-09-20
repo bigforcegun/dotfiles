@@ -1,9 +1,10 @@
 import type { AgentUsage } from "@getpaseo/protocol/agent-types";
 import type { PaseoAgentListOptions } from "@getpaseo/client";
-import type { PluginButtonRegistration, PluginComposerPillContribution } from "@getpaseo/plugin/client";
+import type { PluginButton, PluginButtonRegistration, PluginComposerPillContribution } from "@getpaseo/plugin/client";
 import type { RegistryTimelineSource } from "./controller";
-import { createPulselinePresentation, type PulselinePresentation } from "./pill";
-import type { ScheduleRefresh } from "./runtime";
+import { createAbandonment } from "./abandon";
+import { buildComposerPulseLabel, createPulselinePresentation, type PulselinePresentation } from "./pill";
+import { PULSE_INTERVAL_MS, type ScheduleRefresh } from "./runtime";
 
 export type { ScheduleRefresh } from "./runtime";
 
@@ -36,6 +37,11 @@ export interface RegistryHost {
 
 export type ObservePresentation = (presentation: PulselinePresentation) => void;
 
+export interface RegistryCleanup {
+  (): void;
+  pendingWaits(): number;
+}
+
 interface MountedAgent {
   readonly workspaceId: string;
   readonly registration: PluginButtonRegistration;
@@ -49,7 +55,7 @@ const DIRECTORY_SUBSCRIPTION_ID = "paseo-pulseline-oc";
 const PAGE_LIMIT = 200;
 
 const scheduleRefresh: ScheduleRefresh = (callback) => {
-  const timer = setInterval(callback, 1_000);
+  const timer = setInterval(callback, PULSE_INTERVAL_MS);
   return () => clearInterval(timer);
 };
 
@@ -57,9 +63,10 @@ export function createPulselineRegistry(
   host: RegistryHost,
   schedule: ScheduleRefresh = scheduleRefresh,
   observePresentation: ObservePresentation = () => {},
-): () => void {
+): RegistryCleanup {
   const mounted = new Map<string, MountedAgent>();
   const changedDuringInitialList = new Set<string>();
+  const abandonment = createAbandonment();
   let initialListPending = true;
   let stopped = false;
 
@@ -88,26 +95,28 @@ export function createPulselineRegistry(
       agent,
       timeline: () => host.paseo.agents.ref(agent.id).timeline,
       schedule,
-      onSnapshot: ({ label }) => publishLabel(label),
+      onSnapshot: (snapshot) => publishLabel(buildComposerPulseLabel(snapshot)),
     });
+    const button = {
+      title: DISPLAY_NAME,
+      label: buildComposerPulseLabel(presentation.getSnapshot()),
+      Label: presentation.Label,
+      icon: presentation.Icon,
+      behavior: { kind: "popover", Content: presentation.Content },
+    } satisfies PluginButton & { readonly Label: typeof presentation.Label };
     const registration = host.addComposerPill({
       id: REGISTRATION_ID,
       workspaceId: agent.workspaceId,
       agentId: agent.id,
-      button: {
-        title: DISPLAY_NAME,
-        label: presentation.getSnapshot().label,
-        icon: presentation.Icon,
-        behavior: { kind: "popover", Content: presentation.Content },
-      },
+      button,
     });
-    let published = presentation.getSnapshot().label;
+    let published = buildComposerPulseLabel(presentation.getSnapshot());
     publishLabel = (label) => {
       if (label === published) return;
       published = label;
       registration.update({ label });
     };
-    publishLabel(presentation.getSnapshot().label);
+    publishLabel(buildComposerPulseLabel(presentation.getSnapshot()));
     mounted.set(agent.id, { workspaceId: agent.workspaceId, registration, presentation });
     observePresentation(presentation);
   };
@@ -125,39 +134,42 @@ export function createPulselineRegistry(
         break;
     }
   });
-  const listInitial = async () => {
-    let cursor: string | undefined;
-    let first = true;
-    while (!stopped) {
-      const page = await host.paseo.agents.list({
+  const finishInitialList = () => {
+    initialListPending = false;
+    changedDuringInitialList.clear();
+  };
+  const listInitial = (cursor?: string, first = true): void => {
+    if (stopped) return;
+    abandonment.race(
+      host.paseo.agents.list({
         filter: { includeArchived: false },
         page: cursor ? { limit: PAGE_LIMIT, cursor } : { limit: PAGE_LIMIT },
         ...(first ? { subscribe: { subscriptionId: DIRECTORY_SUBSCRIPTION_ID } } : {}),
-      });
-      for (const { agent } of page.entries) {
-        if (!changedDuringInitialList.has(agent.id)) sync(agent);
-      }
-      const nextCursor = page.pageInfo.nextCursor;
-      if (!page.pageInfo.hasMore || !nextCursor) return;
-      cursor = nextCursor;
-      first = false;
-    }
+      }),
+      {
+        value(page) {
+          if (stopped) return;
+          for (const { agent } of page.entries) {
+            if (!changedDuringInitialList.has(agent.id)) sync(agent);
+          }
+          const nextCursor = page.pageInfo.nextCursor;
+          if (page.pageInfo.hasMore && nextCursor) listInitial(nextCursor, false);
+          else finishInitialList();
+        },
+        error: finishInitialList,
+      },
+    );
   };
-  void listInitial().then(
-    () => {
-      initialListPending = false;
-      changedDuringInitialList.clear();
-    },
-    () => {
-      initialListPending = false;
-      changedDuringInitialList.clear();
-    },
-  );
+  listInitial();
 
-  return () => {
-    if (stopped) return;
-    stopped = true;
-    unsubscribe();
-    for (const agentId of [...mounted.keys()]) remove(agentId);
-  };
+  return Object.assign(
+    () => {
+      if (stopped) return;
+      stopped = true;
+      abandonment.abandon();
+      unsubscribe();
+      for (const agentId of [...mounted.keys()]) remove(agentId);
+    },
+    { pendingWaits: abandonment.pendingCount },
+  );
 }
