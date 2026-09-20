@@ -1,4 +1,5 @@
 import type { PaseoAgentTimelineEvent } from "@getpaseo/client";
+import { createAbandonment } from "./abandon";
 import type { TimelineSourceItem } from "./model";
 import type { TimelineAgentState, TimelineCursor, TimelineStore } from "./store";
 
@@ -41,7 +42,11 @@ export interface RegistryTimelineSource {
 export interface TimelineController {
   updateAgent(agent: TimelineAgentState): void;
   stop(): void;
+  pendingWaits(): number;
 }
+
+export const TIMELINE_PAGE_LIMIT = 200;
+export const MAX_HISTORY_PAGES = 8;
 
 export function createTimelineController(
   source: RegistryTimelineSource,
@@ -50,6 +55,7 @@ export function createTimelineController(
 ): TimelineController {
   let generation = 0;
   let stopped = false;
+  const abandonment = createAbandonment();
   store.beginBootstrap();
 
   const finish = (token: number) => {
@@ -61,10 +67,11 @@ export function createTimelineController(
   const request = (
     options: { readonly direction: "tail" | "before"; readonly cursor?: TimelineCursor },
     token: number,
-  ) => {
+    pageNumber = 1,
+  ): void => {
     if (stopped || token !== generation) return;
-    void source.refetch({ ...options, limit: 200, projection: "canonical" }).then(
-      (page) => {
+    abandonment.race(source.refetch({ ...options, limit: TIMELINE_PAGE_LIMIT, projection: "canonical" }), {
+      value(page) {
         if (stopped || token !== generation) return;
         if (page.error) {
           store.markIncomplete();
@@ -72,32 +79,30 @@ export function createTimelineController(
           finish(token);
           return;
         }
+        const capped = page.hasOlder && !page.gap && (!page.startCursor || pageNumber >= MAX_HISTORY_PAGES);
         store.ingestPage({
           epoch: page.epoch,
           reset: page.reset,
           gap: page.gap,
           hasOlder: page.hasOlder,
           startCursor: page.startCursor,
-          entries: page.entries.map((entry) => ({
-            ...entry,
-            timestamp: Date.parse(entry.timestamp),
-          })),
+          entries: page.entries.map((entry) => ({ ...entry, timestamp: Date.parse(entry.timestamp) })),
         });
+        if (capped) store.markIncomplete();
         onChange();
-        if (page.hasOlder && page.startCursor && !page.gap) {
-          request({ direction: "before", cursor: page.startCursor }, token);
+        if (page.hasOlder && page.startCursor && !page.gap && !capped) {
+          request({ direction: "before", cursor: page.startCursor }, token, pageNumber + 1);
           return;
         }
-        if (page.hasOlder && !page.gap) store.markIncomplete();
         finish(token);
       },
-      () => {
+      error() {
         if (stopped || token !== generation) return;
         store.markIncomplete();
         onChange();
         finish(token);
       },
-    );
+    });
   };
 
   const subscription = source.subscribe((input) => {
@@ -106,7 +111,7 @@ export function createTimelineController(
       generation += 1;
       store.replaceEpoch(input.event.epoch);
       onChange();
-      request({ direction: "tail" }, generation);
+      void request({ direction: "tail" }, generation);
       return;
     }
     store.ingestLive({
@@ -119,10 +124,10 @@ export function createTimelineController(
   });
   const initialGeneration = generation;
 
-  void subscription.ready.then(
-    () => request({ direction: "tail" }, initialGeneration),
-    () => finish(initialGeneration),
-  );
+  abandonment.race(subscription.ready, {
+    value: () => request({ direction: "tail" }, initialGeneration),
+    error: () => finish(initialGeneration),
+  });
 
   return {
     updateAgent(agent) {
@@ -134,7 +139,9 @@ export function createTimelineController(
       if (stopped) return;
       stopped = true;
       generation += 1;
+      abandonment.abandon();
       subscription();
     },
+    pendingWaits: abandonment.pendingCount,
   };
 }

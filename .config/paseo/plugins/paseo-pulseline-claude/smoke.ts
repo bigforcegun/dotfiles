@@ -5,11 +5,7 @@
 // node renderer — so this driver injects stand-ins with the same contract and
 // `client/ui-audit.test.ts` asserts the entry wires the real ones.
 import { createFakeHost } from "./client/fake-host.ts";
-import {
-  PULSELINE_PILL_LABEL,
-  PULSELINE_PILL_TITLE,
-  PULSELINE_VARIANT_TAG,
-} from "./client/descriptor.ts";
+import { PULSELINE_PILL_LABEL, PULSELINE_PILL_TITLE } from "./client/descriptor.ts";
 import { PROVIDERS, USAGE_FULL, at, conversation, toolCall } from "./client/fixtures.ts";
 import { createManualClock } from "./client/fake-agent.ts";
 import { createPulselinePills } from "./client/registry.ts";
@@ -79,9 +75,9 @@ for (const record of host.created) {
   console.log(`     ${record.contribution.agentId}: ${record.label}`);
 }
 report(
-  "cold pills carry the stable variant label",
+  "cold pills carry the neutral idle mark, never the plugin name",
   host.created.every((record) => record.label === PULSELINE_PILL_LABEL),
-  `${PULSELINE_VARIANT_TAG} …`,
+  `label=${String(host.created[0]?.label)}`,
 );
 
 console.log("-- bootstrap --");
@@ -132,15 +128,20 @@ claude.emitTimeline({
   event: { type: "turn_completed", turnId: "turn-1", usage: USAGE_FULL },
 });
 const live = host.created[0]?.label ?? "";
-report("live events reached the label", live.includes("↑2.1k"), live);
-report("no tilde on provider tokens", !live.includes("~↑"), live);
+report("live events reached the label", /^[⣀⣤⣶⣿]+$/.test(live) && live.length > 0, live);
+report("no metrics ride in the pill", !/[↓↑◇⛁$~]/.test(live), live);
 report("behavior survived every update", first?.contribution.button.behavior === behaviorBefore, "stable");
 
 console.log("-- shared store --");
 report(
-  "mounted label is live and variant-tagged",
-  (host.created[0]?.label ?? "").startsWith(`${PULSELINE_VARIANT_TAG} `) &&
+  "mounted label is pulse-only",
+  /^[⣀⣤⣶⣿]+$/.test(host.created[0]?.label ?? "") &&
     host.created[0]?.label !== PULSELINE_PILL_LABEL,
+  String(host.created[0]?.label),
+);
+report(
+  "no provider or variant text reaches the pill",
+  !/plc|Pulseline|Claude/i.test(host.created[0]?.label ?? ""),
   String(host.created[0]?.label),
 );
 report(

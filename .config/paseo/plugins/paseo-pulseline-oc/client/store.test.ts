@@ -153,4 +153,107 @@ describe("timeline store", () => {
     expect(store.snapshot().metrics.chatDurationMs).toEqual({ value: 2_000, approximate: true });
     expect(store.snapshot().metrics.textRateCharsPerSecond).toEqual({ value: 2, approximate: true });
   });
+
+  it("bounds ten thousand buffered live events and retains the newest blocks", () => {
+    // Given
+    const store = new TimelineStore("Pulseline · OpenCode");
+    store.beginBootstrap();
+
+    // When
+    for (let index = 1; index <= 10_000; index += 1) {
+      store.ingestLive({
+        epoch: "e",
+        seq: index,
+        timestamp: index,
+        event: { type: "timeline", provider: "opencode", item: { type: "assistant_message", text: `live-${index}` } },
+      });
+    }
+    store.ingestPage(page({ epoch: "e", entries: [] }));
+    store.finishBootstrap();
+
+    // Then
+    const snapshot = store.snapshot();
+    expect(snapshot.blocks).toHaveLength(200);
+    expect(snapshot.blocks[0]?.text).toBe("live-9801");
+    expect(snapshot.blocks.at(-1)?.text).toBe("live-10000");
+    expect(snapshot.gap).toBe(true);
+    console.log(`F2_BOUNDS buffered.input=10000 retained=${snapshot.blocks.length} first=${snapshot.blocks[0]?.text} last=${snapshot.blocks.at(-1)?.text} gap=${snapshot.gap}`);
+  });
+
+  it("keeps an older active block inside the bounded newest tail", () => {
+    // Given
+    const store = new TimelineStore("Pulseline · OpenCode");
+    store.ingestLive({ epoch: "e", seq: 1, timestamp: 1, event: { type: "turn_started", provider: "opencode", turnId: "active" } });
+    store.ingestLive({
+      epoch: "e",
+      seq: 2,
+      timestamp: 2,
+      event: { type: "timeline", provider: "opencode", turnId: "active", item: { type: "tool_call", callId: "active-tool", name: "Read", detail: { type: "read", filePath: "a" }, status: "running", error: null } },
+    });
+
+    // When
+    for (let index = 3; index <= 203; index += 1) {
+      store.ingestLive({
+        epoch: "e",
+        seq: index,
+        timestamp: index,
+        event: { type: "timeline", provider: "opencode", item: { type: "assistant_message", text: `passive-${index}` } },
+      });
+    }
+
+    // Then
+    const snapshot = store.snapshot();
+    expect(snapshot.blocks).toHaveLength(200);
+    expect(snapshot.blocks.some(({ id }) => id === "tool:active-tool")).toBe(true);
+    expect(snapshot.blocks.at(-1)?.text).toBe("passive-203");
+    expect(snapshot.blocks.every((block, index, blocks) => index === 0 || (blocks[index - 1]?.order ?? 0) < block.order)).toBe(true);
+  });
+
+  it("bounds accounting for ten thousand distinct tools and turns to retained state", () => {
+    // Given
+    const store = new TimelineStore("Pulseline · OpenCode");
+    let seq = 0;
+
+    // When
+    for (let index = 1; index <= 10_000; index += 1) {
+      const turnId = `turn-${index}`;
+      const callId = `tool-${index}`;
+      store.ingestLive({ epoch: "e", seq: ++seq, timestamp: seq, event: { type: "turn_started", provider: "opencode", turnId } });
+      store.ingestLive({
+        epoch: "e",
+        seq: ++seq,
+        timestamp: seq,
+        event: { type: "timeline", provider: "opencode", turnId, item: { type: "tool_call", callId, name: "Read", detail: { type: "read", filePath: `${index}` }, status: "running", error: null } },
+      });
+      store.ingestLive({
+        epoch: "e",
+        seq: ++seq,
+        timestamp: seq,
+        event: { type: "timeline", provider: "opencode", turnId, item: { type: "tool_call", callId, name: "Read", detail: { type: "read", filePath: `${index}` }, status: "completed", error: null } },
+      });
+      store.ingestLive({ epoch: "e", seq: ++seq, timestamp: seq, event: { type: "turn_completed", provider: "opencode", turnId } });
+    }
+    store.ingestLive({ epoch: "e", seq: ++seq, timestamp: seq, event: { type: "turn_started", provider: "opencode", turnId: "active" } });
+    store.ingestLive({
+      epoch: "e",
+      seq: ++seq,
+      timestamp: seq,
+      event: { type: "timeline", provider: "opencode", turnId: "active", item: { type: "tool_call", callId: "active-tool", name: "Read", detail: { type: "read", filePath: "active" }, status: "running", error: null } },
+    });
+    for (let index = 1; index <= 201; index += 1) {
+      store.ingestLive({ epoch: "e", seq: ++seq, timestamp: seq, event: { type: "timeline", provider: "opencode", item: { type: "assistant_message", text: `passive-${index}` } } });
+    }
+
+    // Then
+    const snapshot = store.snapshot();
+    const sizes = store.accountingSizes();
+    const maxAccounting = Math.max(...Object.values(sizes));
+    console.log(`F2_ACCOUNTING input.tools=10000 input.turns=10000 max=${maxAccounting} retained=${snapshot.blocks.length} active=${snapshot.blocks.some(({ id }) => id === "tool:active-tool") ? 1 : 0} newest=${snapshot.blocks.at(-1)?.text} gap=${snapshot.gap}`);
+    expect(maxAccounting).toBeLessThanOrEqual(200);
+    expect(snapshot.blocks).toHaveLength(200);
+    expect(snapshot.blocks.some(({ id }) => id === "tool:active-tool")).toBe(true);
+    expect(snapshot.blocks.at(-1)?.text).toBe("passive-201");
+    expect(snapshot.metrics.toolCount).toEqual({ value: 1, approximate: true });
+    expect(snapshot.gap).toBe(true);
+  });
 });

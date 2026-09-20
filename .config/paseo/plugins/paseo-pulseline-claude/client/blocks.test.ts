@@ -88,11 +88,10 @@ test("tool blocks are keyed by callId so a lifecycle never doubles", () => {
   assert.equal(done?.pending, false);
 });
 
-test("weights are bounded and larger output weighs more", () => {
+test("classification carries the kind, not a size", () => {
   const small = blockFromEntry(entry(1, 0, { type: "assistant_message", text: "ok" }));
   const large = blockFromEntry(entry(2, 1, { type: "assistant_message", text: "x".repeat(4000) }));
   assert.ok(small && large);
-  assert.ok(small.weight >= 0 && small.weight <= 1);
-  assert.ok(large.weight <= 1);
-  assert.ok(large.weight > small.weight);
+  assert.equal(small.kind, large.kind, "height comes from the kind table in pulse-segments.ts");
+  assert.equal("height" in small, false, "blocks no longer carry a content-derived height");
 });

@@ -1,18 +1,29 @@
-// Popover view model. Exact provider numbers and observed estimates live in
-// separate groups, and an absent measurement produces no row at all.
+// Popover view model: one ordered list of icon-led metric rows and the pulse
+// footer, which is always last. Row order, glyphs and formatting follow the
+// agreed cross-plugin baseline; a datum the provider never sent has no row.
+import { formatClock, formatCount, formatMoney, formatRate, formatToolAverage } from "./format.ts";
 import type { PulseMetric, PulseMetrics } from "./metrics.ts";
 import type { PulseModelState } from "./model.ts";
+import {
+  MAX_PULSE_SEGMENTS,
+  buildPulseSegments,
+  type PulseSegment,
+} from "./pulse-segments.ts";
 
 export interface DetailRow {
+  /** Original status glyph: ↓ ↑ ◇ ⚡ ↯ 💬/🏁 Σ 🔧 ⏱ ⌛ $ */
+  readonly glyph: string;
+  /** Accessible name only; the popover shows the glyph and the value. */
   readonly label: string;
   readonly value: string;
   readonly approx: boolean;
 }
 
-export interface DetailSection {
-  readonly id: "usage" | "timing" | "activity";
-  readonly title: string;
-  readonly rows: DetailRow[];
+export interface DetailFooter {
+  readonly placement: "last";
+  readonly width: number;
+  readonly accessibilityLabel: string;
+  readonly segments: PulseSegment[];
 }
 
 export interface DetailModel {
@@ -20,67 +31,56 @@ export interface DetailModel {
   readonly busy: boolean;
   readonly empty: boolean;
   readonly incomplete: boolean;
-  readonly sections: DetailSection[];
+  readonly rows: DetailRow[];
+  readonly emptyMetricsText: string;
+  readonly footer: DetailFooter;
 }
 
-function compact(value: number): string {
-  if (value < 1000) return String(Math.round(value));
-  const scaled = value / 1000;
-  return scaled >= 10 ? `${Math.round(scaled)}k` : `${scaled.toFixed(1).replace(/\.0$/, "")}k`;
+export interface DetailModelOptions {
+  readonly phase?: number;
 }
 
-function exactRow(label: string, metric: PulseMetric | undefined, value?: string): DetailRow[] {
+export const EMPTY_METRICS_TEXT = "No metrics yet";
+const FOOTER_LABEL = "Agent activity pulse";
+
+function row(
+  glyph: string,
+  label: string,
+  metric: PulseMetric | undefined,
+  format: (value: number) => string,
+): DetailRow[] {
   if (!metric) return [];
-  return [{ label, value: value ?? compact(metric.value), approx: false }];
+  const value = format(metric.value);
+  return [{ glyph, label, value: metric.approx ? `~${value}` : value, approx: metric.approx }];
 }
 
-function approxRow(label: string, metric: PulseMetric | undefined, unit: string): DetailRow[] {
-  if (!metric) return [];
-  return [{ label, value: `~${metric.value}${unit}`, approx: true }];
+/** Context shows both sides; a side the provider withheld reads `?`. */
+function contextRow(state: PulseModelState): DetailRow[] {
+  const used = state.usage?.contextWindowUsedTokens;
+  const max = state.usage?.contextWindowMaxTokens;
+  if (used === undefined && max === undefined) return [];
+  const left = typeof used === "number" ? formatCount(used) : "?";
+  const right = typeof max === "number" ? formatCount(max) : "?";
+  return [{ glyph: "◇", label: "Context", value: `${left}/${right}`, approx: false }];
 }
 
-function usageRows(metrics: PulseMetrics): DetailRow[] {
-  const context =
-    metrics.contextUsedTokens && metrics.contextMaxTokens
-      ? `${compact(metrics.contextUsedTokens.value)} / ${compact(metrics.contextMaxTokens.value)}` +
-        ` (${Math.round((metrics.contextUsedTokens.value / metrics.contextMaxTokens.value) * 100)}%)`
-      : undefined;
+function metricRows(state: PulseModelState, metrics: PulseMetrics): DetailRow[] {
   return [
-    ...exactRow("Input", metrics.inputTokens),
-    ...exactRow("Output", metrics.outputTokens),
-    ...exactRow("Cache read", metrics.cachedInputTokens),
-    ...(context ? exactRow("Context", metrics.contextUsedTokens, context) : []),
-    ...exactRow("Cost", metrics.costUsd, `$${metrics.costUsd?.value.toFixed(2) ?? ""}`),
+    ...row("↓", "Input", metrics.inputTokens, formatCount),
+    ...row("↑", "Output", metrics.outputTokens, formatCount),
+    ...row("◇", "Cache read", metrics.cachedInputTokens, formatCount),
+    ...row("⚡", "Output rate", metrics.outputTokensPerSecond, (v) => `${formatRate(v)}/s`),
+    ...row("↯", "Text rate", metrics.textCharsPerSecond, (v) => `${formatRate(v)}/s`),
+    ...row(state.activeTurn ? "💬" : "🏁", "Turn", metrics.turnSeconds, (v) =>
+      formatClock(v * 1_000),
+    ),
+    ...row("Σ", "Chat", metrics.chatSeconds, (v) => formatClock(v * 1_000)),
+    ...row("🔧", "Tools", metrics.toolCount, formatCount),
+    ...row("⏱", "Tool average", metrics.toolAvgSeconds, (v) => formatToolAverage(v * 1_000)),
+    ...row("⌛", "Tool total", metrics.toolTotalSeconds, (v) => formatClock(v * 1_000)),
+    ...contextRow(state),
+    ...row("$", "Cost", metrics.costUsd, formatMoney),
   ];
-}
-
-function timingRows(metrics: PulseMetrics): DetailRow[] {
-  return [
-    ...approxRow("Turn", metrics.turnSeconds, "s"),
-    ...approxRow("Chat", metrics.chatSeconds, "s"),
-    ...approxRow("Tools", metrics.toolCount, ""),
-    ...approxRow("Tool average", metrics.toolAvgSeconds, "s"),
-    ...approxRow("Tool total", metrics.toolTotalSeconds, "s"),
-    ...approxRow("Text rate", metrics.textCharsPerSecond, "c/s"),
-  ];
-}
-
-/** A trimmed or gapped history can only support approximate counts. */
-function activityRows(state: PulseModelState): DetailRow[] {
-  const partial = state.gap || state.truncated;
-  const counts = {
-    Messages: state.blocks.filter((block) => block.kind === "text").length,
-    Reasoning: state.blocks.filter((block) => block.kind === "reasoning").length,
-    Tools: state.blocks.filter((block) => block.key.startsWith("tool:")).length,
-    Errors: state.blocks.filter((block) => block.kind === "error").length,
-  };
-  return Object.entries(counts)
-    .filter(([, value]) => value > 0)
-    .map(([label, value]) => ({
-      label,
-      value: partial ? `~${value}` : String(value),
-      approx: partial,
-    }));
 }
 
 function describe(state: PulseModelState): string {
@@ -94,14 +94,11 @@ function describe(state: PulseModelState): string {
   return "Idle";
 }
 
-export function buildDetailModel(state: PulseModelState, metrics: PulseMetrics): DetailModel {
-  const candidates: DetailSection[] = [
-    { id: "usage", title: "Reported by the provider", rows: usageRows(metrics) },
-    { id: "timing", title: "Observed by this client (~)", rows: timingRows(metrics) },
-    { id: "activity", title: "Activity", rows: activityRows(state) },
-  ];
-  const sections = candidates.filter((section) => section.rows.length > 0);
-
+export function buildDetailModel(
+  state: PulseModelState,
+  metrics: PulseMetrics,
+  options: DetailModelOptions = {},
+): DetailModel {
   return {
     status: describe(state),
     busy: state.busy,
@@ -113,6 +110,16 @@ export function buildDetailModel(state: PulseModelState, metrics: PulseMetrics):
       !state.usage &&
       !state.busy,
     incomplete: state.gap,
-    sections,
+    rows: metricRows(state, metrics),
+    emptyMetricsText: EMPTY_METRICS_TEXT,
+    footer: {
+      placement: "last",
+      width: MAX_PULSE_SEGMENTS,
+      accessibilityLabel: FOOTER_LABEL,
+      segments: buildPulseSegments(state, {
+        width: MAX_PULSE_SEGMENTS,
+        phase: options.phase ?? 0,
+      }),
+    },
   };
 }

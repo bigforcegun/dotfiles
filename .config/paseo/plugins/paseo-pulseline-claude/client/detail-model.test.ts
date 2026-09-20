@@ -13,40 +13,34 @@ function build(inputs: Parameters<typeof reducePulse>[1][], entries = conversati
   return buildDetailModel(state, derivePulseMetrics(state, NOW));
 }
 
-function rows(model: ReturnType<typeof buildDetailModel>, sectionId: string) {
-  return model.sections.find((section) => section.id === sectionId)?.rows ?? [];
+function glyphs(model: ReturnType<typeof buildDetailModel>) {
+  return model.rows.map((row) => row.glyph);
+}
+
+function valueOf(model: ReturnType<typeof buildDetailModel>, glyph: string) {
+  return model.rows.find((row) => row.glyph === glyph)?.value;
 }
 
 test("tokens, cache, context and cost are grouped and unmarked", () => {
   const model = build([{ type: "agent", status: "idle", activeTurn: null, usage: USAGE_FULL }]);
-  const usage = rows(model, "usage");
-  assert.deepEqual(
-    usage.map((row) => row.label),
-    ["Input", "Output", "Cache read", "Context", "Cost"],
-  );
-  for (const row of usage) {
+  assert.deepEqual(glyphs(model).slice(0, 3), ["↓", "↑", "◇"]);
+  for (const row of model.rows.filter((entry) => ["↓", "↑", "◇", "$"].includes(entry.glyph))) {
     assert.equal(row.approx, false, row.label);
     assert.equal(row.value.startsWith("~"), false, row.value);
   }
-  assert.equal(usage[0]?.value, "18k");
-  assert.equal(usage[3]?.value, "124k / 200k (62%)");
-  assert.equal(usage[4]?.value, "$0.42");
+  assert.equal(valueOf(model, "↓"), "18k");
+  assert.equal(model.rows.filter((row) => row.glyph === "◇").at(-1)?.value, "124k/200k");
+  assert.equal(valueOf(model, "$"), "$0.42");
 });
 
 test("observed timings are grouped separately and always tilde-marked", () => {
   const model = build([
     { type: "agent", status: "running", activeTurn: { turnId: "t", startedAt: at(20) } },
   ]);
-  const timing = rows(model, "timing");
-  assert.ok(timing.length > 0);
-  for (const row of timing) {
-    assert.equal(row.approx, true, row.label);
-    assert.match(row.value, /^~/, row.value);
-  }
-  assert.deepEqual(
-    timing.map((row) => row.label),
-    ["Turn", "Chat", "Tools", "Tool average", "Tool total", "Text rate"],
-  );
+  const approxRows = model.rows.filter((row) => row.approx);
+  for (const row of approxRows) assert.match(row.value, /^~/, row.value);
+  assert.deepEqual(approxRows.map((row) => row.glyph), ["↯", "Σ", "⏱", "⌛"]);
+  assert.deepEqual(glyphs(model).filter((glyph) => "🔧⏱⌛".includes(glyph)), ["🔧", "⏱", "⌛"]);
 });
 
 test("both providers produce the same detail model", () => {
@@ -107,20 +101,21 @@ test("usage without blocks still renders the token group", () => {
     ),
   );
   assert.equal(model.empty, false);
-  assert.ok(rows(model, "usage").length > 0);
-  assert.equal(rows(model, "timing").length, 0, "no observed timings to report yet");
+  assert.ok(model.rows.length > 0);
+  assert.equal(model.rows.some((row) => row.glyph === "Σ"), false, "no observed timings yet");
 });
 
 test("an empty idle model says so instead of printing zeros", () => {
   const loaded = reducePulse(initialPulseState, { type: "history", epoch: "e", entries: [] });
   const model = buildDetailModel(loaded, derivePulseMetrics(loaded, NOW));
   assert.equal(model.empty, true);
-  assert.equal(model.sections.length, 0);
+  assert.equal(model.rows.length, 0);
+  assert.equal(model.emptyMetricsText, "No metrics yet");
   assert.match(model.status, /No activity/i);
 });
 
 test("a gapped history is disclosed rather than hidden", () => {
-  const model = build([], conversation("claude")).sections;
+  const model = build([], conversation("claude")).rows;
   const gapped = buildDetailModel(
     reducePulse(initialPulseState, {
       type: "history",
@@ -131,13 +126,19 @@ test("a gapped history is disclosed rather than hidden", () => {
     derivePulseMetrics(initialPulseState, NOW),
   );
   assert.equal(gapped.incomplete, true);
-  assert.equal(model.some((section) => section.id === "activity"), true);
+  assert.equal(model.some((row) => row.glyph === "🔧"), true);
 });
 
-test("the activity group counts blocks by kind", () => {
-  const activity = rows(build([]), "activity");
-  const byLabel = Object.fromEntries(activity.map((row) => [row.label, row.value]));
-  assert.equal(byLabel["Tools"], "3");
-  assert.equal(byLabel["Errors"], "1");
-  assert.equal(byLabel["Messages"], "2");
+test("the tool rows count what the pulse shows", () => {
+  const model = build([]);
+  assert.equal(valueOf(model, "🔧"), "3", "three tool rows");
+  assert.equal(valueOf(model, "⏱"), "~2.0s");
+  assert.equal(valueOf(model, "⌛"), "~00:02");
+});
+
+test("the footer carries the pulse and comes last", () => {
+  const model = build([]);
+  assert.equal(model.footer.placement, "last");
+  assert.ok(model.footer.segments.length > 0);
+  assert.equal(model.footer.width, 36);
 });

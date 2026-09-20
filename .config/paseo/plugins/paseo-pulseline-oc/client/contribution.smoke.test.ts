@@ -104,11 +104,11 @@ it("drives history and live timeline state through cleanup with binary observabl
 
   expect({
     registration: active.size === 1,
-    descriptor: descriptor?.title === "Pulseline · OpenCode" && descriptor.label === "Pulseline · OpenCode",
+    descriptor: descriptor?.title === "Pulseline · OpenCode" && descriptor.label === "⣀",
     icon: typeof descriptor?.icon === "function",
     popover: behavior?.kind === "popover" && typeof behavior.Content === "function",
-    history: labels.includes("Pulseline · OpenCode · text"),
-    live: labels.at(-1) === "Pulseline · OpenCode · reasoning",
+    history: mounted.getSnapshot().blocks.some(({ text }) => text === "history"),
+    live: labels.at(-1) === "⣀⣀",
     labelOnly: updates.length > 0 && updates.every((patch) => Object.keys(patch).join() === "label"),
     behaviorStable: descriptor?.behavior === behavior,
     catalogSubscribed,

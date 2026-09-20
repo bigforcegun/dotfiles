@@ -1,11 +1,20 @@
-// Source-level audit. The components cannot run under `node --test` (React Native
-// has no node renderer), so their platform contract is asserted as text.
+// Two audits. Imports and forbidden host surfaces are read from source, because
+// that is what they are about. Everything the popover draws — hierarchy, accessible
+// names, colours, density — is asserted against the real element tree, rendered
+// through injected primitives (see fake-render.ts).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { PULSE_THEME_TOKENS } from "./pulse-strip.ts";
+import { buildDetailModel, type DetailModel } from "./detail-model.ts";
+import { FAKE_COLOR_VALUES, descendants, footerOf, renderDetail, type FakeNode } from "./fake-render.ts";
+import { at } from "./fixtures.ts";
+import { derivePulseMetrics } from "./metrics.ts";
+import { initialPulseState, type PulseModelState } from "./model.ts";
+import { buildPulseDot } from "./pulse-dot.ts";
 
 const UI_FILES = ["client/pulse-icon.tsx", "client/pulse-detail.tsx"];
+/** The icon renders nothing, so theme and density rules apply to the popover only. */
+const DRAWING_UI_FILES = ["client/pulse-detail.tsx"];
 const HOOK = "client/use-pulse-view.ts";
 const ENTRY = "index.client.tsx";
 const ALLOWED_IMPORTS = [
@@ -22,6 +31,30 @@ function read(path: string): string {
 
 function imports(source: string): string[] {
   return [...source.matchAll(/from "([^"]+)"/g)].map((match) => match[1] as string);
+}
+
+/** A popover with metric rows and more than one bar: enough to audit what is drawn. */
+function shownModel(): DetailModel {
+  const state: PulseModelState = {
+    ...initialPulseState,
+    historyLoaded: true,
+    usage: {
+      inputTokens: 1_200,
+      outputTokens: 800,
+      contextWindowUsedTokens: 2_000,
+      contextWindowMaxTokens: 128_000,
+    },
+    blocks: [
+      { key: "b1", kind: "text", startedAt: at(0), endedAt: at(1), pending: false },
+      { key: "b2", kind: "error", startedAt: at(1), endedAt: at(2), pending: false },
+    ],
+  };
+  return buildDetailModel(state, derivePulseMetrics(state, Date.parse(at(30))));
+}
+
+/** Hierarchy and accessible names, without any measurement. */
+function shape(node: FakeNode): unknown {
+  return [node.type, node.props.accessibilityLabel ?? null, node.children.map(shape)];
 }
 
 test("components import only host-provided modules or local files", () => {
@@ -46,6 +79,35 @@ test("components never reach for private, DOM or icon-library modules", () => {
   }
 });
 
+test("the icon slot draws one themed dot that beats while the agent works", () => {
+  const source = read("client/pulse-icon.tsx");
+  assert.match(source, /from "react-native"/, "the slot now draws");
+  assert.match(source, /borderRadius: diameter \/ 2/, "a circle, not a bar");
+  assert.equal(/#[0-9a-fA-F]{3,8}\b/.test(source), false, "no hardcoded colour");
+
+  const idle: PulseModelState = { ...initialPulseState, historyLoaded: true };
+  const working: PulseModelState = {
+    ...idle,
+    busy: true,
+    blocks: [{ key: "t", kind: "tool", startedAt: at(0), pending: true }],
+  };
+  const calm = buildPulseDot(idle, 0);
+  assert.equal(calm.busy, false);
+  assert.equal(calm.token, "border", "nothing has happened yet: a neutral mark");
+  assert.ok(calm.opacity < 1, "idle is calm");
+
+  const beats = [0, 1].map((phase) => buildPulseDot(working, phase));
+  assert.deepEqual(beats.map((dot) => dot.token), ["statusWarning", "statusWarning"]);
+  assert.deepEqual(beats.map((dot) => dot.opacity), [1, 1]);
+  const scales = beats.map((dot) => dot.scale);
+  assert.deepEqual(scales, [...scales].sort((a, b) => a - b), "the dot grows through the phases");
+  assert.ok((scales.at(-1) as number) - (scales[0] as number) >= 0.3, "and visibly so");
+  assert.ok(scales.every((scale) => scale > calm.scale), "busy is always bigger than calm");
+
+  const failed = buildPulseDot({ ...idle, status: "error" }, 0);
+  assert.equal(failed.token, "statusDanger", "an error always shows red");
+});
+
 test("components use React Native primitives and no DOM surface", () => {
   const domTokens = [
     "document.",
@@ -61,28 +123,25 @@ test("components use React Native primitives and no DOM surface", () => {
   for (const file of UI_FILES) {
     const source = read(file);
     for (const token of domTokens) assert.equal(source.includes(token), false, `${file}:${token}`);
-    assert.match(source, /from "react-native"/, file);
   }
+  for (const file of DRAWING_UI_FILES) assert.match(read(file), /from "react-native"/, file);
 });
 
-test("no colour is hardcoded: every colour comes from theme.colors", () => {
-  for (const file of UI_FILES) {
-    const source = read(file);
-    assert.equal(/#[0-9a-fA-F]{3,8}\b/.test(source), false, `${file} has a hex colour`);
-    assert.equal(/\brgba?\(/.test(source), false, `${file} has an rgb colour`);
-    const used = [...source.matchAll(/theme\.colors\.([A-Za-z0-9]+)/g)].map(
-      (match) => match[1] as string,
-    );
-    assert.ok(used.length > 0, `${file} reads no theme colour`);
-    for (const token of used) {
+test("every colour drawn comes from theme.colors", () => {
+  const colourKeys = ["color", "backgroundColor", "borderColor"];
+  let painted = 0;
+  for (const node of descendants(renderDetail(shownModel()))) {
+    for (const key of colourKeys) {
+      const value = node.style[key];
+      if (value === undefined) continue;
+      painted += 1;
       assert.ok(
-        [...PULSE_THEME_TOKENS, "surface0", "surface1", "surface2", "accentForeground"].includes(
-          token as never,
-        ),
-        `${file} uses theme.colors.${token}`,
+        FAKE_COLOR_VALUES.includes(value as string),
+        `${node.type}.${key} draws ${String(value)}, which is not a theme colour`,
       );
     }
   }
+  assert.ok(painted > 0, "the popover paints something");
 });
 
 test("the popover renders a body only: the host owns scrolling", () => {
@@ -108,7 +167,9 @@ test("no bootstrap failure is swallowed", () => {
   const registry = read("client/registry.ts");
   assert.equal(registry.includes(".catch(() => undefined)"), false, "no silent catch");
   assert.match(registry, /onBootstrapError\?\.\(/, "terminal failures are reported");
-  assert.match(registry, /teardown\(\);\n\s*options\.onBootstrapError/, "cleanup precedes the report");
+  const reportAt = registry.indexOf("options.onBootstrapError?.(");
+  const teardownAt = registry.lastIndexOf("teardown();", reportAt);
+  assert.ok(reportAt > 0 && teardownAt > 0 && teardownAt < reportAt, "cleanup precedes the report");
   const entry = read(ENTRY);
   assert.match(entry, /onBootstrapError/, "the entry wires the failure channel");
 });
@@ -121,8 +182,48 @@ test("the registry never opens a timeline or a store by itself", () => {
   assert.match(source, /subscriptionId/, "the directory subscription is paired with the listing");
 });
 
-test("components respond to layout.compact", () => {
-  for (const file of UI_FILES) assert.match(read(file), /layout\.compact/, file);
+test("the compact layout changes measurements, never the hierarchy", () => {
+  const model = shownModel();
+  const compact = renderDetail(model, { compact: true });
+  const roomy = renderDetail(model, { compact: false });
+
+  assert.deepEqual(shape(compact), shape(roomy), "density must not add or drop nodes");
+  assert.notDeepEqual(compact.style, roomy.style, "the body reacts to layout.compact");
+  assert.equal(compact.style.gap, 10);
+  assert.equal(roomy.style.gap, 14);
+  assert.equal((compact.children[0] as FakeNode).style.fontSize, 15);
+  assert.equal((roomy.children[0] as FakeNode).style.fontSize, 17);
+});
+
+test("every metric row carries its accessible name and draws glyph and value", () => {
+  const model = shownModel();
+  const rows = (renderDetail(model).children[2] as FakeNode).children;
+  assert.ok(model.rows.length > 0, "the fixture has metrics");
+  assert.deepEqual(
+    rows.map((row) => [row.props.accessibilityLabel, row.children.map((child) => child.text)]),
+    model.rows.map((row) => [`${row.label} ${row.value}`, [row.glyph, row.value]]),
+  );
+});
+
+test("the footer names the pulse and every bar names its kind", () => {
+  const model = shownModel();
+  const footer = footerOf(renderDetail(model));
+  assert.equal(footer.props.accessibilityLabel, model.footer.accessibilityLabel);
+  const bars = footer.children.filter((node) => node.children.length === 1);
+  assert.equal(bars.length, model.footer.segments.length);
+  assert.deepEqual(
+    bars.map((wrapper) => (wrapper.children[0] as FakeNode).props.accessibilityLabel),
+    model.footer.segments.map((segment) => segment.kind),
+  );
+  for (const separator of footer.children.filter((node) => node.children.length === 0)) {
+    assert.equal(separator.props.accessibilityLabel, undefined, "a hairline is not announced");
+  }
+});
+
+test("only the injected primitives are drawn", () => {
+  for (const node of descendants(renderDetail(shownModel()))) {
+    assert.ok(["View", "Text"].includes(node.type), `${node.type} is not a host primitive`);
+  }
 });
 
 test("the entry wires the real icon and popover content into the registry", () => {

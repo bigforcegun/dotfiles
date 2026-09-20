@@ -32,6 +32,8 @@ export interface FakeHost extends PulselineHost {
   agent(agentId: string): FakeAgent;
   readonly refs: () => number;
   readonly listOptions: () => readonly unknown[];
+  /** Raw host promises still pending; the plugin cannot cancel these. */
+  readonly pendingListPromises: () => number;
   /** Resolves the pending `agents.list()` bootstrap. */
   settleList(): Promise<void>;
   asPluginClientContext(): PluginClientContext;
@@ -49,6 +51,8 @@ export interface FakeHostOptions {
   failListTimes?: number;
   /** Throw from the first N `addComposerPill()` calls. */
   failRegistrationTimes?: number;
+  /** Never answer `agents.list()`: reproduces a daemon that stops responding. */
+  hangList?: boolean;
 }
 
 function targetKey(pill: PulselineComposerPill): string {
@@ -65,6 +69,7 @@ export function createFakeHost(options: FakeHostOptions = {}): FakeHost {
   const seenListOptions: unknown[] = [];
   let listCalls = 0;
   let listFailures = options.failListTimes ?? 0;
+  let pendingList = 0;
   let registrationFailures = options.failRegistrationTimes ?? 0;
   let release: (() => void) | undefined;
   const gate = options.deferList
@@ -90,6 +95,7 @@ export function createFakeHost(options: FakeHostOptions = {}): FakeHost {
     },
     refs: () => handles.size,
     listOptions: () => seenListOptions,
+    pendingListPromises: () => pendingList,
     async settleList() {
       release?.();
       await gate;
@@ -143,6 +149,10 @@ export function createFakeHost(options: FakeHostOptions = {}): FakeHost {
           listCalls += 1;
           seenListOptions.push(listOptions);
           await gate;
+          if (options.hangList) {
+            pendingList += 1;
+            await new Promise<void>(() => {});
+          }
           if (listFailures > 0) {
             listFailures -= 1;
             throw new Error("agent directory unavailable");

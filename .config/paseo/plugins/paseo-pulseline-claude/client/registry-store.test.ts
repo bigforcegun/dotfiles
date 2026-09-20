@@ -37,13 +37,13 @@ test("a mounted pill's label follows the model's deterministic text state", asyn
   const cleanup = createPulselinePills(host, { ui });
   await host.settleList();
   const record = host.created[0];
-  assert.equal(record?.label, "plc Pulseline · Claude", "cold registration shows the plugin name");
+  assert.equal(record?.label, "⣀", "cold registration shows the neutral placeholder");
 
   const lease = mount(host, "agent-1");
   await host.agent("agent-1").settleHistory();
 
   assert.ok((record?.updates ?? 0) > 0);
-  assert.match(record?.label ?? "", /^plc [▁▂▃▄▅▆▇█]/);
+  assert.match(record?.label ?? "", /^[⣀⣤⣶⣿]+$/);
   lease.release();
   await cleanup();
 });
@@ -109,7 +109,7 @@ test("a workspace move re-registers the pill and keeps the mounted store", async
   assert.equal(host.created.length, 2, "the pill moved to the new composer");
   assert.equal(pulseStoreCount(), 1, "the store belongs to the mounted component, not the pill");
   assert.equal(host.agent("agent-1").refetchCalls(), 1, "no second history fetch for a move");
-  assert.match([...host.live.values()][0]?.label ?? "", /^plc [▁▂▃▄▅▆▇█]/);
+  assert.match([...host.live.values()][0]?.label ?? "", /^[⣀⣤⣶⣿]+$/);
   lease.release();
   assert.equal(pulseStoreCount(), 0);
   await cleanup();
