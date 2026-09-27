@@ -7,9 +7,10 @@ import {
   type ViewProps,
 } from "react-native";
 import { type PluginSurfaceProps } from "@getpaseo/plugin/client";
+import { Icon } from "@getpaseo/plugin/client/react-native";
 import { type GraphNode } from "./model";
 import { canvas } from "./styles";
-import { LAYER, NODE_BORDER_WIDTH } from "./view";
+import { LAYER, NODE_BORDER_WIDTH, glyphSize } from "./view";
 
 /**
  * One dot: its gesture handling, its keyboard and assistive activation, and the
@@ -32,6 +33,8 @@ interface NodeViewProps {
   top: number;
   radius: number;
   color: string;
+  /** Lucide name of the provider mark, or null for a bare dot. */
+  icon: string | null;
   theme: PluginSurfaceProps["theme"];
   hovered: boolean;
   opacity: number;
@@ -50,6 +53,7 @@ export function NodeView({
   top,
   radius,
   color,
+  icon,
   theme,
   hovered,
   opacity,
@@ -115,6 +119,11 @@ export function NodeView({
   // Only the corner radius follows the dot; the fill itself is fixed.
   const fillStyle = useMemo(() => [canvas.fill, { borderRadius: radius }], [radius]);
 
+  // Knocked out of the dot in the canvas colour and as wide as the dot itself:
+  // the fill already carries the status, so the mark only has to read against
+  // it. No size floor - it shrinks with the dot rather than vanishing.
+  const glyph = glyphSize(radius);
+
   // Keyboard and assistive activation never reach the responder above, so these
   // are the only paths that fire them - no pointer tap is doubled.
   const hostHandlers = useMemo(
@@ -173,6 +182,11 @@ export function NodeView({
         onHoverOut={hoverOut}
         style={fillStyle}
       />
+      {icon ? (
+        <View pointerEvents="none" style={canvas.glyph}>
+          <Icon name={icon} size={glyph} color={theme.colors.surface0} />
+        </View>
+      ) : null}
     </View>
   );
 }

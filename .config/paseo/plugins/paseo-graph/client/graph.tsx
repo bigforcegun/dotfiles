@@ -70,6 +70,7 @@ import {
   isHoverStale,
   nodeColor,
   nodeRadius,
+  providerIcon,
 } from "./view";
 
 /**
@@ -216,6 +217,14 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     () => buildGraph(workspaces, agents, projects),
     [workspaces, agents, projects],
   );
+
+  // Only the families actually on the canvas are named in the legend - the
+  // full provider table would list marks nothing on screen wears.
+  const families = useMemo(() => {
+    const present = new Set<string>();
+    for (const node of nodes) if (node.family) present.add(node.family);
+    return [...present].sort();
+  }, [nodes]);
 
   // Clearing the id, not just masking it: a node that vanishes and returns
   // under the same id would otherwise light up again with the pointer
@@ -596,7 +605,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         })}
       </View>
 
-      <Legend theme={theme} compact={layout.compact} />
+      <Legend theme={theme} compact={layout.compact} families={families} />
 
       <View
         {...canvasResponder.panHandlers}
@@ -735,6 +744,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               top={centerY + body.y * scale}
               radius={nodeRadius(node.kind, scale)}
               color={nodeColor(node, theme)}
+              icon={providerIcon(node.family)}
               theme={theme}
               hovered={activeHover === node.id}
               opacity={opacity}

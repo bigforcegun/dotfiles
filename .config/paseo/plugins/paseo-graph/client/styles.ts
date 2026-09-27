@@ -67,6 +67,9 @@ export const canvas = StyleSheet.create({
   root: { flex: 1, overflow: "hidden" },
   overlay: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   fill: { width: "100%", height: "100%" },
+  // The provider mark, centred over the dot it belongs to. Absolute rather than
+  // a child of the fill, so it never takes part in the gesture.
+  glyph: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
 });
 
 /**

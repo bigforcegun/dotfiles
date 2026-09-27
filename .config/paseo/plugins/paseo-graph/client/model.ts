@@ -12,6 +12,8 @@ export interface GraphNode {
   label: string;
   sublabel: string;
   status: string;
+  /** Which tool runs this agent - `claude`, `codex`, `opencode`. Null off an agent. */
+  family: string | null;
 }
 
 export interface GraphEdge {
@@ -65,6 +67,16 @@ export interface AgentInfo {
  */
 const PARENT_AGENT_ID_LABEL = "paseo.parent-agent-id";
 
+/**
+ * `agent.provider` is `family/model...` - `claude/claude-opus-5`, or
+ * `opencode/openai/gpt-5.6-sol-fast`. Only the first segment names the tool,
+ * and that is what a mark on the dot can stand for.
+ */
+export function providerFamily(provider: string): string | null {
+  const family = provider.split("/", 1)[0]?.trim().toLowerCase();
+  return family ? family : null;
+}
+
 export function parentFromLabels(labels: Record<string, string> | undefined): string | null {
   const raw = labels?.[PARENT_AGENT_ID_LABEL];
   return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
@@ -111,6 +123,7 @@ export function buildGraph(
       label: name,
       sublabel: "project",
       status: "project",
+      family: null,
     });
   };
 
@@ -123,6 +136,7 @@ export function buildGraph(
       label: workspace.label,
       sublabel: workspace.kind,
       status: workspace.status,
+      family: null,
     });
     edges.push({
       id: `c:${workspace.projectId}:${workspace.id}`,
@@ -151,6 +165,7 @@ export function buildGraph(
       label: agent.label,
       sublabel: agent.provider,
       status: agent.archived ? "archived" : agent.status,
+      family: providerFamily(agent.provider),
     });
   }
 

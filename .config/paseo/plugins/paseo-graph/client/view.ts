@@ -58,6 +58,42 @@ export const LABEL_SHADOW_RADIUS = 4;
 
 export const LABEL_SHADOW_OFFSET = { width: 0, height: 0 };
 
+/**
+ * The mark inside an agent's dot. Paseo has real brand icons for providers, but
+ * that registry is host-only: a plugin's `Icon` resolves Lucide names and
+ * nothing else, and the SVG a provider ships is not reachable from client code.
+ * So each family gets the nearest Lucide glyph, and anything unlisted stays a
+ * plain bot - a confident wrong mark is worse than an honest generic one.
+ */
+const PROVIDER_ICON: Record<string, string> = {
+  claude: "Asterisk", // the Anthropic starburst
+  codex: "Atom", // the OpenAI knot
+  opencode: "Braces",
+  kimi: "Moon", // Kimi is Moonshot's
+  gemini: "Sparkle", // Gemini's four-point spark
+  copilot: "Github",
+  cursor: "MousePointer2",
+  goose: "Bird",
+  grok: "Slash", // the xAI slash
+};
+
+export const FALLBACK_PROVIDER_ICON = "Bot";
+
+export function providerIcon(family: string | null): string | null {
+  if (!family) return null;
+  return PROVIDER_ICON[family] ?? FALLBACK_PROVIDER_ICON;
+}
+
+/**
+ * The mark is as big as the dot itself: not decoration inside a disc, but the
+ * disc wearing a silhouette. Drawn at every zoom - a mark that disappears when
+ * you pull back to see the whole graph is a mark you cannot navigate by, and
+ * the smudge a tiny glyph becomes still reads as a silhouette at a glance.
+ */
+export function glyphSize(radius: number): number {
+  return Math.round(radius * 2);
+}
+
 /** Ring around a dot: heavier when hovered or when it is a project. */
 export const NODE_BORDER_WIDTH = { resting: 1, emphasised: 2 };
 
