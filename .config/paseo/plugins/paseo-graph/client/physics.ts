@@ -81,6 +81,10 @@ export const WAKE_ALPHA_GRAB = 0.5;
 
 export const WAKE_ALPHA_RELEASE = 0.4;
 
+/** Physics after a focus layout: enough to ease overlaps, far too little to
+ * undo the rings the layout just drew. */
+export const FOCUS_RELAX_ALPHA = 0.1;
+
 /** The frame counter only ever has to change to force a repaint; wrapping keeps
  * it away from the integer range where increments stop being exact. */
 export const FRAME_COUNTER_MODULO = 1000000;

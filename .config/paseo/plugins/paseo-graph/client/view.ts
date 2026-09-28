@@ -112,11 +112,13 @@ export const ZOOM_BUTTON_STEP = 1.25;
  * fast flick still crosses the range without ever overshooting past zero. */
 export const WHEEL_ZOOM_SENSITIVITY = 0.0015;
 
-/** Under this scale labels would overlap into noise, so they are dropped
- * outright rather than drawn unreadably. */
-export const LABEL_VISIBILITY_SCALE = 0.05;
+/** Under this scale labels are dropped outright. Overlap is `pickLabels`'
+ * job now, so this only has to sit below the zoom floor: fully zoomed out, the
+ * project names are still the map. */
+export const LABEL_VISIBILITY_SCALE = 0.01;
 
-const MIN_SCALE = 0.1;
+/** Low enough to take in a ring of subagents thousands of units out. */
+const MIN_SCALE = 0.03;
 
 const MAX_SCALE = 16;
 
@@ -163,6 +165,9 @@ export function fitView(bounds: Bounds, viewport: Viewport): { scale: number; pa
     },
   };
 }
+
+/** DOM `MouseEvent.button` for the wheel button, which toggles focus. */
+export const MIDDLE_BUTTON = 1;
 
 /** A hovered node can vanish on a refetch without ever emitting a leave event. */
 export function isHoverStale(hovered: string | null, nodes: GraphNode[]): boolean {
@@ -222,4 +227,93 @@ export function nodeColor(node: GraphNode, theme: PluginSurfaceProps["theme"]): 
     default:
       return theme.colors.foregroundMuted;
   }
+}
+
+/** Rough glyph advance as a share of font size - enough to size a label's box
+ * without measuring text on every frame. */
+const LABEL_CHAR_WIDTH = 0.6;
+const LABEL_LINE_HEIGHT = 13;
+/** Breathing room between two kept labels. */
+const LABEL_PADDING = 4;
+
+const LABEL_KIND_RANK: Record<NodeKind, number> = { project: 0, workspace: 1, agent: 2, subagent: 3 };
+
+export interface LabelCandidate {
+  id: string;
+  kind: NodeKind;
+  text: string;
+  /** Screen position of the label box's top centre. */
+  x: number;
+  y: number;
+  fontSize: number;
+  /** Hovered, or in the hovered neighbourhood: placed before everything else. */
+  pinned: boolean;
+}
+
+/**
+ * Which labels to draw: greedy by rank, a label is kept only if its box clears
+ * every label already kept. A crowded fan of subagents then shows a few names
+ * instead of an unreadable smear, and zooming in reveals the rest. Boxes off
+ * screen are dropped first. A coarse grid keeps the overlap test near-linear.
+ */
+export function pickLabels(
+  candidates: readonly LabelCandidate[],
+  width: number,
+  height: number,
+): Set<string> {
+  const ranked = candidates
+    .map((candidate, order) => ({ candidate, order }))
+    .sort(
+      (a, b) =>
+        Number(b.candidate.pinned) - Number(a.candidate.pinned) ||
+        LABEL_KIND_RANK[a.candidate.kind] - LABEL_KIND_RANK[b.candidate.kind] ||
+        a.order - b.order,
+    );
+  const cell = LABEL_WIDTH;
+  const grid = new Map<string, Array<{ left: number; top: number; right: number; bottom: number }>>();
+  const kept = new Set<string>();
+  for (const { candidate } of ranked) {
+    const textWidth = candidate.text.length * candidate.fontSize * LABEL_CHAR_WIDTH;
+    const boxWidth = Math.min(LABEL_WIDTH, textWidth) + LABEL_PADDING * 2;
+    const lines = textWidth > LABEL_WIDTH ? 2 : 1;
+    const box = {
+      left: candidate.x - boxWidth / 2,
+      right: candidate.x + boxWidth / 2,
+      top: candidate.y - LABEL_PADDING,
+      bottom: candidate.y + lines * LABEL_LINE_HEIGHT + LABEL_PADDING,
+    };
+    if (box.right < 0 || box.left > width || box.bottom < 0 || box.top > height) continue;
+    const x0 = Math.floor(box.left / cell);
+    const x1 = Math.floor(box.right / cell);
+    const y0 = Math.floor(box.top / cell);
+    const y1 = Math.floor(box.bottom / cell);
+    let clear = true;
+    for (let gx = x0; gx <= x1 && clear; gx += 1) {
+      for (let gy = y0; gy <= y1 && clear; gy += 1) {
+        for (const other of grid.get(`${gx}:${gy}`) ?? []) {
+          if (
+            box.left < other.right &&
+            other.left < box.right &&
+            box.top < other.bottom &&
+            other.top < box.bottom
+          ) {
+            clear = false;
+            break;
+          }
+        }
+      }
+    }
+    // A pinned label is drawn even over another: it is what the pointer is on.
+    if (!clear && !candidate.pinned) continue;
+    kept.add(candidate.id);
+    for (let gx = x0; gx <= x1; gx += 1) {
+      for (let gy = y0; gy <= y1; gy += 1) {
+        const key = `${gx}:${gy}`;
+        const list = grid.get(key);
+        if (list) list.push(box);
+        else grid.set(key, [box]);
+      }
+    }
+  }
+  return kept;
 }

@@ -10,6 +10,7 @@ import {
 import { type PluginSurfaceProps, usePaseo } from "@getpaseo/plugin/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BACKSTOP_POLL_MS, fetchAllAgents, fetchAllWorkspaces } from "./data";
+import { type FocusScope, focusLayout, focusScope, inScope } from "./focus";
 import { radialLayout } from "./layout";
 import { Legend } from "./legend";
 import { canvas, makeStyles } from "./styles";
@@ -25,11 +26,13 @@ import {
   subagentStatus,
 } from "./model";
 import { useNativeSubagents } from "./subagents";
+import { useSpinnerFrame } from "./spinner";
 import { NodeView } from "./node-view";
 import {
   ALPHA_DECAY,
   ALPHA_FLOOR,
   type Body,
+  FOCUS_RELAX_ALPHA,
   FRAME_COUNTER_MODULO,
   PINNED_ALPHA,
   WAKE_ALPHA_GRAB,
@@ -60,7 +63,9 @@ import {
   LABEL_SHADOW_RADIUS,
   LABEL_VISIBILITY_SCALE,
   LABEL_WIDTH,
+  pickLabels,
   LAYER,
+  MIDDLE_BUTTON,
   NODE_OPACITY,
   NO_TEXT_SELECTION,
   OVERLAY_TOP,
@@ -90,6 +95,13 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   const [hovered, setHovered] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [showSubagents, setShowSubagents] = useState(false);
+  // Also ask about closed agents. The daemon keeps subagents in memory only,
+  // so after a restart nearly every agent is closed and has none to report
+  // until it is resumed - which this opts into, at the cost of every such
+  // agent staying loaded as idle (and OpenCode ones acquiring a server).
+  const [deepSubagents, setDeepSubagents] = useState(false);
+  // The node a middle click pulled out of the graph, if any.
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [treeLayout, setTreeLayout] = useState(true);
   const treeLayoutRef = useRef(treeLayout);
   treeLayoutRef.current = treeLayout;
@@ -207,17 +219,23 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     [agentsQuery.data, liveStatus],
   );
 
-  // Only agents the daemon already holds: asking about a closed one would make
-  // it resume that agent just to answer, and an archived one is refused.
+  // By default only agents the daemon already holds: asking about a closed one
+  // makes it resume that agent just to answer. `deep` accepts that. An archived
+  // one is refused either way.
   const subagentParents = useMemo(
-    () => agents.filter((agent) => !agent.archived && agent.status !== "closed").map((agent) => agent.id),
-    [agents],
+    () =>
+      agents
+        .filter((agent) => !agent.archived && (deepSubagents || agent.status !== "closed"))
+        .map((agent) => agent.id),
+    [agents, deepSubagents],
   );
   const { subagents: nativeSubagents, scan: subagentScan } = useNativeSubagents(
     paseo,
     showSubagents,
     subagentParents,
   );
+  // A deep scan wakes agents one by one and can take a while; the button says so.
+  const deepFrame = useSpinnerFrame(deepSubagents && subagentScan !== null);
 
   const subagents = useMemo<SubagentInfo[]>(
     () =>
@@ -243,10 +261,31 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     askedWorkspacesRef.current.clear();
   }, [workspaces]);
 
-  const { nodes, edges } = useMemo(
+  const fullGraph = useMemo(
     () => buildGraph(workspaces, agents, projects, subagents),
     [workspaces, agents, projects, subagents],
   );
+
+  // Scoped against the full graph: the lineage has to be found before anything
+  // is hidden, not in what is left afterwards.
+  const scope = useMemo<FocusScope | null>(() => {
+    if (!focusId || !fullGraph.nodes.some((node) => node.id === focusId)) return null;
+    return focusScope(focusId, fullGraph.edges);
+  }, [focusId, fullGraph]);
+
+  const { nodes, edges } = useMemo(() => {
+    if (!scope) return fullGraph;
+    return {
+      nodes: fullGraph.nodes.filter((node) => inScope(scope, node.id)),
+      edges: fullGraph.edges.filter((edge) => inScope(scope, edge.from) && inScope(scope, edge.to)),
+    };
+  }, [fullGraph, scope]);
+
+  // A focused node that leaves the catalogue takes the focus with it.
+  useEffect(() => {
+    // oxlint-disable-next-line set-state-in-effect -- stale-id cleanup, not derived state
+    if (focusId && !scope) setFocusId(null);
+  }, [focusId, scope]);
 
   // Only the families actually on the canvas are named in the legend - the
   // full provider table would list marks nothing on screen wears.
@@ -366,6 +405,28 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   // bodies, and an effect runs too late for that. Syncing against the last node
   // list seen during render is the one place that is both early enough and
   // re-entrant, because the sync itself is idempotent.
+  //
+  // Focus borrows the bodies: the layout below moves the nodes it keeps, and
+  // the sync drops the ones it hides. Leaving focus puts every position back as
+  // it was, so a hand-arranged graph survives a look inside it. Same render-time
+  // placement as the sync, for the same reason: it must precede it.
+  const savedBodiesRef = useRef<Map<string, Body> | null>(null);
+  const focusSyncedFor = useRef<string | null>(null);
+  const activeFocus = scope?.focusId ?? null;
+  if (focusSyncedFor.current !== activeFocus) {
+    if (focusSyncedFor.current === null) {
+      // Entering, not switching: a jump from one focus to another keeps the
+      // snapshot of the unfocused graph.
+      savedBodiesRef.current = new Map(
+        [...bodiesRef.current].map(([id, body]) => [id, { ...body }]),
+      );
+    } else if (activeFocus === null && savedBodiesRef.current) {
+      bodiesRef.current = savedBodiesRef.current;
+      savedBodiesRef.current = null;
+    }
+    focusSyncedFor.current = activeFocus;
+  }
+
   const bodiesSyncedFor = useRef<GraphNode[] | null>(null);
   if (bodiesSyncedFor.current !== nodes) {
     bodiesSyncedFor.current = nodes;
@@ -411,13 +472,22 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
 
   // Positions are recomputed once per topology change, then left alone. A drag
   // still edits a body directly, so manual nudges survive until the next change.
+  //
+  // Focus always lays out deterministically, even under physics: the point is a
+  // readable subtree at once. Physics then only relaxes it from there.
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
   useEffect(() => {
-    if (!treeLayout) return;
+    const focused = scopeRef.current;
+    if (!treeLayout && !focused) return;
     // The ref, not the render-scope values: this effect must lay out the graph
     // the topology key was computed from, not whatever arrived since.
     const { nodes: laidOutNodes, edges: laidOutEdges } = graphRef.current;
     const bodies = bodiesRef.current;
-    for (const [id, position] of radialLayout(laidOutNodes, laidOutEdges)) {
+    const positions = focused
+      ? focusLayout(focused, laidOutNodes, laidOutEdges)
+      : radialLayout(laidOutNodes, laidOutEdges);
+    for (const [id, position] of positions) {
       const body = bodies.get(id);
       if (body) {
         body.x = position.x;
@@ -428,12 +498,15 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         bodies.set(id, { ...position, vx: 0, vy: 0 });
       }
     }
-    alphaRef.current = 0;
+    // Under physics the topology change has already woken the simulation at
+    // full strength, which would scatter the fresh layout; a gentle alpha lets
+    // it settle instead.
+    alphaRef.current = treeLayout ? 0 : FOCUS_RELAX_ALPHA;
     // oxlint-disable-next-line set-state-in-effect -- forces the repaint that the ref mutation above cannot
     setFrame((frame) => (frame + 1) % FRAME_COUNTER_MODULO);
     // `topology` is a trigger here too - see above.
     // oxlint-disable-next-line exhaustive-effect-dependencies -- deliberate trigger
-  }, [treeLayout, topology]);
+  }, [treeLayout, topology, activeFocus]);
 
   // Leaving tree mode has to restart the simulation by hand: the tree layout
   // parks alpha at zero, and nothing else would ever wake it again.
@@ -483,6 +556,26 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     grabOriginRef.current = null;
     wake(WAKE_ALPHA_RELEASE);
   }, [wake]);
+
+  // Middle click on the focused node leaves focus; on any other, moves it there.
+  const handleFocus = useCallback((nodeId: string) => {
+    setHovered(null);
+    setFocusId((current) => (current === nodeId ? null : nodeId));
+  }, []);
+
+  // A middle click on bare canvas - a node's own click never gets this far.
+  const canvasHostHandlers = useMemo(
+    () =>
+      ({
+        onMouseDown: (event: { button?: number; preventDefault?: () => void }) => {
+          if (event.button === MIDDLE_BUTTON) event.preventDefault?.();
+        },
+        onAuxClick: (event: { button?: number }) => {
+          if (event.button === MIDDLE_BUTTON) setFocusId(null);
+        },
+      }) as unknown as ViewProps,
+    [],
+  );
 
   const handleActivate = useCallback(
     (node: GraphNode) => {
@@ -573,10 +666,56 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     setPan(framed.pan);
   }, []);
 
+  // Entering focus frames the subtree; leaving it returns to the exact view
+  // the graph had before, not a fresh fit of the whole thing. Runs after the
+  // layout effect above, so the bodies it frames are already in place.
+  const savedViewRef = useRef<{ scale: number; pan: { x: number; y: number } } | null>(null);
+  useEffect(() => {
+    if (activeFocus) {
+      savedViewRef.current ??= { scale: scaleRef.current, pan: panRef.current };
+      fitToContent();
+      return;
+    }
+    const saved = savedViewRef.current;
+    if (!saved) return;
+    savedViewRef.current = null;
+    // oxlint-disable-next-line set-state-in-effect -- restoring the view focus borrowed
+    setScale(saved.scale);
+    setPan(saved.pan);
+  }, [activeFocus, fitToContent]);
+
+  const focusLabel = useMemo(
+    () => (activeFocus ? (nodes.find((node) => node.id === activeFocus)?.label ?? "") : null),
+    [activeFocus, nodes],
+  );
+
   const centerX = size.width / 2 + pan.x;
   const centerY = size.height / 2 + pan.y;
   const bodies = bodiesRef.current;
   const showLabels = scale >= LABEL_VISIBILITY_SCALE;
+  // Recomputed every render on purpose: it depends on where the bodies are
+  // right now, and under physics they move every frame.
+  const visibleLabels = showLabels
+    ? pickLabels(
+        nodes.flatMap((node) => {
+          const body = bodies.get(node.id);
+          if (!body) return [];
+          return [
+            {
+              id: node.id,
+              kind: node.kind,
+              text: node.label,
+              x: centerX + body.x * scale,
+              y: centerY + body.y * scale + nodeRadius(node.kind, scale) + LABEL_GAP,
+              fontSize: node.kind === "project" ? LABEL_FONT_SIZE.project : LABEL_FONT_SIZE.other,
+              pinned: activeHover === node.id || (neighbourhood?.has(node.id) ?? false),
+            },
+          ];
+        }),
+        size.width,
+        size.height,
+      )
+    : null;
 
   // Agents the graph could not attach to a workspace or a project.
   const looseAgents = useMemo(() => {
@@ -634,6 +773,21 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
             action: () => setShowSubagents((value) => !value),
             active: showSubagents,
           },
+          // Only while subagents are on: on its own it would change nothing.
+          ...(showSubagents
+            ? [
+                {
+                  label: "load all",
+                  suffix: deepFrame,
+                  action: () => setDeepSubagents((value) => !value),
+                  active: deepSubagents,
+                },
+              ]
+            : []),
+          // Only while focused: the way out that does not need a middle button.
+          ...(focusLabel !== null
+            ? [{ label: `× ${focusLabel}`, action: () => setFocusId(null), active: true }]
+            : []),
         ].map((control) => {
           const active = "active" in control && control.active;
           return (
@@ -644,7 +798,9 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               onPress={control.action}
               style={active ? activeButton : styles.button}
             >
-              <Text style={active ? activeButtonLabel : styles.buttonLabel}>{control.label}</Text>
+              <Text style={active ? activeButtonLabel : styles.buttonLabel}>
+                {"suffix" in control && control.suffix ? `${control.label} ${control.suffix}` : control.label}
+              </Text>
             </Pressable>
           );
         })}
@@ -655,6 +811,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
       <View
         {...canvasResponder.panHandlers}
         {...wheelHandler}
+        {...canvasHostHandlers}
         onLayout={onLayout}
         style={canvasStyle}
       >
@@ -798,6 +955,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
               onMove={handleMove}
               onRelease={handleRelease}
               onActivate={handleActivate}
+              onFocus={handleFocus}
             />
           );
         })}
@@ -805,7 +963,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
         {showLabels
           ? nodes.map((node) => {
               const body = bodies.get(node.id);
-              if (!body) return null;
+              if (!body || !visibleLabels?.has(node.id)) return null;
               const near = neighbourhood?.has(node.id) ?? false;
               const isHovered = activeHover === node.id;
               const radius = nodeRadius(node.kind, scale);

@@ -5,8 +5,51 @@ import { type GraphEdge, type GraphNode } from "./model";
  * so it can be laid out once on concentric rings with no simulation at all.
  */
 
-/** World units between consecutive rings. */
-const RING_STEP = 600;
+/** World units between consecutive rings, at the least. */
+export const RING_STEP = 600;
+
+/** Closest two neighbours on one ring may sit, in world units. A ring whose
+ * busiest stretch is tighter than this is pushed outward until it is not -
+ * but only a ring that holds agents: projects and workspaces are the map's
+ * centre and stay on their fixed rings, however lopsided the weights. */
+const MIN_NEIGHBOUR_ARC = 60;
+
+/** An agent ring this crowded alternates its nodes across rows instead of
+ * queueing them on one arc: forty subagents would otherwise need their own
+ * orbit. Rows alternate round the whole ring, not per fan, so the last leaf of
+ * one fan and the first of the next never share a row. */
+const LEAF_ROWS = 3;
+const LEAF_ROW_MIN_SIBLINGS = 6;
+/** Radial gap between those rows. */
+const LEAF_ROW_STEP = 140;
+
+/** The arc a project or workspace is owed on its fixed ring, whatever its
+ * weight: a project with one agent still needs room for its own dot. */
+const MIN_HUB_ARC = 160;
+
+/**
+ * Splits `span` between siblings in proportion to weight, except that nobody
+ * gets less than `minEach`: those below it are lifted to it, and the rest
+ * share what is left in proportion again. When even equal shares fall below
+ * the floor, equal shares are the best there is.
+ */
+function spread(weights: readonly number[], span: number, minEach: number): number[] {
+  const floor = Math.min(minEach, span / Math.max(1, weights.length));
+  const lifted = new Set<number>();
+  for (;;) {
+    const free = span - floor * lifted.size;
+    const freeWeight = weights.reduce((sum, w, i) => (lifted.has(i) ? sum : sum + w), 0) || 1;
+    let changed = false;
+    for (let i = 0; i < weights.length; i += 1) {
+      if (!lifted.has(i) && ((weights[i] as number) / freeWeight) * free < floor) {
+        lifted.add(i);
+        changed = true;
+      }
+    }
+    if (changed) continue;
+    return weights.map((w, i) => (lifted.has(i) ? floor : (w / freeWeight) * free));
+  }
+}
 
 /**
  * The graph is already a forest: a workspace belongs to its project, and an
@@ -14,7 +57,14 @@ const RING_STEP = 600;
  * workspace. Resolving that single primary parent gives a tree that can be laid
  * out once, deterministically, with no physics at all.
  */
-export function radialLayout(nodes: GraphNode[], edges: GraphEdge[]): Map<string, { x: number; y: number }> {
+export function radialLayout(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  // Off: roots sit on the first ring, spread round the origin. On: a lone root
+  // sits at the origin itself, with its children on the first ring - the shape
+  // a focused subtree wants.
+  { centerRoots = false }: { centerRoots?: boolean } = {},
+): Map<string, { x: number; y: number }> {
   const known = new Set(nodes.map((node) => node.id));
   const parent = new Map<string, string>();
 
@@ -85,31 +135,126 @@ export function radialLayout(nodes: GraphNode[], edges: GraphEdge[]): Map<string
       );
     }
   }
-  const totalWeight = roots.reduce((sum, id) => sum + (weight.get(id) ?? 1), 0) || 1;
 
-  const positions = new Map<string, { x: number; y: number }>();
-  const pending: Array<{ id: string; depth: number; start: number; span: number }> = [];
+  // Angles first: they depend only on weights. Radii come after, once every
+  // ring knows how crowded its tightest stretch is.
+  const kindOf = new Map(nodes.map((node) => [node.id, node.kind]));
+  // The angular floor a set of siblings on ring `depth` is owed. Only hubs get
+  // one: agents and subagents have elastic rings that make their own room.
+  const minAngle = (ids: readonly string[], depth: number) => {
+    const radius = RING_STEP * (depth + (centerRoots ? 0 : 1));
+    const hubs = ids.every((id) => {
+      const kind = kindOf.get(id);
+      return kind === "project" || kind === "workspace";
+    });
+    return hubs && radius > 0 ? MIN_HUB_ARC / radius : 0;
+  };
+  const placed = new Map<string, { angle: number; depth: number; row: number }>();
+  const pending: Array<{ id: string; depth: number; start: number; span: number; row: number }> =
+    [];
   let rootCursor = 0;
-  for (const id of roots) {
-    const share = ((weight.get(id) ?? 1) / totalWeight) * Math.PI * 2;
-    pending.push({ id, depth: 0, start: rootCursor, span: share });
+  const rootShares = spread(
+    roots.map((id) => weight.get(id) ?? 1),
+    Math.PI * 2,
+    minAngle(roots, 0),
+  );
+  roots.forEach((id, index) => {
+    const share = rootShares[index] as number;
+    pending.push({ id, depth: 0, start: rootCursor, span: share, row: 0 });
     rootCursor += share;
-  }
+  });
   while (pending.length > 0) {
     const frame = pending.pop();
     if (frame === undefined) break;
-    const angle = frame.start + frame.span / 2;
-    const radius = RING_STEP * (frame.depth + 1);
-    positions.set(frame.id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
+    placed.set(frame.id, {
+      angle: frame.start + frame.span / 2,
+      depth: frame.depth,
+      row: frame.row,
+    });
     const kids = children.get(frame.id) ?? [];
     if (kids.length === 0) continue;
-    const own = weight.get(frame.id) ?? 1;
+    const shares = spread(
+      kids.map((kid) => weight.get(kid) ?? 1),
+      frame.span,
+      minAngle(kids, frame.depth + 1),
+    );
     let cursor = frame.start;
-    for (const kid of kids) {
-      const share = ((weight.get(kid) ?? 1) / own) * frame.span;
-      pending.push({ id: kid, depth: frame.depth + 1, start: cursor, span: share });
+    for (const [index, kid] of kids.entries()) {
+      const share = shares[index] as number;
+      pending.push({ id: kid, depth: frame.depth + 1, start: cursor, span: share, row: 0 });
       cursor += share;
     }
+  }
+
+  const elastic = new Set<number>();
+  for (const [id, { depth }] of placed) {
+    const kind = kindOf.get(id);
+    if (kind === "agent" || kind === "subagent") elastic.add(depth);
+  }
+  const ringMembers = new Map<number, string[]>();
+  for (const [id, { depth }] of placed) {
+    const list = ringMembers.get(depth);
+    if (list) list.push(id);
+    else ringMembers.set(depth, [id]);
+  }
+  for (const [depth, ids] of ringMembers) {
+    if (!elastic.has(depth) || ids.length < LEAF_ROW_MIN_SIBLINGS) continue;
+    ids.sort((a, b) => (placed.get(a)?.angle ?? 0) - (placed.get(b)?.angle ?? 0));
+    ids.forEach((id, index) => {
+      const entry = placed.get(id);
+      if (entry) entry.row = index % LEAF_ROWS;
+    });
+  }
+
+  // Per ring, the smallest angle between neighbours on the same row. Rows of a
+  // staggered fan are radially apart, so only same-row neighbours can collide.
+  const byRing = new Map<string, number[]>();
+  for (const { angle, depth, row } of placed.values()) {
+    const key = `${depth}:${row}`;
+    const list = byRing.get(key);
+    if (list) list.push(angle);
+    else byRing.set(key, [angle]);
+  }
+  const tightest = new Map<number, number>();
+  const deepestRow = new Map<number, number>();
+  for (const { depth, row } of placed.values()) {
+    deepestRow.set(depth, Math.max(deepestRow.get(depth) ?? 0, row));
+  }
+  for (const [key, angles] of byRing) {
+    if (angles.length < 2) continue;
+    angles.sort((a, b) => a - b);
+    let gap = Math.PI * 2 - ((angles.at(-1) as number) - (angles[0] as number));
+    for (let i = 1; i < angles.length; i += 1) {
+      gap = Math.min(gap, (angles[i] as number) - (angles[i - 1] as number));
+    }
+    const depth = Number(key.split(":")[0]);
+    tightest.set(depth, Math.min(tightest.get(depth) ?? Math.PI * 2, gap));
+  }
+  const maxDepth = Math.max(0, ...[...placed.values()].map((entry) => entry.depth));
+  const ringRadius: number[] = [];
+  for (let depth = 0; depth <= maxDepth; depth += 1) {
+    const base = RING_STEP * (depth + (centerRoots ? 0 : 1));
+    // A ring never moves inward, and never closer than a step past the ring
+    // inside it - counting that ring's outermost leaf row.
+    const floor =
+      depth === 0
+        ? base
+        : Math.max(
+            base,
+            (ringRadius[depth - 1] as number) +
+              RING_STEP +
+              LEAF_ROW_STEP * (deepestRow.get(depth - 1) ?? 0),
+          );
+    const gap = elastic.has(depth) ? tightest.get(depth) : undefined;
+    // A lone centred root stays at the origin whatever the crowding.
+    const crowded = gap !== undefined && gap > 0 ? MIN_NEIGHBOUR_ARC / gap : 0;
+    ringRadius.push(depth === 0 && centerRoots ? 0 : Math.max(floor, crowded));
+  }
+
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const [id, { angle, depth, row }] of placed) {
+    const radius = (ringRadius[depth] as number) + row * LEAF_ROW_STEP;
+    positions.set(id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
   }
   return positions;
 }

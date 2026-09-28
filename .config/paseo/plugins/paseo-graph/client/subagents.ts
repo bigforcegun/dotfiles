@@ -55,9 +55,9 @@ function mergeNewer(
 }
 
 /**
- * `parentIds` must list only agents the daemon already holds in memory. Asking
- * about a closed agent makes the daemon resume it from persistence just to
- * answer, and an archived one is refused outright.
+ * Every id in `parentIds` gets asked. For a closed agent that means the daemon
+ * resumes it from persistence just to answer, so the caller decides whether
+ * closed agents belong here; archived ones are refused outright.
  */
 export function useNativeSubagents(
   paseo: PaseoApi,

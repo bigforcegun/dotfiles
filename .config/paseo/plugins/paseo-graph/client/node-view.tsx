@@ -10,7 +10,7 @@ import { type PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/react-native";
 import { type GraphNode } from "./model";
 import { canvas } from "./styles";
-import { LAYER, NODE_BORDER_WIDTH, glyphSize } from "./view";
+import { LAYER, MIDDLE_BUTTON, NODE_BORDER_WIDTH, glyphSize } from "./view";
 
 /**
  * One dot: its gesture handling, its keyboard and assistive activation, and the
@@ -25,7 +25,14 @@ const TAP_SLOP = 5;
  * the named action. Both are wired, plus Enter and Space on the web; a platform
  * only ever delivers one of them, so activation stays single.
  */
-const ACTIVATE_ACTION = [{ name: "activate" }] as const;
+const ACTIVATE_ACTION = [{ name: "activate" }, { name: "focus", label: "Focus" }] as const;
+
+/** The raw host mouse event; only the web build ever delivers one. */
+interface MouseLike {
+  button?: number;
+  preventDefault?: () => void;
+  stopPropagation?: () => void;
+}
 
 interface NodeViewProps {
   node: GraphNode;
@@ -43,6 +50,8 @@ interface NodeViewProps {
   onMove: (nodeId: string, dx: number, dy: number) => void;
   onRelease: () => void;
   onActivate: (node: GraphNode) => void;
+  /** Middle click, or the assistive "focus" action. */
+  onFocus: (nodeId: string) => void;
 }
 
 /** Just the dot. Its label is drawn by the canvas-level label layer, because a
@@ -62,13 +71,14 @@ export function NodeView({
   onMove,
   onRelease,
   onActivate,
+  onFocus,
 }: NodeViewProps) {
   // A status refetch replaces the node object on every backstop poll, and a
   // stream event can do it sooner. Rebuilding the responder then would abandon
   // an in-flight gesture together with its InteractionManager handle, and the
   // restarted one reports zero travel - a drag read as a tap.
-  const latest = useRef({ node, onGrab, onMove, onRelease, onActivate, onHover });
-  latest.current = { node, onGrab, onMove, onRelease, onActivate, onHover };
+  const latest = useRef({ node, onGrab, onMove, onRelease, onActivate, onHover, onFocus });
+  latest.current = { node, onGrab, onMove, onRelease, onActivate, onHover, onFocus };
 
   // Travel is remembered for the whole gesture: dragging out and back lands on
   // a final delta of zero, which read as a tap and opened the node.
@@ -113,6 +123,10 @@ export function NodeView({
   const hoverOut = useCallback(() => latest.current.onHover(null), []);
   const activate = useCallback(() => latest.current.onActivate(latest.current.node), []);
   const accessibilityAction = useCallback((event: AccessibilityActionEvent) => {
+    if (event.nativeEvent.actionName === "focus") {
+      latest.current.onFocus(latest.current.node.id);
+      return;
+    }
     if (event.nativeEvent.actionName !== "activate") return;
     latest.current.onActivate(latest.current.node);
   }, []);
@@ -125,12 +139,25 @@ export function NodeView({
   const glyph = glyphSize(radius);
 
   // Keyboard and assistive activation never reach the responder above, so these
-  // are the only paths that fire them - no pointer tap is doubled.
+  // are the only paths that fire them - no pointer tap is doubled. The same
+  // holds for the middle button: the web responder only starts on the primary
+  // button, so a middle click can neither drag nor open the node.
   const hostHandlers = useMemo(
     () =>
       ({
         onMouseEnter: () => latest.current.onHover(latest.current.node.id),
         onMouseLeave: () => latest.current.onHover(null),
+        // Swallowed on the way down, or the browser starts its autoscroll.
+        onMouseDown: (event: MouseLike) => {
+          if (event.button === MIDDLE_BUTTON) event.preventDefault?.();
+        },
+        onAuxClick: (event: MouseLike) => {
+          if (event.button !== MIDDLE_BUTTON) return;
+          event.preventDefault?.();
+          // The canvas behind reads a middle click as "leave focus".
+          event.stopPropagation?.();
+          latest.current.onFocus(latest.current.node.id);
+        },
         onKeyDown: (event: { key?: string; preventDefault?: () => void }) => {
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault?.();
