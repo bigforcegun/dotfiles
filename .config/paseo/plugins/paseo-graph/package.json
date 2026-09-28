@@ -8,9 +8,13 @@
     "lint:fix": "bunx --bun oxlint@1.83.0 --fix .",
     "check": "npm run typecheck && npm run lint"
   },
+  "dependencies": {
+    "@getpaseo/client": "0.9.1"
+  },
   "devDependencies": {
     "@getpaseo/plugin": "0.9.1",
     "@tanstack/react-query": "^5.90.11",
+    "@types/node": "^22.20.4",
     "@types/react": "~19.2.0",
     "react": "19.1.0",
     "react-native": "0.81.5",

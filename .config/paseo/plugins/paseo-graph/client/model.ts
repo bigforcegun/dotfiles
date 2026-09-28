@@ -3,11 +3,15 @@
  * here knows about React, pixels or the physics that will later move the nodes.
  */
 
-export type NodeKind = "project" | "workspace" | "agent";
+/** `subagent` is a provider-native child (a Claude `Task`, an OpenCode
+ * `@librarian`) living inside one agent's session, not a Paseo agent. */
+export type NodeKind = "project" | "workspace" | "agent" | "subagent";
 
 export interface GraphNode {
   id: string;
   kind: NodeKind;
+  /** The Paseo object behind the node. A subagent has none of its own, so it
+   * points at the agent it lives in - which is what opening it should show. */
   refId: string;
   label: string;
   sublabel: string;
@@ -61,6 +65,30 @@ export interface AgentInfo {
   projectRoot: string | null;
 }
 
+export interface SubagentInfo {
+  id: string;
+  parentAgentId: string;
+  /** Set only when the provider reports nesting; built-in providers so far
+   * report every subagent as a direct child of the agent. */
+  parentSubagentId: string | null;
+  label: string;
+  sublabel: string;
+  provider: string;
+  status: string;
+}
+
+/** The daemon's subagent lifecycle, in the vocabulary the palette already has. */
+export function subagentStatus(status: string): string {
+  switch (status) {
+    case "completed":
+      return "done";
+    case "canceled":
+      return "idle";
+    default:
+      return status;
+  }
+}
+
 /**
  * Paseo records agent parentage as an ordinary label rather than a snapshot
  * field, which is why `agents.list()` looks like it has no parent link.
@@ -95,6 +123,9 @@ const workspaceNodeId = (id: string) => `workspace:${id}`;
 
 const agentNodeId = (id: string) => `agent:${id}`;
 
+// Namespaced by parent: a subagent id is only promised unique within its agent.
+const subagentNodeId = (parentAgentId: string, id: string) => `subagent:${parentAgentId}:${id}`;
+
 /**
  * Paseo never records "this workspace was created by that agent", and a parent
  * sitting elsewhere does not prove it: an agent can be started in any existing
@@ -104,6 +135,7 @@ export function buildGraph(
   rawWorkspaces: WorkspaceInfo[],
   rawAgents: AgentInfo[],
   projects: ProjectInfo[],
+  rawSubagents: SubagentInfo[] = [],
 ): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const workspaces = dedupeById(rawWorkspaces);
   const agents = dedupeById(rawAgents);
@@ -205,6 +237,32 @@ export function buildGraph(
       to: agentNodeId(agent.id),
       kind: "spawn",
     });
+  }
+
+  // A subagent whose agent is not on the canvas - archived out of view, or not
+  // listed yet - has nothing to hang from, so it is left out rather than
+  // floating loose.
+  const subagents = rawSubagents.filter((subagent) => agentById.has(subagent.parentAgentId));
+  for (const subagent of subagents) {
+    const id = subagentNodeId(subagent.parentAgentId, subagent.id);
+    nodes.set(id, {
+      id,
+      kind: "subagent",
+      refId: subagent.parentAgentId,
+      label: subagent.label,
+      sublabel: subagent.sublabel,
+      status: subagent.status,
+      family: providerFamily(subagent.provider),
+    });
+  }
+  for (const subagent of subagents) {
+    const nestedParent = subagent.parentSubagentId
+      ? subagentNodeId(subagent.parentAgentId, subagent.parentSubagentId)
+      : null;
+    const from =
+      nestedParent && nodes.has(nestedParent) ? nestedParent : agentNodeId(subagent.parentAgentId);
+    const to = subagentNodeId(subagent.parentAgentId, subagent.id);
+    edges.push({ id: `s:${from}:${to}`, from, to, kind: "spawn" });
   }
 
   const dedupedEdges = new Map<string, GraphEdge>();

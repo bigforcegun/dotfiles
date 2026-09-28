@@ -23,10 +23,11 @@ export function radialLayout(nodes: GraphNode[], edges: GraphEdge[]): Map<string
     if (!known.has(edge.from) || !known.has(edge.to)) continue;
     if (!parent.has(edge.to)) parent.set(edge.to, edge.from);
   }
-  // A subagent hangs off its parent agent, not off the shared workspace.
+  // A subagent hangs off its parent agent, not off the shared workspace. A
+  // native subagent has no workspace edge at all, so this is its only parent.
   for (const edge of edges) {
     if (edge.kind !== "spawn") continue;
-    if (!edge.to.startsWith("agent:")) continue;
+    if (!edge.to.startsWith("agent:") && !edge.to.startsWith("subagent:")) continue;
     if (!known.has(edge.from) || !known.has(edge.to)) continue;
     parent.set(edge.to, edge.from);
   }

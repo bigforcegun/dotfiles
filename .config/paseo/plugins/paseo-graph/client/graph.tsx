@@ -18,10 +18,13 @@ import {
   type AgentInfo,
   type GraphNode,
   type ProjectInfo,
+  type SubagentInfo,
   type WorkspaceInfo,
   buildGraph,
   parentFromLabels,
+  subagentStatus,
 } from "./model";
+import { useNativeSubagents } from "./subagents";
 import { NodeView } from "./node-view";
 import {
   ALPHA_DECAY,
@@ -86,6 +89,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [showSubagents, setShowSubagents] = useState(false);
   const [treeLayout, setTreeLayout] = useState(true);
   const treeLayoutRef = useRef(treeLayout);
   treeLayoutRef.current = treeLayout;
@@ -203,6 +207,32 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     [agentsQuery.data, liveStatus],
   );
 
+  // Only agents the daemon already holds: asking about a closed one would make
+  // it resume that agent just to answer, and an archived one is refused.
+  const subagentParents = useMemo(
+    () => agents.filter((agent) => !agent.archived && agent.status !== "closed").map((agent) => agent.id),
+    [agents],
+  );
+  const { subagents: nativeSubagents, scan: subagentScan } = useNativeSubagents(
+    paseo,
+    showSubagents,
+    subagentParents,
+  );
+
+  const subagents = useMemo<SubagentInfo[]>(
+    () =>
+      [...nativeSubagents.values()].map((subagent) => ({
+        id: subagent.id,
+        parentAgentId: subagent.parentAgentId,
+        parentSubagentId: subagent.parentSubagentId ?? null,
+        label: subagent.description ?? subagent.title ?? subagent.id.slice(0, 7),
+        sublabel: subagent.subtitle ?? subagent.title ?? subagent.provider,
+        provider: subagent.provider,
+        status: subagentStatus(subagent.status),
+      })),
+    [nativeSubagents],
+  );
+
   useEffect(() => {
     knownAgentsRef.current = new Set(agents.map((agent) => agent.id));
     askedAgentsRef.current.clear();
@@ -214,8 +244,8 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   }, [workspaces]);
 
   const { nodes, edges } = useMemo(
-    () => buildGraph(workspaces, agents, projects),
-    [workspaces, agents, projects],
+    () => buildGraph(workspaces, agents, projects, subagents),
+    [workspaces, agents, projects, subagents],
   );
 
   // Only the families actually on the canvas are named in the legend - the
@@ -283,7 +313,9 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
   const activeNodeIds = useMemo(() => {
     const running = new Set<string>();
     for (const node of nodes) {
-      if (node.kind === "agent" && node.status === "running") running.add(node.id);
+      if ((node.kind === "agent" || node.kind === "subagent") && node.status === "running") {
+        running.add(node.id);
+      }
     }
     return running;
   }, [nodes]);
@@ -456,7 +488,10 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     (node: GraphNode) => {
       if (!navigation) return;
       if (node.kind === "workspace") navigation.openWorkspace({ workspaceId: node.refId });
-      if (node.kind === "agent") navigation.openAgent({ agentId: node.refId });
+      // A subagent's refId is the agent whose session it runs in.
+      if (node.kind === "agent" || node.kind === "subagent") {
+        navigation.openAgent({ agentId: node.refId });
+      }
     },
     [navigation],
   );
@@ -548,6 +583,11 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     const attached = new Set(edges.map((edge) => edge.to));
     return nodes.filter((node) => node.kind === "agent" && !attached.has(node.id)).length;
   }, [nodes, edges]);
+  // The snapshot runs behind the canvas, so its progress lives in the toolbar
+  // instead of the loading overlay.
+  const subagentProgress = subagentScan
+    ? ` · subagents ${subagentScan.done}/${subagentScan.total}${subagentScan.failed > 0 ? ` (${subagentScan.failed} failed)` : ""}`
+    : "";
   const loading = workspacesQuery.isPending || agentsQuery.isPending || projectsQuery.isPending;
   const error = workspacesQuery.error ?? agentsQuery.error ?? projectsQuery.error;
 
@@ -573,7 +613,7 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
     <View style={styles.surface}>
       <View style={styles.toolbar}>
         <Text style={styles.toolbarTitle}>
-          {`${nodes.length} nodes · ${edges.length} links${activeNodeIds.size > 0 ? ` · ${activeNodeIds.size} active` : ""}${looseAgents > 0 ? ` · ${looseAgents} loose` : ""}`}
+          {`${nodes.length} nodes · ${edges.length} links${activeNodeIds.size > 0 ? ` · ${activeNodeIds.size} active` : ""}${looseAgents > 0 ? ` · ${looseAgents} loose` : ""}${subagentProgress}`}
         </Text>
         {[
           { label: "−", action: () => setScale((value) => applyZoom(value, 1 / ZOOM_BUTTON_STEP)) },
@@ -588,6 +628,11 @@ export function GraphSurface({ theme, layout, navigation }: PluginSurfaceProps) 
             label: "archive",
             action: () => setShowArchived((value) => !value),
             active: showArchived,
+          },
+          {
+            label: "subagents",
+            action: () => setShowSubagents((value) => !value),
+            active: showSubagents,
           },
         ].map((control) => {
           const active = "active" in control && control.active;

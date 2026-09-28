@@ -9,7 +9,7 @@ import { clamp } from "./physics";
  * viewport. No component here - just the numbers and the functions over them.
  */
 
-export const RADIUS: Record<NodeKind, number> = { project: 20, workspace: 13, agent: 9 };
+export const RADIUS: Record<NodeKind, number> = { project: 20, workspace: 13, agent: 9, subagent: 6 };
 
 /** Below this a dot stops being a target you can hit with a pointer. */
 const MIN_DOT_RADIUS = 3;

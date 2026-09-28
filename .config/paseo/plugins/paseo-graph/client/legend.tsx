@@ -19,7 +19,7 @@ interface LegendProps {
   families: readonly string[];
 }
 
-const KINDS: NodeKind[] = ["project", "workspace", "agent"];
+const KINDS: NodeKind[] = ["project", "workspace", "agent", "subagent"];
 
 /** Big enough to read in a text row, unlike the mark on a zoomed-out dot. */
 const LEGEND_GLYPH_SIZE = 11;
