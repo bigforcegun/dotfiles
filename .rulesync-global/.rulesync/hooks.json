@@ -3,13 +3,6 @@
   "hooks": {},
   "claudecode": {
     "hooks": {
-      "preToolUse": [
-        {
-          "type": "command",
-          "command": "rtk hook claude",
-          "matcher": "Bash"
-        }
-      ],
       "beforeSubmitPrompt": [
         {
           "type": "command",
@@ -43,16 +36,6 @@
           "type": "command",
           "command": "if [ -n \"$PASEO_TERMINAL_ID\" ]; then \"${PASEO_HOOK_CLI:-paseo}\" hooks claude Notification; fi",
           "timeout": 10
-        }
-      ]
-    }
-  },
-  "cursor": {
-    "hooks": {
-      "preToolUse": [
-        {
-          "command": "rtk hook cursor",
-          "matcher": "Shell"
         }
       ]
     }
