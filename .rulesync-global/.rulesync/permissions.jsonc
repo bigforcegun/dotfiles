@@ -47,12 +47,39 @@
   },
   "codexcli": {
     "permission": {
+      // Codex execpolicy matches argv prefixes literally (no globs), so the
+      // shared "*brew install*" patterns never fire there. Replaces shared bash.
+      "bash": {
+        "brew install": "deny",
+        "brew reinstall": "deny",
+        "brew uninstall": "deny",
+        "brew remove": "deny",
+        "brew cask install": "deny",
+        "brew cask uninstall": "deny",
+        "port install": "deny",
+        "port uninstall": "deny",
+        "sudo port install": "deny",
+        "sudo port uninstall": "deny",
+        "mas install": "deny",
+        "mas uninstall": "deny",
+        "installer": "deny",
+        "sudo installer": "deny",
+        "softwareupdate --install": "deny",
+        "softwareupdate -i": "deny",
+        "sudo softwareupdate --install": "deny",
+        "sudo softwareupdate -i": "deny",
+        "pkgutil --forget": "deny",
+        "sudo pkgutil --forget": "deny",
+        "rulesync generate": "deny",
+        "npx rulesync generate": "deny"
+      },
       "edit": {
         "./**": "allow",
-        "**/opencode.json": "deny",
-        "**/opencode.json.bak": "deny",
-        "**/.gitconfig": "deny",
-        "**/.gitmessage": "deny",
+        "opencode.json": "deny",
+        "opencode.json.bak": "deny",
+        ".gitconfig": "deny",
+        ".gitmessage": "deny",
+        ".config/opencode/**": "deny",
         ".githooks/**": "deny",
         ".opencode/**": "deny",
         "~/.config/opencode/**": "deny"

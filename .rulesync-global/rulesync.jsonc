@@ -7,7 +7,6 @@
   ],
   "features": [
     "rules",
-    "ignore",
     "mcp",
     "commands",
     "subagents",
