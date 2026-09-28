@@ -233,7 +233,7 @@
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_WATCHER_URI}"
       },
-      "enabled": false,
+      "enabled": true,
       "quarantined": false,
       "disabled_tools": [
         "export"
