@@ -173,7 +173,8 @@ completed → done, canceled → idle. Работающий сабагент п�
   `PASEO_GRAPH_DAEMON_URL`. Удалённый демон или демон с паролем не
   поддерживаются.
 - Упавшие пачки не повторяются, пока тоггл не выключить и включить.
-- Нужен демон Paseo >= 0.9 (события `agent.provider_subagents.*`).
+- Нужен демон Paseo >= 0.9 (события `agent.provider_subagents.*`) — поэтому
+  это минимальная версия всего плагина в `paseo-plugin.json`.
 
 ## Разработка
 
@@ -186,7 +187,7 @@ paseo plugin reload paseo-graph
 paseo plugin logs paseo-graph
 ```
 
-Требует Paseo >= 0.8.0, для сабагентов — >= 0.9. Код клиента живёт в
+Требует Paseo >= 0.9.0. Код клиента живёт в
 `client/`, сервера — в `server/`, общие RPC-контракты — в `shared/`; в корне
 только `index.client.tsx` и `index.server.ts`.
 
