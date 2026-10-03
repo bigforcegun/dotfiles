@@ -21,7 +21,7 @@ PASEO_AGENTS = os.path.join(PASEO_HOME, "agents")
 CLAUDE_CFG = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
 CLAUDE_PROJ = os.path.join(CLAUDE_CFG, "projects")
 _BAK = None
-TESTED = ("0.7", "0.8")
+TESTED = ("0.7", "0.8", "0.9")
 HOST = None
 PROJECT_DIR_LENGTH_CAP = 200
 
@@ -40,10 +40,11 @@ def die(msg, code=1):
     sys.exit(code)
 
 
-_CLIENT_JS = None
+_RUNTIME = None
+ASAR_CLIENT = "app.asar/node_modules/@getpaseo/cli/dist/utils/client.js"
 
 
-def _client_under(start):
+def _npm_client(start):
     """Walk up from a `paseo` executable to its @getpaseo/cli root."""
     d = os.path.dirname(os.path.realpath(start))
     for _ in range(4):
@@ -60,67 +61,86 @@ def _client_under(start):
     return None
 
 
+def _desktop_exe(resources):
+    """The Electron binary the Desktop launcher (Resources/bin/paseo) itself execs.
+    macOS must go through the Helper: the main APPL executable drags in app UI
+    lifecycle. Mirrors the launcher's own lookup order."""
+    helper = os.path.join(resources, "..", "Frameworks", "Paseo Helper.app",
+                          "Contents", "MacOS", "Paseo Helper")
+    for exe in (helper, os.path.join(resources, "..", "Paseo.bin"),
+                os.path.join(resources, "..", "Paseo")):
+        if os.access(exe, os.X_OK):
+            return os.path.normpath(exe)
+    return None
+
+
+def _desktop_runtime(start):
+    """A Desktop install has no node and no npm package: its CLI runs inside the
+    app's Electron with ELECTRON_RUN_AS_NODE=1, which reads app.asar transparently.
+    Same trick, same binary, so the client is imported in place — no extraction."""
+    resources = os.path.dirname(os.path.dirname(os.path.realpath(start)))
+    if not os.path.isfile(os.path.join(resources, "app.asar")):
+        return None
+    exe = _desktop_exe(resources)
+    if not exe:
+        return None
+    return ([exe], {"ELECTRON_RUN_AS_NODE": "1", "PASEO_NODE_ENV": "production"},
+            os.path.join(resources, ASAR_CLIENT))
+
+
 def path_bins():
-    """Every `paseo` on PATH, in PATH order."""
+    """Every `paseo` on PATH, in PATH order, then the default Desktop location."""
     out = []
     for p in os.environ.get("PATH", "").split(os.pathsep):
         f = os.path.join(p, "paseo")
         if p and os.path.isfile(f) and f not in out:
             out.append(f)
+    app = "/Applications/Paseo.app/Contents/Resources/bin/paseo"
+    if os.path.isfile(app) and app not in out:
+        out.append(app)
     return out
 
 
-def extra_bins(seen):
-    """Fallback roots, consulted only when nothing on PATH ships a client. The
-    Desktop build keeps its CLI inside app.asar, where nothing is importable, so a
-    PATH that puts /Applications/Paseo.app first must not hide a real npm install.
-    `npm root -g` costs ~300ms and npm may be absent, so it runs only here."""
-    roots = []
-    if shutil.which("npm"):
-        r = subprocess.run(["npm", "root", "-g"], capture_output=True, text=True)
-        if r.returncode == 0 and r.stdout.strip():
-            roots.append(r.stdout.strip())
-    roots += ["/opt/homebrew/lib/node_modules", "/usr/local/lib/node_modules",
-              os.path.expanduser("~/.npm-global/lib/node_modules")]
-    out = []
-    for root in roots:
-        f = os.path.join(root, "@getpaseo", "cli", "bin", "paseo")
-        if os.path.isfile(f) and f not in seen and f not in out:
-            out.append(f)
-    return out
-
-
-def client_js():
-    """Locate the shipped daemon client. Install layout varies (brew/npm/nvm/bun/
-    Desktop), so never hardcode it."""
-    global _CLIENT_JS
-    if _CLIENT_JS:
-        return _CLIENT_JS
+def js_runtime():
+    """(argv, env, client.js) to run the shipped daemon client with. Desktop build
+    first-class: its own Electron is the JS runtime and app.asar holds the client.
+    An npm @getpaseo/cli on PATH works too, with system node. PASEO_CLIENT_JS
+    overrides the client (the eval stand injects failure shims through it) and
+    keeps whatever runtime was found, so a shim importing an asar path still loads."""
+    global _RUNTIME
+    if _RUNTIME:
+        return _RUNTIME
+    tried, found = [], None
+    for b in path_bins():
+        tried.append(b)
+        found = _desktop_runtime(b)
+        if not found:
+            cand = _npm_client(b)
+            if cand and shutil.which("node"):
+                found = (["node"], {}, cand)
+        if found:
+            break
     override = os.environ.get("PASEO_CLIENT_JS")
     if override:
         if not os.path.exists(override):
             die(f"PASEO_CLIENT_JS={override} does not exist")
-        _CLIENT_JS = override
-        return override
-    bins = path_bins()
-    if not bins:
-        die("paseo not on PATH")
-    tried = []
-    for group in (bins, None):
-        for b in (group if group is not None else extra_bins(tried)):
-            tried.append(b)
-            cand = _client_under(b)
-            if cand:
-                if b != bins[0]:
-                    print(f"warn: {bins[0]} ships no importable client (Desktop "
-                          f"build?); using {b}", file=sys.stderr)
-                _CLIENT_JS = cand
-                return cand
-    die("could not locate the @getpaseo/cli package. Tried:\n  "
-        + "\n  ".join(tried) +
-        "\n  The Paseo Desktop build keeps its CLI inside app.asar, which cannot be\n"
-        "  imported. Install the npm CLI (`npm i -g @getpaseo/cli`) or point\n"
-        "  PASEO_CLIENT_JS at a dist/utils/client.js.")
+        found = (found[0], found[1], override) if found else (["node"], {}, override)
+    if not found:
+        die("no runtime for the Paseo daemon client. Tried:\n  " + "\n  ".join(tried) +
+            "\n  Expected a Paseo Desktop install (Resources/bin/paseo next to app.asar)\n"
+            "  or an npm @getpaseo/cli with node on PATH.")
+    _RUNTIME = found
+    return found
+
+
+def run_js(src, env=None):
+    argv, rt_env, _ = js_runtime()
+    return subprocess.run([*argv, "--input-type=module", "-e", src], capture_output=True,
+                          text=True, env={**os.environ, **rt_env, **(env or {})})
+
+
+def client_js():
+    return js_runtime()[2]
 
 
 def paseo(*argv):
@@ -163,11 +183,9 @@ def rp(p):
     p = os.path.expanduser(p)
     if p in _RP_CACHE:
         return _RP_CACHE[p]
-    r = subprocess.run(
-        ["node", "--input-type=module", "-e",
-         "import{realpathSync} from 'node:fs';"
-         "process.stdout.write(realpathSync.native(process.env.PASEO_MOVE_RP))"],
-        capture_output=True, text=True, env={**os.environ, "PASEO_MOVE_RP": p})
+    r = run_js("import{realpathSync} from 'node:fs';"
+               "process.stdout.write(realpathSync.native(process.env.PASEO_MOVE_RP))",
+               {"PASEO_MOVE_RP": p})
     _RP_CACHE[p] = r.stdout if r.returncode == 0 and r.stdout else p
     return _RP_CACHE[p]
 
@@ -211,18 +229,26 @@ def project_dir(cwd):
     return f"{CLAUDE_PROJ}/{claude_slug(cwd)}"
 
 
+def connect_opts():
+    """0.9 takes a DaemonTarget; 0.7/0.8 took a flat {host}. Send both shapes — each
+    version ignores the other's key. Without `target`, 0.9 dies in its own error
+    builder with "Cannot read properties of undefined (reading 'kind')"."""
+    if HOST:
+        return {"host": HOST, "target": {"kind": "endpoint", "host": HOST}}
+    return {"target": {"kind": "instance", "home": PASEO_HOME}}
+
+
 def node(call):
     """Only channel for mutations: the shipped daemon client. Never touch state files."""
-    opts = json.dumps({"host": HOST} if HOST else {})
     src = (
-        f"import('{client_js()}').then(async (m) => {{\n"
-        f"  const client = await m.connectToDaemon({opts});\n"
+        "import { pathToFileURL } from 'node:url';\n"
+        "import(pathToFileURL(process.env.PASEO_MOVE_CLIENT).href).then(async (m) => {\n"
+        f"  const client = await m.connectToDaemon({json.dumps(connect_opts())});\n"
         f"  try {{ const r = await ({call}); console.log(JSON.stringify(r ?? {{}})); }}\n"
         "  finally { await client.close(); }\n"
         "}).catch(e => { console.error('ERR:' + e.message); process.exit(1); });"
     )
-    r = subprocess.run(["node", "--input-type=module", "-e", src],
-                       capture_output=True, text=True)
+    r = run_js(src, {"PASEO_MOVE_CLIENT": client_js()})
     if r.returncode:
         raise RuntimeError(r.stderr.strip())
     try:
@@ -357,6 +383,10 @@ def main():
             "Stop it first, or pass --force.")
 
     client = client_js()          # preflight: fail here, not half-way through
+    try:                          # a dry-run that never connects proves nothing
+        node("Promise.resolve({})")
+    except RuntimeError as e:
+        die(f"cannot drive the daemon through {client}: {e}")
     ver = paseo_version()
     if not ver.startswith(TESTED):
         print(f"warn: daemon {ver} is outside the tested range {TESTED}; "

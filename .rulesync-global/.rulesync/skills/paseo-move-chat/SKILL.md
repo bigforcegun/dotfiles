@@ -28,6 +28,12 @@ python3 scripts/move_chat.py <agent-id-prefix> <workspace-id|name>          # dr
 python3 scripts/move_chat.py <agent-id-prefix> <workspace-id|name> --apply  # mutates
 ```
 
+Runs on the Paseo Desktop install alone: the script drives the daemon through the client
+shipped inside `Paseo.app`'s `app.asar`, executed by the app's own Electron. It needs no
+system `node` and no npm `@getpaseo/cli`. **Never install the npm CLI and never unpack
+`app.asar`** to make it work — if the script cannot find a runtime, stop and show the user
+its error.
+
 Also accepts `--force` (see below) and `--host <daemon-host>` for a non-default daemon.
 `--host` only redirects the *mutations*; the agent record, the workspace list and the
 transcript are still read locally, so the script refuses `--host` unless `PASEO_HOME` also

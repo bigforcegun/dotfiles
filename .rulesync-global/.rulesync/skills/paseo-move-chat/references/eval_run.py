@@ -54,16 +54,14 @@ def sh(*cmd, env=None, **kw):
                           env={**os.environ, **ENV, **(env or {})}, **kw)
 
 
-def node(call, client=None, host=HOST):
-    src = (f"import('{client or CLIENT}').then(async (m) => {{\n"
-           f"  const client = await m.connectToDaemon({json.dumps({'host': host})});\n"
-           f"  try {{ const r = await ({call}); console.log(JSON.stringify(r ?? {{}})); }}\n"
-           "  finally { await client.close(); }\n"
-           "}).catch(e => { console.error('ERR:' + e.message); process.exit(1); });")
-    r = sh("node", "--input-type=module", "-e", src)
-    if r.returncode:
-        raise RuntimeError(r.stderr.strip())
-    return json.loads(r.stdout.strip() or "{}")
+def node(call):
+    # the script's own runner and connect shape, pointed at the sandbox daemon
+    _ns["HOST"] = HOST
+    return _ns["node"](call)
+
+
+def js(src, env=None):
+    return _ns["run_js"](src, {**ENV, **(env or {})})
 
 
 def find_client():
@@ -239,11 +237,20 @@ def setup():
     assert 205 < len(os.path.realpath(deep)) < 245, len(os.path.realpath(deep))
     sh(*g, "worktree", "add", "-q", deep, "-b", "deepbranch")
     print(f"daemon on {HOST} ...")
+    # 0.9 ignores PASEO_LISTEN/PASEO_RELAY_ENABLED and reads config.json only; left
+    # alone, the sandbox daemon goes for the production port 6767. Seed it first.
+    json.dump({"version": 1, "daemon": {"listen": HOST, "relay": {"enabled": False}}},
+              open(f"{T}/paseo/config.json", "w"))
     sh("paseo", "daemon", "start", "--home", f"{T}/paseo")
     for _ in range(40):
         time.sleep(0.25)
-        if sh("paseo", "daemon", "status", "--home", f"{T}/paseo").returncode == 0:
+        r = sh("paseo", "daemon", "status", "--json", "--home", f"{T}/paseo")
+        if r.returncode == 0:
             break
+    listen = json.loads(r.stdout or "{}").get("listen")
+    if listen != HOST:
+        raise SystemExit(f"sandbox daemon listens on {listen!r}, not {HOST} — refusing "
+                         "to run cases against what may be the production daemon")
     ws = {}
     for name, path in (("WS-A", f"{T}/repo"), ("WS-B", f"{T}/repo"),
                        ("WS-C", f"{T}/wt"), ("DUP", f"{T}/repo"), ("DUP", f"{T}/repo"),
@@ -524,8 +531,7 @@ export async function connectToDaemon(o) {{
 
         def daemon_canon(path):
             # verbatim canonicalizeSync: native realpath, and on failure the RAW input
-            r = sh("node", "--input-type=module", "-e",
-                   "import{realpathSync} from 'node:fs';"
+            r = js("import{realpathSync} from 'node:fs';"
                    "let p=process.env.P;try{p=realpathSync.native(p)}catch{};"
                    "process.stdout.write(process.platform==='darwin'?p.normalize('NFC'):p)",
                    env={"P": path})

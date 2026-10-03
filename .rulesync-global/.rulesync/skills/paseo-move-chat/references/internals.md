@@ -81,14 +81,18 @@ the state file's basename (checked across every local agent).
 
 ## Locating the daemon client
 
-`client_js()` walks up from a `paseo` executable to the `@getpaseo/cli` package root and takes
-`dist/utils/client.js`. There is usually more than one `paseo` on a machine: the npm/brew CLI,
-and `/Applications/Paseo.app/Contents/Resources/bin/paseo` (commonly symlinked into
-`~/.local/bin`). **The Desktop build keeps its code inside `app.asar`, so it ships no importable
-client** — whichever comes first on `PATH` wins, and when that is the Desktop one the locator
-has to keep looking. It therefore tries every `paseo` on `PATH`, then `npm root -g` and the
-usual Homebrew prefixes, and only then fails, printing what it tried. `PASEO_CLIENT_JS`
-overrides all of it.
+`js_runtime()` returns `(argv, env, client.js)`. The Desktop launcher
+`Paseo.app/Contents/Resources/bin/paseo` (commonly symlinked into `~/.local/bin`) is a shell
+script that execs the app's own Electron — `Frameworks/Paseo Helper.app/.../Paseo Helper` on
+macOS, `Paseo.bin`/`Paseo` elsewhere — with `ELECTRON_RUN_AS_NODE=1`. In that mode Electron is
+plain node **plus transparent `app.asar` reads**, so the client is imported in place from
+`Resources/app.asar/node_modules/@getpaseo/cli/dist/utils/client.js`. No system node, no npm
+package, no extraction; startup is ~50 ms. `rp()` uses the same runtime.
+
+Lookup order: every `paseo` on `PATH`, then `/Applications/Paseo.app`. A Desktop launcher wins
+outright; an npm `@getpaseo/cli` is used only with `node` on `PATH`. `PASEO_CLIENT_JS` replaces
+the client but keeps the runtime found — the eval stand's failure shims import the asar path
+and must run under Electron to resolve it.
 
 ## `--host`
 
@@ -131,24 +135,49 @@ Changed:
 - Session titles: `custom-title` → `ai-title` → first prompt, instead of first match.
 - New `paseo workspace setup <id>`.
 
+## 0.8 → 0.9
+
+Verified against the 0.9.2 Desktop bundle, by code reading and a green eval stand.
+
+Unchanged: both cwd gates (`import-sessions.js:107`, `workspace-provisioning-service.js:44`),
+the label patch, `unarchiveAgentState`/`rollbackArchivedImport`, the fresh-session import path,
+the `import_agent_request` schema (`provider`, `sessionId`, `cwd`, `workspaceId`, `labels`),
+`claudeProjectDirSync`, `paseo agent import` (still no `--workspace`).
+
+Changed — both broke this skill silently:
+- **`connectToDaemon` takes a `DaemonTarget`**: `{target: {kind: "instance", home}}` or
+  `{target: {kind: "endpoint", host}}`. Given the old flat `{host}` it throws inside its own
+  error builder: `Cannot read properties of undefined (reading 'kind')`. A dry-run never
+  connected, so it passed and `--apply` failed. `connect_opts()` now sends both shapes, and the
+  dry-run connects once as a preflight.
+- **The daemon ignores `PASEO_LISTEN` / `PASEO_RELAY_ENABLED`**; listen address and relay live in
+  `$PASEO_HOME/config.json` (`daemon.listen`, `daemon.relay.enabled`), and `daemon start` has no
+  flag for them. An unseeded sandbox home goes for the production port 6767. The eval stand
+  seeds `config.json` and refuses to run if the daemon reports any other listen address.
+
 ## Re-checking after an upgrade
 
-Unpack the new tarballs somewhere and diff these four against the installed copy — they are
-the entire contract this skill depends on:
+Pull these out of the new `app.asar` (`node_modules/@getpaseo/...`; the Desktop bundle ships no
+`.d.ts`) and diff them against the previous version — they are the entire contract this skill
+depends on:
 
 ```
 @getpaseo/server  dist/server/server/agent/import-sessions.js
 @getpaseo/server  dist/server/server/session/workspace-provisioning/workspace-provisioning-service.js
-@getpaseo/client  dist/daemon-client.d.ts          # ImportAgentInput, importAgent
+@getpaseo/client  dist/daemon-client.js            # importAgent, archiveAgent
+@getpaseo/cli     dist/utils/client.js             # connectToDaemon options shape
 @getpaseo/cli     dist/commands/agent/import.js    # did --workspace finally appear?
 ```
+
+Then run the eval stand — it is the only check that actually connects.
 
 Do not upgrade Paseo from inside a Paseo agent: it restarts the daemon and kills every live
 session, including yours.
 
 ## The eval stand
 
-`references/eval_run.py` — hermetic: its own daemon (`PASEO_HOME` + `PASEO_LISTEN`, relay off),
+`references/eval_run.py` — hermetic: its own daemon (`PASEO_HOME` with a seeded `config.json`
+for listen address and relay off),
 its own `CLAUDE_CONFIG_DIR`, a throwaway git repo and worktrees. Transcripts are synthesized, so
 it makes **zero provider calls and costs no tokens**, and it asserts the real `~/.paseo` state is
 unchanged when it finishes.
