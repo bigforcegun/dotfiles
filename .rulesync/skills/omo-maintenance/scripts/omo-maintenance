@@ -129,7 +129,7 @@ verify() {
   done
 
   if [[ ${1:-} == "--smoke" ]]; then
-    output=$(opencode run 'Reply with exactly: OMO_OK' 2>&1) || {
+    output=$(OPENCODE_DB=:memory: opencode run 'Reply with exactly: OMO_OK' 2>&1) || {
       printf '%s\n' "$output"
       problem "OMO smoke prompt failed"
       return
