@@ -10,10 +10,10 @@ description: >-
   happens to touch `.agents/`.
 targets:
   - '*'
-disable-model-invocation: true
+disable-model-invocation: false
 codexcli:
   policy:
-    allow_implicit_invocation: false
+    allow_implicit_invocation: true
 ---
 
 # Agent contexts
@@ -46,7 +46,7 @@ rulebook — and leaves anything already present alone. Safe to re-run.
 ## Everyday work
 
 | Intent | Command |
-|---|---|
+| --- | --- |
 | Load a known context | `dot-agents-ctl load <slug>` |
 | Find the right one | `dot-agents-ctl list [--status active]` |
 | Resume the latest | `dot-agents-ctl list --status active` — top row |

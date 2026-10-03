@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+"""Bridge OMO's stdio LSP to Godot, correcting its missing GDScript language ID."""
+
+import argparse
+import json
+import socket
+import sys
+import threading
+from urllib.parse import urlparse
+
+
+def forward_requests(connection, errors):
+    try:
+        while True:
+            headers = {}
+            while True:
+                line = sys.stdin.buffer.readline()
+                if not line:
+                    return
+                if line in (b"\r\n", b"\n"):
+                    break
+                name, value = line.decode("ascii").split(":", 1)
+                headers[name.lower()] = value.strip()
+            length = int(headers["content-length"])
+            if length < 0:
+                raise ValueError("negative Content-Length")
+            body = sys.stdin.buffer.read(length)
+            if len(body) != length:
+                raise ValueError("incomplete LSP message")
+            message = json.loads(body)
+            if message.get("method") == "textDocument/didOpen":
+                document = message["params"]["textDocument"]
+                if urlparse(document["uri"]).path.endswith(".gd"):
+                    document["languageId"] = "gdscript"
+                    body = json.dumps(message, ensure_ascii=False).encode("utf-8")
+            connection.sendall(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        errors.append(error)
+        print(f"godot-lsp: {error}", file=sys.stderr)
+    finally:
+        try:
+            connection.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--port", type=int, default=6005)
+    args = parser.parse_args()
+    errors = []
+    try:
+        with socket.create_connection(("127.0.0.1", args.port), timeout=5) as connection:
+            connection.settimeout(None)
+            threading.Thread(target=forward_requests, args=(connection, errors), daemon=True).start()
+            while data := connection.recv(65536):
+                sys.stdout.buffer.write(data)
+                sys.stdout.buffer.flush()
+    except (OSError, ValueError) as error:
+        print(f"godot-lsp: open the Godot project with LSP on 127.0.0.1:{args.port}: {error}", file=sys.stderr)
+        return 1
+    return int(bool(errors))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
