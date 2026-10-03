@@ -166,15 +166,7 @@
       "oauth": null,
       "enabled": true,
       "quarantined": false,
-      "disabled_tools": [
-        "vault_write",
-        "vault_append",
-        "vault_patch",
-        "vault_move",
-        "vault_delete",
-        "open_file",
-        "periodic_note_get_path"
-      ]
+      "disabled_tools": []
     },
     {
       "name": "krita",
@@ -759,6 +751,6 @@
     "default_model": "gpt-4",
     "encoding": "cl100k_base"
   },
-  "tool_response_limit": 50000,
+  "tool_response_limit": 200000,
   "tools_limit": 15
 }
