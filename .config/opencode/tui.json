@@ -6,7 +6,7 @@
     "enabled": true
   },
   "plugin": [
-    "oh-my-openagent@5.1.12",
+    "oh-my-openagent@5.1.13",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
     "@slkiser/opencode-quota@4.10.7",

@@ -89,7 +89,7 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@5.1.12",
+    "oh-my-openagent@5.1.13",
     "@slkiser/opencode-quota@4.10.7",
     "@ramtinj95/opencode-tokenscope@1.8.1",
     "opencode-skill-creator@0.3.5",
