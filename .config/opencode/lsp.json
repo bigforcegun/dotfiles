@@ -1,0 +1,15 @@
+{
+  "lsp": {
+    "marksman": {
+      "command": ["marksman", "server"],
+      "extensions": [".md", ".markdown"]
+    },
+    "gdscript": {
+      "command": ["godot-lsp"],
+      "extensions": [".gd"]
+    },
+    "typescript": {
+      "command": ["sh", "-c", "exec tsc --lsp --stdio"]
+    }
+  }
+}

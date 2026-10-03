@@ -10,88 +10,170 @@
     },
     "agents": {
       "sisyphus": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "high"
-      },
-      "hephaestus": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "medium"
-      },
-      "oracle": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "high"
-      },
-      "librarian": {
-        "model": "openai/gpt-5.6-luna-fast",
-        "reasoning": "medium"
-      },
-      "explore": {
-        "model": "openai/gpt-5.6-luna-fast",
-        "reasoning": "medium"
-      },
-      "multimodal-looker": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "high"
-      },
-      "prometheus": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "high"
-      },
-      "metis": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "high"
-      },
-      "momus": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "high"
-      },
-      "atlas": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "high"
-      },
-      "sisyphus-junior": {
-        "model": "openai/gpt-5.6-luna-fast",
-        "reasoning": "medium"
-      }
-    },
-    "categories": {
-      "visual-engineering": {
-        "model": "openai/gpt-5.6-sol",
-        "reasoning": "high"
-      },
-      "ultrabrain": {
-        "model": "openai/gpt-5.6-sol",
-        "reasoning": "xhigh"
-      },
-      "deep": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "xhigh"
-      },
-      "artistry": {
-        "model": "openai/gpt-5.6-sol-fast",
-        "reasoning": "high"
-      },
-      "quick": {
-        "model": "openai/gpt-5.6-luna-fast",
-        "reasoning": "medium",
-        "fallback_models": [
+        "models": [
           {
-            "model": "openai/gpt-5.6-luna-fast",
+            "model": "openai/gpt-5.6-sol",
             "reasoning": "medium"
           }
         ]
       },
+      "hephaestus": {
+        "models": [
+          {
+            "model": "openai/gpt-6-sol",
+            "reasoning": "medium"
+          }
+        ]
+      },
+      "oracle": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "xhigh"
+          }
+        ]
+      },
+      "librarian": {
+        "models": [
+          {
+            "model": "openai/gpt-6-luna-fast",
+            "reasoning": "low"
+          }
+        ]
+      },
+      "explore": {
+        "models": [
+          {
+            "model": "openai/gpt-6-luna-fast",
+            "reasoning": "low"
+          }
+        ]
+      },
+      "multimodal-looker": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "low"
+          }
+        ]
+      },
+      "prometheus": {
+        "models": [
+          {
+            "model": "openai/gpt-6-astra",
+            "reasoning": "high"
+          }
+        ]
+      },
+      "metis": {
+        "models": [
+          {
+            "model": "openai/gpt-6-astra",
+            "reasoning": "high"
+          }
+        ]
+      },
+      "momus": {
+        "models": [
+          {
+            "model": "openai/gpt-6-astra",
+            "reasoning": "xhigh"
+          }
+        ]
+      },
+      "atlas": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "medium"
+          }
+        ]
+      },
+      "sisyphus-junior": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "medium"
+          }
+        ]
+      }
+    },
+    "categories": {
+      "visual-engineering": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "high"
+          }
+        ]
+      },
+      "ultrabrain": {
+        "models": [
+          {
+            "model": "openai/gpt-6-astra",
+            "reasoning": "max"
+          },
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "max"
+          }
+        ]
+      },
+      "deep-low": {
+        "models": [
+          {
+            "model": "openai/gpt-6.1-sol",
+            "reasoning": "medium"
+          }
+        ]
+      },
+      "deep-high": {
+        "models": [
+          {
+            "model": "openai/gpt-6-astra",
+            "reasoning": "high"
+          }
+        ]
+      },
+      "artistry": {
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "xhigh"
+          }
+        ]
+      },
+      "quick": {
+        "models": [
+          {
+            "model": "openai/gpt-6-luna-fast",
+            "reasoning": "low"
+          }
+        ]
+      },
       "unspecified-low": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "medium"
+        "models": [
+          {
+            "model": "openai/gpt-5.6-terra",
+            "reasoning": "high"
+          }
+        ]
       },
       "unspecified-high": {
-        "model": "openai/gpt-5.6-terra-fast",
-        "reasoning": "high"
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "high"
+          }
+        ]
       },
       "writing": {
-        "model": "openai/gpt-5.6-luna-fast",
-        "reasoning": "medium"
+        "models": [
+          {
+            "model": "openai/gpt-5.6-sol",
+            "reasoning": "medium"
+          }
+        ]
       }
     }
   },

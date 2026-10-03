@@ -6,13 +6,13 @@
     "enabled": true
   },
   "plugin": [
-    "oh-my-openagent@4.19.4",
+    "oh-my-openagent@5.1.12",
     "/Users/bigforcegun/.config/opencode/plugins/chat-pulse-line/tui.js",
     "/Users/bigforcegun/.config/opencode/plugins/session-cycle/tui.js",
-    "@slkiser/opencode-quota@4.4.1",
+    "@slkiser/opencode-quota@4.10.7",
     "file:///Users/bigforcegun/.config/opencode/node_modules/opencode-subagent-statusline/dist/tui.js",
     "@ishaksebsib/opencode-tree@0.4.2",
-    "opencode-rules@0.6.4"
+    "opencode-rules@1.0.0"
   ],
   "keybinds": {
     "input_submit": "ctrl+return, ctrl+s",
