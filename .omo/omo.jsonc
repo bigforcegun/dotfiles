@@ -12,7 +12,7 @@
       "sisyphus": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "medium"
           }
         ]
@@ -20,7 +20,7 @@
       "hephaestus": {
         "models": [
           {
-            "model": "openai/gpt-6-sol",
+            "model": "openai/gpt-6-sol-fast",
             "reasoning": "medium"
           }
         ]
@@ -28,7 +28,7 @@
       "oracle": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "xhigh"
           }
         ]
@@ -52,7 +52,7 @@
       "multimodal-looker": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "low"
           }
         ]
@@ -60,7 +60,7 @@
       "prometheus": {
         "models": [
           {
-            "model": "openai/gpt-6-astra",
+            "model": "openai/gpt-6-astra-fast",
             "reasoning": "high"
           }
         ]
@@ -68,7 +68,7 @@
       "metis": {
         "models": [
           {
-            "model": "openai/gpt-6-astra",
+            "model": "openai/gpt-6-astra-fast",
             "reasoning": "high"
           }
         ]
@@ -76,7 +76,7 @@
       "momus": {
         "models": [
           {
-            "model": "openai/gpt-6-astra",
+            "model": "openai/gpt-6-astra-fast",
             "reasoning": "xhigh"
           }
         ]
@@ -84,7 +84,7 @@
       "atlas": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "medium"
           }
         ]
@@ -92,7 +92,7 @@
       "sisyphus-junior": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "medium"
           }
         ]
@@ -122,7 +122,7 @@
       "deep-low": {
         "models": [
           {
-            "model": "openai/gpt-6.1-sol",
+            "model": "openai/gpt-6.1-sol-fast",
             "reasoning": "medium"
           }
         ]
@@ -130,7 +130,7 @@
       "deep-high": {
         "models": [
           {
-            "model": "openai/gpt-6-astra",
+            "model": "openai/gpt-6-astra-fast",
             "reasoning": "high"
           }
         ]
@@ -138,7 +138,7 @@
       "artistry": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "xhigh"
           }
         ]
@@ -154,7 +154,7 @@
       "unspecified-low": {
         "models": [
           {
-            "model": "openai/gpt-5.6-terra",
+            "model": "openai/gpt-5.6-terra-fast",
             "reasoning": "high"
           }
         ]
@@ -162,7 +162,7 @@
       "unspecified-high": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "high"
           }
         ]
@@ -170,7 +170,7 @@
       "writing": {
         "models": [
           {
-            "model": "openai/gpt-5.6-sol",
+            "model": "openai/gpt-5.6-sol-fast",
             "reasoning": "medium"
           }
         ]
