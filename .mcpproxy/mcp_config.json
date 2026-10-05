@@ -614,7 +614,12 @@
       "name": "personal",
       "servers": [
         "bfg-nextcloud",
-        "bfg-qbittorrent"
+        "bfg-qbittorrent",
+        "endless-library",
+        "obsidian-bfg",
+        "playwright",
+        "playwright-vivaldi-personal",
+        "context7"
       ]
     },
     {
@@ -635,7 +640,6 @@
         "salotech-mongodb-ticket-monitor",
         "salotech-grafana",
         "salotech-opensearch",
-        "endless-library",
         "salotech-miro-isa",
         "salotech-redash"
       ]
