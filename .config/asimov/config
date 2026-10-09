@@ -1,0 +1,91 @@
+# Asimov — исключение зависимостей и кэшей из Time Machine
+# Формат: [секция], key = value, по одной строке "extra =" на значение, ~ раскрывается.
+# Проверка конфига: asimov doctor (неизвестные ключи не ломают запуск, только репортятся).
+# Встроенные правила: /opt/homebrew/opt/asimov/share/asimov/{sentinels,fixed-dirs}.tsv
+#
+# Исключения "липкие" (xattr на папке): удаление строки отсюда НЕ снимает уже
+# поставленное исключение — для этого tmutil removeexclusion <path>.
+
+[scan]
+# Домашняя папка сканируется всегда. Дополнительные корни:
+# extra = /Volumes/Work
+
+[sentinels]
+# Пара "папка файл-маркер": папка исключается, только если маркер лежит рядом.
+# Встроенных 61 (node_modules/package.json, target/Cargo.toml, .venv/pyproject.toml,
+# bin|obj/*.csproj, .godot/project.godot, vendor/go.mod, vendor/Gemfile, ...).
+# extra = .cache my-tool.toml
+#
+# Отключить встроенную пару:
+# disabled = vendor Gemfile
+
+[fixed_dirs]
+# Глобальные кэши без маркеров. Встроенные: ~/.cache, ~/.gradle/{caches,wrapper},
+# ~/.kube/{cache,http-cache}, ~/.m2/repository, ~/.npm/_cacache, ~/.nuget/packages,
+# ~/.vagrant.d/boxes, ~/go/pkg/mod
+enabled = true
+
+# Свои: восстанавливаются сами (скачиванием или пересборкой)
+extra = ~/.npm
+extra = ~/.bun/install/cache
+extra = ~/.gradle/daemon
+extra = ~/Library/pnpm
+extra = ~/.rvm/src
+extra = ~/.rvm/archives
+extra = ~/.local/share/uv
+extra = ~/Library/Developer/Xcode/DerivedData
+extra = ~/Library/Containers/com.docker.docker/Data
+extra = ~/Library/Group Containers/UBF8T346G9.OneDriveStandaloneSuite/OneDrive.noindex
+
+# Кэши Electron/Chromium: HTTP/JS-кэш, пересобирается при запуске
+extra = ~/Library/Application Support/Cursor/CachedData
+extra = ~/Library/Application Support/Cursor/Cache
+extra = ~/Library/Application Support/Cursor/Code Cache
+extra = ~/Library/Application Support/Cursor/CachedExtensionVSIXs
+extra = ~/Library/Application Support/Code/Cache
+extra = ~/Library/Application Support/Code/Code Cache
+extra = ~/Library/Application Support/Code/CachedData
+extra = ~/Library/Application Support/Code/CachedExtensionVSIXs
+extra = ~/Library/Application Support/Claude/Cache
+extra = ~/Library/Application Support/Claude/Code Cache
+extra = ~/Library/Application Support/discord/Cache
+extra = ~/Library/Application Support/discord/Code Cache
+extra = ~/Library/Application Support/obsidian/Cache
+extra = ~/Library/Application Support/obsidian/Code Cache
+extra = ~/Library/Application Support/Postman/Cache
+extra = ~/Library/Application Support/Postman/Code Cache
+# Figma версионирует профиль (v26) — после обновления путь сменится
+extra = ~/Library/Application Support/Figma/DesktopProfile/v26/Cache
+extra = ~/Library/Application Support/Figma/DesktopProfile/v26/Code Cache
+extra = ~/Library/Application Support/RealtimeBoard/Cache
+extra = ~/Library/Application Support/RealtimeBoard/Code Cache
+extra = ~/Library/Application Support/Steam/config/htmlcache
+extra = ~/Library/Application Support/Vivaldi/component_crx_cache
+
+# Офлайн-кэш сайтов/PWA и переустанавливаемые расширения
+# (на 2026-10-09 уже исключены на диске — здесь, чтобы пережили переустановку)
+extra = ~/Library/Application Support/Vivaldi/Default/Service Worker
+extra = ~/Library/Application Support/Slack/Service Worker
+extra = ~/Library/Application Support/obsidian/Service Worker
+extra = ~/.cursor/extensions
+extra = ~/.vscode/extensions
+
+# НЕ исключать — там данные:
+#   ~/.local/share/opencode  (opencode.db — история сессий OpenCode)
+#   ~/.claude/projects       (транскрипты Claude Code)
+#   ~/.codex                 (сессии Codex)
+#   ~/.paseo/worktrees       (незакоммиченная работа агентов)
+#   ~/.gradle целиком        (gradle.properties может содержать токены)
+
+[skip_paths]
+# Не обходить при поиске (~/.Trash и ~/Library пропускаются всегда).
+# Папки под TCC: без Full Disk Access всё равно дают "Operation not permitted".
+extra = ~/Music
+extra = ~/Pictures
+extra = ~/Movies
+# Не ставить xattr внутри подписанных бандлов (GoLand.app/Contents/plugins/.../node_modules)
+extra = ~/Applications
+# Если проектов там нет, можно убрать шум и отсюда:
+# extra = ~/Documents
+# extra = ~/Downloads
+# extra = ~/Desktop

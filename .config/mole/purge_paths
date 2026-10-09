@@ -1,0 +1,18 @@
+# Mole Purge Paths — где `mo purge` ищет артефакты сборки проектов.
+# Одна папка на строку, `~` раскрывается. Проверить: `mo purge --dry-run`.
+# Если активных строк нет — Mole сам ищет проектные папки (медленно, частично).
+#
+# Удаляемые артефакты (lib/clean/purge_shared.sh, MOLE_PURGE_TARGETS):
+#   node_modules target build dist venv .venv .pytest_cache .mypy_cache .tox
+#   .nox .ruff_cache .gradle .terragrunt-cache __pycache__ .next .nuxt .output
+#   vendor bin obj .turbo .parcel-cache .dart_tool .zig-cache zig-out …
+#
+~/Projects
+# ~/Projects/aviasales
+# ~/Projects/gamedev
+# ~/Projects/kupibilet
+# ~/Projects/llm-workspace
+# ~/Projects/main
+# ~/Projects/nerdforce
+# ~/Projects/opensource
+# ~/Projects/umbrellio

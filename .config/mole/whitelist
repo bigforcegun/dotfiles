@@ -1,0 +1,72 @@
+# Mole Whitelist — пути, которые `mo clean` не трогает.
+# Одна запись на строку: абсолютный путь или glob, `~` и `$HOME` раскрываются.
+# Проверить: `mo clean --dry-run` → строка "Whitelist: N core patterns active".
+#
+# ВАЖНО: если этот файл существует, он ЗАМЕНЯЕТ встроенные дефолты Mole.
+# Поэтому дефолты ниже продублированы — не удалять без причины.
+# Жёсткие safety-пути (FontRegistry, Spotlight, CloudKit, pypoetry/virtualenvs)
+# Mole добавляет всегда, их здесь не нужно.
+#
+# Источник списков: /opt/homebrew/opt/mole/libexec/lib/core/base.sh
+# (DEFAULT_WHITELIST_PATTERNS) и lib/manage/whitelist.sh (get_all_cache_items).
+
+## --- Дефолты Mole (v1.55.0) ---------------------------------------------
+$HOME/Library/Caches/ms-playwright*
+$HOME/.gradle/caches/*
+$HOME/.gradle/daemon/*
+$HOME/.ollama/models/*
+$HOME/Library/Caches/com.nssurge.surge-mac/*
+$HOME/Library/Application Support/com.nssurge.surge-mac/*
+$HOME/Library/Caches/org.R-project.R/R/renv/*
+$HOME/Library/Caches/JetBrains*
+$HOME/Library/Caches/com.jetbrains.toolbox*
+$HOME/Library/Caches/tealdeer/tldr-pages
+$HOME/Library/Application Support/JetBrains*
+$HOME/Library/Caches/com.apple.finder
+$HOME/Library/Mobile Documents*
+# Finder metadata (.DS_Store) — специальный маркер, не путь
+FINDER_METADATA
+
+## --- Моё ------------------------------------------------------------------
+# Бэкапы истории zsh: Mole считает их мусором ("Zsh history backup")
+$HOME/.zsh_history.bak_*
+# Плагины zsh (antidote клонирует их в Caches) — без них шелл стартует с ошибками
+$HOME/Library/Caches/antidote*
+
+## --- Опционально: раскомментировать, чтобы защитить ----------------------
+## Go (самое крупное: go-build ~16 ГБ, после чистки первая сборка медленная)
+# $HOME/Library/Caches/go-build/*
+# $HOME/go/pkg/mod/*
+#
+## Пакетные менеджеры
+# $HOME/.npm/_cacache/*
+# $HOME/.cache/pip/*
+# $HOME/.cache/uv/*
+# $HOME/.cache/yarn/*
+# $HOME/Library/pnpm/store/*
+# $HOME/Library/Caches/Homebrew/*
+# $HOME/.gem/cache/*
+# $HOME/.cargo/registry/cache/*
+# $HOME/.rustup/downloads/*
+#
+## IDE / редакторы
+# $HOME/Library/Application Support/Code/Cache/*
+# $HOME/Library/Application Support/Code/CachedData/*
+# $HOME/Library/Caches/com.microsoft.VSCode/*
+# $HOME/Library/Caches/com.todesktop.230313mzl4w4u92/*
+# $HOME/Library/Developer/Xcode/DerivedData/*
+# $HOME/Library/Caches/Google/AndroidStudio*/*
+#
+## Браузеры
+# $HOME/Library/Caches/Google/Chrome/*
+# $HOME/Library/Caches/Firefox/*
+# $HOME/Library/Caches/com.apple.Safari/*
+# $HOME/Library/Application Support/Google/Chrome/optimization_guide_model_store/*
+#
+## Контейнеры (Docker/OrbStack Mole не чистит вообще — только BuildX cache)
+# $HOME/.docker/buildx/cache/*
+#
+## Прочее
+# $HOME/.Trash
+# $HOME/.cache/pre-commit/*
+# $HOME/.cache/selenium/*

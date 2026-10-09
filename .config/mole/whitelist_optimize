@@ -1,0 +1,27 @@
+# Mole Optimization Whitelist — задачи, которые `mo optimize` пропускает.
+# Одна задача на строку, ID задачи. Проверить: `mo optimize --dry-run`.
+# Источник: /opt/homebrew/opt/mole/libexec/lib/optimize/catalog.sh
+#
+# Раскомментировать, чтобы ОТКЛЮЧИТЬ задачу:
+#
+# system_maintenance              # DNS & Spotlight: сброс DNS-кэша, проверка Spotlight
+# cache_refresh                   # QuickLook-превью и кэш иконок
+# saved_state_cleanup             # сохранённые состояния приложений старше 30 дней
+# fix_broken_configs              # починка битых .plist
+# network_optimization            # сброс DNS + рестарт mDNSResponder
+# sqlite_vacuum                   # VACUUM баз Mail/Safari/Messages (если закрыты)
+# launch_services_rebuild         # пересборка LaunchServices («Открыть в…»)
+# prevent_network_dsstore         # запрет .DS_Store на сетевых/USB томах
+# legacy_overrides_audit          # снятие старых твиков App Nap / проверки dmg
+# network_stack_optimize          # сброс таблицы маршрутов и ARP-кэша
+# disk_permissions_repair         # права на домашние папки
+# spotlight_index_optimize        # пересборка индекса Spotlight, если медленный
+# spotlight_orphan_rules_cleanup  # правила Spotlight от удалённых приложений
+# periodic_maintenance            # daily/weekly/monthly скрипты macOS
+# shared_file_list_repair         # избранное Finder и недавние документы
+# disk_verify                     # проверка целостности ФС
+# login_items_audit               # аудит битых login items
+# quarantine_cleanup              # история загрузок Gatekeeper
+# launch_agents_cleanup           # удаление LaunchAgents с несуществующими бинарями
+# notification_cleanup            # старые доставленные уведомления
+# coreduet_cleanup                # старые данные трекинга использования
