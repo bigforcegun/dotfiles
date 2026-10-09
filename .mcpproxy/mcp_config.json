@@ -77,7 +77,7 @@
   },
   "listen": "127.0.0.1:9091",
   "logging": {
-    "level": "info",
+    "level": "warn",
     "enable_file": true,
     "enable_console": true,
     "filename": "main.log",
@@ -250,90 +250,13 @@
       ]
     },
     {
-      "name": "salotech-freshdesk-direct",
-      "protocol": "http",
-      "url": "${env:SALOTECH_FRESHDESK_MCP_URL}",
-      "headers": {
-        "Authorization": "${env:SALOTECH_FRESHDESK_API_KEY}"
-      },
-      "oauth": null,
-      "enabled": false,
-      "quarantined": false,
-      "disabled_tools": [
-        "create_ticket",
-        "update_ticket",
-        "delete_ticket",
-        "create_ticket_note",
-        "create_ticket_reply",
-        "update_ticket_conversation",
-        "update_ticket_summary",
-        "delete_ticket_summary",
-        "create_ticket_field",
-        "update_ticket_field",
-        "update_contact",
-        "create_contact_field",
-        "update_contact_field",
-        "create_agent",
-        "update_agent",
-        "create_group",
-        "update_group",
-        "create_canned_response",
-        "update_canned_response",
-        "create_canned_response_folder",
-        "update_canned_response_folder",
-        "create_solution_article",
-        "update_solution_article",
-        "create_solution_category",
-        "update_solution_category",
-        "create_solution_category_folder",
-        "update_solution_category_folder"
-      ]
-    },
-    {
       "name": "salotech-freshdesk",
-      "protocol": "stdio",
-      "command": "uvx",
-      "args": [
-        "--with",
-        "mcp<2",
-        "freshdesk-mcp"
-      ],
-      "env": {
-        "FRESHDESK_API_KEY": "${env:SALOTECH_FRESHDESK_API_KEY}",
-        "FRESHDESK_DOMAIN": "${env:SALOTECH_FRESHDESK_DOMAIN}"
-      },
-      "oauth": null,
+      "url": "${env:SALOTECH_FRESHDESK_MCP_URL}",
+      "protocol": "streamable-http",
       "enabled": true,
+      "oauth": {},
       "quarantined": false,
-      "disabled_tools": [
-        "create_ticket",
-        "update_ticket",
-        "delete_ticket",
-        "create_ticket_note",
-        "create_ticket_reply",
-        "update_ticket_conversation",
-        "update_ticket_summary",
-        "delete_ticket_summary",
-        "create_ticket_field",
-        "update_ticket_field",
-        "update_contact",
-        "create_contact_field",
-        "update_contact_field",
-        "create_agent",
-        "update_agent",
-        "create_group",
-        "update_group",
-        "create_canned_response",
-        "update_canned_response",
-        "create_canned_response_folder",
-        "update_canned_response_folder",
-        "create_solution_article",
-        "update_solution_article",
-        "create_solution_category",
-        "update_solution_category",
-        "create_solution_category_folder",
-        "update_solution_category_folder"
-      ]
+      "disabled_tools": []
     },
     {
       "name": "salotech-slack",
@@ -635,7 +558,6 @@
         "salotech-slack",
         "salotech-atlassian",
         "salotech-freshdesk",
-        "salotech-freshdesk-direct",
         "salotech-mongodb-watcher",
         "salotech-mongodb-ticket-monitor",
         "salotech-grafana",
@@ -649,7 +571,6 @@
       "servers": [
         "salotech-atlassian",
         "salotech-freshdesk",
-        "salotech-freshdesk-direct",
         "salotech-mongodb-watcher",
         "salotech-opensearch",
         "salotech-redash"
