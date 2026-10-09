@@ -1,4 +1,8 @@
 
+# oh-my-zsh plugins (kubectl, docker-compose) cache completions here; must be set before load
+export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
+mkdir -p "$ZSH_CACHE_DIR/completions"
+
 # https://github.com/mattmc3/antidote
 antidote load ${ZDOTDIR:-$HOME}/.zsh_plugins
 

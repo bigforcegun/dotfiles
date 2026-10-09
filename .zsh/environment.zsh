@@ -5,8 +5,6 @@ include "/usr/share/LS_COLORS/dircolors.sh"
 include "/home/bigforcegun/.local/share/lscolors.sh"
 fi
 
-export ZSH_CACHE_DIR="$HOME/.cache/oh-my-zsh"
-
 # all opts in https://github.com/sorin-ionescu/prezto/blob/master/modules/history/init.zsh
 #setopt    sharehistory
 unsetopt SHARE_HISTORY

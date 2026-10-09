@@ -24,7 +24,7 @@ if [[ ! -o interactive ]] && { [[ -n "$MCPPROXY_DAEMON" ]] || [[ "$(ps -p "$PPID
     return
 fi
 
-export THEME_OS_MODE="$(/opt/homebrew/bin/dark-notify -e)"
+export THEME_OS_MODE="$($HOME/.local/bin/dark-notify -e)"
 
 source ~/.zsh/autorun-tmux.zsh
 

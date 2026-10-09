@@ -85,6 +85,16 @@ link ".agentcairn/config.toml"
 
 link ".config/kilo"
 
+## Mole (mo clean / optimize / purge)
+
+link ".config/mole/whitelist"
+link ".config/mole/whitelist_optimize"
+link ".config/mole/purge_paths"
+
+## Asimov (Time Machine exclusions)
+
+link ".config/asimov/config"
+
 ## mcpproxy
 
 link ".mcpproxy"
