@@ -1,0 +1,84 @@
+# Time Machine — исключения (macOS)
+#
+# Формат: одна запись на строку, `~` = $HOME, `#` — комментарий.
+# Префикс `-p ` — исключение по пути (SkipPaths в /Library/Preferences/com.apple.TimeMachine),
+#   ставится через sudo:   sudo tmutil addexclusion -p <path>
+# Без префикса — «липкое» исключение (xattr com_apple_backup_excludeItem на самой папке),
+#   ставится без sudo:     tmutil addexclusion <path>
+#   Живёт на папке: пропадает, если папку удалить и создать заново, и при переустановке системы.
+#
+# Проверка:   tmutil isexcluded <path>
+# Все SkipPaths: defaults read /Library/Preferences/com.apple.TimeMachine SkipPaths
+#
+# Уже исключено самой системой (не дублировать): ~/Library/Caches, ~/Library/Logs, ~/.cache,
+# OrbStack data.img.raw / swap.img (ставит OrbStack).
+#
+# Собрано 2026-10-09.
+
+## --- По пути (sudo) --------------------------------------------------------
+# File Provider не даёт поставить xattr, поэтому только так
+-p ~/Library/CloudStorage/OneDrive-Personal
+-p ~/Library/Application Support/Steam/steamapps/common
+
+## --- Облако: и так лежит в OneDrive ---------------------------------------
+~/Library/Group Containers/UBF8T346G9.OneDriveStandaloneSuite/OneDrive.noindex
+
+## --- Пакетные менеджеры и тулчейны (скачиваются заново) --------------------
+~/go/pkg/mod
+~/.npm
+~/.bun/install/cache
+~/.nuget/packages
+~/Library/pnpm
+~/.local/share/uv
+~/.rvm/src
+~/.rvm/archives
+# не весь ~/.gradle: в gradle.properties бывают настройки и токены
+~/.gradle/caches
+~/.gradle/wrapper
+~/.gradle/daemon
+
+## --- Контейнеры / сборки ---------------------------------------------------
+~/Library/Containers/com.docker.docker/Data
+~/Library/Developer/Xcode/DerivedData
+
+## --- Редакторы ---------------------------------------------------------------
+~/Library/Application Support/Cursor/CachedData
+~/Library/Application Support/Cursor/Cache
+~/Library/Application Support/Cursor/CachedExtensionVSIXs
+~/Library/Application Support/Code/Cache
+~/Library/Application Support/Code/CachedExtensionVSIXs
+# расширения: переустанавливаются, список — через Settings Sync
+~/.cursor/extensions
+~/.vscode/extensions
+
+## --- Electron/Chromium кэши приложений --------------------------------------
+~/Library/Application Support/Claude/Cache
+~/Library/Application Support/Claude/Code Cache
+~/Library/Application Support/discord/Cache
+~/Library/Application Support/obsidian/Cache
+~/Library/Application Support/obsidian/Code Cache
+~/Library/Application Support/RealtimeBoard/Cache
+~/Library/Application Support/RealtimeBoard/Code Cache
+~/Library/Application Support/Steam/config/htmlcache/Default/Cache
+~/Library/Application Support/Steam/config/htmlcache/Default/Code Cache
+~/Library/Application Support/Vivaldi/component_crx_cache
+# пути с хэшами — актуальны для этой машины, на новой проверить заново
+~/Library/Application Support/Postman/Partitions/be8357bb-755a-4acc-8281-82bce6d3c665/Cache
+~/Library/Application Support/Figma/DesktopProfile/v26/Code Cache
+~/Library/Application Support/obsidian/Partitions/vault-489a54fb6bdd30ff/Cache
+
+## --- Service Worker (офлайн-кэш сайтов/PWA, восстанавливается сам) ----------
+~/Library/Application Support/Vivaldi/Default/Service Worker
+~/Library/Application Support/Vivaldi/Profile 1/Service Worker
+~/Library/Application Support/Slack/Service Worker
+~/Library/Application Support/obsidian/Service Worker
+~/Library/Application Support/Postman/Partitions/be8357bb-755a-4acc-8281-82bce6d3c665/Service Worker
+
+## --- НЕ исключать: там данные ----------------------------------------------
+# ~/.local/share/opencode   — opencode.db, история сессий OpenCode
+# ~/.claude/projects        — транскрипты Claude Code
+# ~/.codex                  — сессии Codex
+# ~/.paseo/worktrees        — рабочие копии агентов, возможна незакоммиченная работа
+#
+## --- TODO -------------------------------------------------------------------
+# node_modules / target / .venv в ~/Projects — через Asimov (brew install asimov), не вручную

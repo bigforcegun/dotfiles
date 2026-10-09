@@ -96,6 +96,8 @@ if [[ $HOST_OS == 'mac' ]]; then
     export GOPATH="$HOME/go"
     export PATH="$GOPATH/bin:$PATH"
     export PATH="$HOME/.local/bin:$PATH"
+    # brew rustup is keg-only: cargo/rustc proxies live here, not in ~/.cargo/bin
+    export PATH="/opt/homebrew/opt/rustup/bin:$PATH"
     export UV_PYTHON=3.13
 fi
 

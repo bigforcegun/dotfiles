@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-echo "DARKMODE=${DARKMODE}"
+echo "mode=$1"
 /Users/bigforcegun/bin/alacritty_auto_theme
 /Users/bigforcegun/bin/tmux_auto_theme
 
