@@ -16,6 +16,8 @@ codexcli:
   model_reasoning_effort: max
 opencode:
   mode: subagent
+  model: openai/gpt-6-luna
+  variant: max
   permission:
     skill:
       "visual-explainer": allow

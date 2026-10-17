@@ -3,7 +3,9 @@
   "autoupdate": "notify",
   "share": "manual",
   "logLevel": "INFO",
+  "model": "openai/gpt-6-astra-fast",
   "small_model": "openai/gpt-5.6-luna-fast",
+  "default_agent": "hephaestus",
   "watcher": {
     "ignore": [
       "node_modules/**",
@@ -99,6 +101,5 @@
     "opencode-skill-creator@0.3.5",
     "opencode-rules@1.0.0"
   ],
-  "mcp": {
-  }
+  "mcp": {}
 }
