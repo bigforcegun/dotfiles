@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 1,
+  "sources": {
+    "nicobailon/visual-explainer": {
+      "requestedRef": "main",
+      "resolvedRef": "bde0b2cc6c08e55400334471ba92c547d1f90297",
+      "resolvedAt": "2026-10-17T18:06:49.242Z",
+      "skills": {
+        "visual-explainer": {
+          "integrity": "sha256-a30ea65090280779e9f064f3ea0318f5a8f9cbb2e87607f6a4e9da440fc00e8a"
+        }
+      },
+      "skillSelection": [
+        "visual-explainer"
+      ]
+    }
+  }
+}

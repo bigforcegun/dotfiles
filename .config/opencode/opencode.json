@@ -86,6 +86,10 @@
       "*.local.json": "deny",
       ".env": "deny",
       "credentials/": "deny"
+    },
+    "skill": {
+      "*": "allow",
+      "visual-explainer": "deny"
     }
   },
   "plugin": [
