@@ -1,0 +1,59 @@
+{
+  "skill_name": "paseo-maintenance",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Проверь, стоит ли обновлять Paseo: что вышло после моей версии и что из моей обвязки сломается.",
+      "expected_output": "A compact brief with installed and latest versions, per-plugin/skill/hook impact, and exactly one verdict.",
+      "files": [],
+      "assertions": [
+        "Runs scripts/paseo-maintenance (status, update-check, plugins at minimum) instead of ad-hoc inspection.",
+        "Reads release notes for every release between installed and latest, not only the latest one, and checks SDK changes with scripts/paseo-maintenance changes.",
+        "Names any enabled plugin whose requirements.paseo excludes the target version, including caret ranges such as ^0.9.0 that cap the minor, not only explicit < bounds.",
+        "Ends with exactly one of the four fixed verdict strings.",
+        "Does not install @getpaseo/cli, unpack app.asar, or restart the daemon.",
+        "Reports the three tracks separately (vendored skills, wf commands, own skills) and asks the user whether to run each own skill eval (e.g. paseo-move-chat eval_run.py) before calling own skills verified."
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Paseo обновился, мой плагин в worktree перестал показываться. Разберись.",
+      "expected_output": "Diagnosis from plugin status and paseo-maintenance logs (paseo plugin logs first, main.log second), a fix in the plugin's working copy, reload, and a request for visual confirmation.",
+      "files": [],
+      "assertions": [
+        "Checks plugin status and the load error from paseo-maintenance logs (paseo plugin logs), not only main.log, before editing code.",
+        "Fixes the plugin in place and does not relocate it or rewrite its configured path.",
+        "Validates with typecheck/tests and paseo plugin reload plus a log check, not typecheck alone.",
+        "Asks the user to confirm the UI visually before calling it done."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Синхронизируй вендорные paseo-скилы и wf-команды с текущей версией Paseo.",
+      "expected_output": "vendor-skills and vendor-commands results, skill bodies updated from the upstream tag with local frontmatter kept, wf commands re-read against changed upstream sections, and the rulesync deploy step.",
+      "files": [],
+      "assertions": [
+        "Uses the upstream tag matching the running daemon version.",
+        "Runs vendor-skills and vendor-commands as separate tracks.",
+        "Preserves local rulesync frontmatter (targets) when copying upstream skill bodies.",
+        "Treats wf commands as adaptations: updates meaning from changed sections and keeps $ARGUMENTS, instead of copying sections verbatim.",
+        "Re-runs both commands and reports them clean, or explains what remains.",
+        "Mentions make install-agents-global-configs to deploy the change."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Paseo само обновилось до новой версии. Проверь, что у меня ничего не отвалилось, и что с ближайшей бетой.",
+      "expected_output": "Analysis of the already-applied jump (previous -> installed), plugin load failures with their cause, managed-plugin update availability, a Ремонт сейчас section, and a verdict about the next (beta) release.",
+      "files": [],
+      "assertions": [
+        "Uses update-check applied= releases (previous version from the auto-updater log or --from) instead of stopping at installed == latest.",
+        "Runs update-check --pre and plugins with the beta version as a target.",
+        "Reports plugins that already fail to load with the cause from paseo-maintenance logs (paseo plugin logs), not only main.log.",
+        "Checks managed-plugin updates through the plugins update lines (whether the candidate release admits the daemon and target versions) and does not apply them without consent.",
+        "Puts breakage from the installed version under Ремонт сейчас and gives exactly one verdict about the next release.",
+        "Asks whether to run the paseo-move-chat eval stand on the installed version; without consent reports it as not verified, never as fine."
+      ]
+    }
+  ]
+}

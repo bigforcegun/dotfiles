@@ -1,0 +1,426 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+repo_root=${PASEO_MAINT_REPO:-$(cd "$(dirname "$(realpath "$0")")/../../../.." && pwd)}
+global_dir="$repo_root/.rulesync-global/.rulesync"
+app_plist=/Applications/Paseo.app/Contents/Info.plist
+main_log="$HOME/Library/Logs/Paseo/main.log"
+upstream=getpaseo/paseo
+problems=0
+
+usage() {
+  cat <<'EOF'
+Usage: paseo-maintenance <command>
+
+Read-only Paseo caretaker checks.
+
+Commands:
+  status                    App, CLI and daemon versions; flags drift between them.
+  update-check [--pre] [--from <ver>]
+                            Installed vs latest release. Lists releases already applied since
+                            the previous version (auto-detected from main.log, or --from) and
+                            releases still ahead. --pre includes betas.
+  plugins [<ver>...]        Every configured plugin: status, origin, @getpaseo/* pins, and whether
+                            requirements.paseo admits the daemon, latest stable and each <ver>;
+                            the same for the release `paseo plugin update` would install.
+  changes <from> <to>       Files changed between two tags in the plugin SDK packages,
+                            skills/ and public-docs/.
+  vendor-skills             Vendored skill bodies vs upstream skills/ at the daemon's tag.
+  vendor-commands [<from>]  Vendored wf-* commands vs orchestration-workflows.md sections at the
+                            daemon's tag; flags sections changed since <from> (default: previous).
+  own-skills                Own paseo* skills (not shipped upstream) and their eval entry points.
+  hooks                     Agent hook wiring vs the CLI hook surface.
+  logs                      Plugin load errors from the daemon and recent desktop main.log errors.
+  all                       Everything except changes.
+
+Needs node, jq, gh, curl. Version ranges use npm's bundled semver (PASEO_MAINT_SEMVER overrides its path).
+EOF
+}
+
+problem() {
+  printf 'ERROR: %s\n' "$*" >&2
+  problems=1
+}
+
+warn() {
+  printf 'WARN: %s\n' "$*" >&2
+}
+
+app_version() {
+  defaults read "$app_plist" CFBundleShortVersionString 2>/dev/null
+}
+
+daemon_version() {
+  paseo daemon status --json 2>/dev/null | jq -r '.daemonVersion // empty'
+}
+
+status() {
+  local app cli daemon
+  app=$(app_version) || problem "Paseo.app is missing: $app_plist"
+  cli=$(paseo --version 2>/dev/null) || problem "paseo CLI is not on PATH"
+  daemon=$(daemon_version)
+  [[ -n "$daemon" ]] || problem "daemon is not reachable"
+  printf 'app=%s\ncli=%s\ndaemon=%s\ncli_path=%s\n' "${app:-?}" "${cli:-?}" "${daemon:-?}" "$(realpath "$(command -v paseo)" 2>/dev/null)"
+  [[ "$(type -ap paseo | sort -u | wc -l)" -le 1 ]] || warn "several paseo binaries on PATH: $(type -ap paseo | tr '\n' ' ')"
+  if [[ -n "${app:-}" && -n "${cli:-}" && "$app" != "$cli" ]]; then problem "CLI $cli differs from app $app"; fi
+  if [[ -n "${app:-}" && -n "$daemon" && "$app" != "$daemon" ]]; then problem "daemon $daemon differs from app $app (restart pending?)"; fi
+}
+
+# Version logic runs on the semver copy bundled with npm; nothing is installed.
+semver_dir=${PASEO_MAINT_SEMVER:-$(npm root -g 2>/dev/null)/npm/node_modules/semver}
+
+# sv check <range> <ver>...      "<ver> ok|blocked|invalid-version" per version, or "invalid-range".
+#                                Same rule as the daemon (packages/protocol/src/plugin-requirements.ts):
+#                                satisfies(version) || satisfies(its stable core), default options.
+# sv releases <installed> <from> stdin "tag date" -> "latest", then "newer" and "applied" lines,
+#                                newest first. applied skips prereleases when the jump was stable.
+sv_js='
+const semver = require(process.env.SEMVER_DIR);
+const [mode, ...args] = process.argv.slice(1);
+if (mode === "check") {
+  const [range, ...versions] = args;
+  if (!semver.validRange(range)) { console.log("invalid-range"); process.exit(0); }
+  for (const v of versions) {
+    const p = semver.parse(v);
+    if (!p) { console.log(`${v} invalid-version`); continue; }
+    const ok = semver.satisfies(p, range) || semver.satisfies(`${p.major}.${p.minor}.${p.patch}`, range);
+    console.log(`${p.version} ${ok ? "ok" : "blocked"}`);
+  }
+} else if (mode === "releases") {
+  const [installed, from] = args;
+  if (!semver.valid(installed) || (from && !semver.valid(from))) throw new Error(`not a version: ${installed} ${from}`);
+  const rel = require("fs").readFileSync(0, "utf8").split("\n").filter(Boolean)
+    .map(l => { const [tag, date] = l.split(" "); return { tag, date, v: semver.parse(tag) }; })
+    .filter(r => r.v).sort((a, b) => semver.rcompare(a.v, b.v));
+  const stableJump = !semver.prerelease(installed) && !(from && semver.prerelease(from));
+  if (rel.length) console.log(`latest ${rel[0].tag} ${rel[0].date}`);
+  for (const r of rel) if (semver.gt(r.v, installed)) console.log(`newer ${r.tag} ${r.date}`);
+  if (from) for (const r of rel)
+    if (semver.gt(r.v, from) && semver.lte(r.v, installed) && !(stableJump && r.v.prerelease.length))
+      console.log(`applied ${r.tag} ${r.date}`);
+}
+'
+
+sv_ready() {
+  [[ -f "$semver_dir/package.json" ]] || { problem "semver not found at $semver_dir (set PASEO_MAINT_SEMVER)"; return 1; }
+}
+
+sv() { SEMVER_DIR=$semver_dir node -e "$sv_js" "$@" 2>/dev/null; }
+
+# Previous app version as recorded by the desktop auto-updater before the installed one.
+previous_version() {
+  local installed=$1
+  cat "${main_log%.log}.old.log" "$main_log" 2>/dev/null |
+    sed -n "s/.*currentVersion: '\([^']*\)'.*/\1/p" | uniq | command grep -vxF "$installed" | tail -1
+}
+
+# "tag date" for every published release; prereleases only with "pre".
+releases() {
+  local keep='(.prerelease | not)'
+  [[ "${1:-}" == pre ]] && keep=true
+  gh api --paginate "repos/$upstream/releases?per_page=100" \
+    --jq ".[] | select((.draft | not) and $keep) | \"\(.tag_name) \(.published_at)\"" 2>/dev/null
+}
+
+update_check() {
+  local installed from="" pre="" list out kind tag date
+  while (($#)); do
+    case $1 in
+      --pre) pre=pre ;;
+      --from) [[ $# -ge 2 ]] || { problem "update-check: --from needs a version"; return; }; from=${2#v}; shift ;;
+      *) problem "update-check: unknown argument $1"; return ;;
+    esac
+    shift
+  done
+  sv_ready || return
+  installed=$(app_version) || { problem "Paseo.app is missing"; return; }
+  [[ -n "$from" ]] || from=$(previous_version "$installed")
+  printf 'installed=%s\nprevious=%s\n' "$installed" "${from:-unknown (pass --from)}"
+  list=$(releases "$pre") && [[ -n "$list" ]] || { problem "cannot list upstream releases"; return; }
+  out=$(sv releases "$installed" "$from" <<<"$list") || { problem "cannot order releases (bad --from '$from'?)"; return; }
+  while read -r kind tag date; do
+    if [[ "$kind" == latest ]]; then
+      printf 'latest%s=%s\n' "${pre:+_pre}" "$tag"
+    else
+      printf '%s=%s %s https://github.com/%s/releases/tag/%s\n' "$kind" "$tag" "${date%%T*}" "$upstream" "$tag"
+    fi
+  done <<<"$out"
+}
+
+# Release versions a plugin must still load on: the daemon, latest stable, and any extras.
+plugin_targets() {
+  local daemon=$1 latest
+  shift
+  latest=$(releases | sv releases "${daemon:-0.0.0}" "" | awk '$1 == "latest" { print $2 }')
+  [[ -n "$latest" ]] || warn "latest stable release unknown; checking the daemon and given versions only"
+  printf '%s\n' "$daemon" "${latest#v}" "${@#v}" | awk 'NF && !seen[$0]++'
+}
+
+changes() {
+  local from=${1:-} to=${2:-}
+  [[ -n "$from" && -n "$to" ]] || { problem "usage: changes <from-tag> <to-tag>"; return; }
+  [[ "$from" == v* ]] || from="v$from"
+  [[ "$to" == v* ]] || to="v$to"
+  local filter='select(.type == "blob" and (.path | test("^packages/(plugin|client|protocol)/|^skills/|^public-docs/"))) | "\(.sha)\t\(.path)"'
+  local old new
+  old=$(gh api "repos/$upstream/git/trees/$from?recursive=1" --jq "if .truncated then error(\"truncated\") else .tree[] | $filter end" 2>/dev/null) ||
+    { problem "cannot read full upstream tree at $from"; return; }
+  new=$(gh api "repos/$upstream/git/trees/$to?recursive=1" --jq "if .truncated then error(\"truncated\") else .tree[] | $filter end" 2>/dev/null) ||
+    { problem "cannot read full upstream tree at $to"; return; }
+  printf 'range=%s...%s\n' "$from" "$to"
+  awk -F'\t' 'NR == FNR { if (NF) old[$2] = $1; next }
+       NF { if (!($2 in old)) print "added " $2; else if (old[$2] != $1) print "modified " $2; delete old[$2] }
+       END { for (p in old) print "removed " p }' <(printf '%s\n' "$old") <(printf '%s\n' "$new") | sort -k2
+}
+
+# paseo-plugin.json of the release `paseo plugin update` would install, fetched as a single file:
+# npm through jsDelivr, GitHub git remotes through the contents API. $1 is one --check entry.
+candidate_manifest() {
+  local entry=$1 kind name sub ref repo
+  kind=$(jq -r '.target.kind' <<<"$entry")
+  sub=$(jq -r '.current.identity.pluginPath // "." | ltrimstr(".") | ltrimstr("/")' <<<"$entry")
+  sub=${sub:+$sub/}
+  case $kind in
+    npm)
+      name=$(jq -r '.current.identity.packageName' <<<"$entry")
+      ref=$(jq -r '.target.version' <<<"$entry")
+      curl -fsSL "https://cdn.jsdelivr.net/npm/$name@$ref/${sub}paseo-plugin.json" 2>/dev/null
+      ;;
+    git)
+      repo=$(jq -r '.current.identity.remote' <<<"$entry" | sed -nE 's#\.git$##; s#^(https://|git@)github\.com[:/]([^/]+/[^/]+)$#\2#p')
+      ref=$(jq -r '.target.commit' <<<"$entry")
+      [[ -n "$repo" ]] && upstream_file_from "$repo" "${sub}paseo-plugin.json" "$ref"
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# Prints "  <label> <target>: ok|blocked" for each target. Only label "paseo" (the installed
+# release) raises problems and warnings; a candidate is information for the update decision.
+check_requirement() {
+  local id=$1 label=$2 requirement=$3 enabled=$4 daemon=$5 target verdict
+  shift 5
+  while read -r target verdict; do
+    if [[ "$target" == invalid-range ]]; then
+      problem "$id: $label requirements.paseo '$requirement' is not a valid range"
+      return
+    fi
+    printf '  %s %s: %s\n' "$label" "$target" "$verdict"
+    [[ "$verdict" == ok || "$enabled" != true || "$label" != paseo ]] && continue
+    if [[ "$target" == "$daemon" ]]; then
+      problem "$id: requires $requirement, daemon is $daemon"
+    else
+      warn "$id: requires $requirement, will not load on $target"
+    fi
+  done < <(sv check "$requirement" "$@")
+}
+
+plugins() {
+  local daemon list targets checked t updates
+  sv_ready || return
+  daemon=$(daemon_version)
+  list=$(paseo plugin ls --json 2>/dev/null) || { problem "paseo plugin ls failed"; return; }
+  updates=$(paseo plugin update --all --check --json 2>/dev/null) || { warn "paseo plugin update --check failed; candidates not checked"; updates='[]'; }
+  checked=$(sv check '*' $(plugin_targets "${daemon:-}" "$@"))
+  for t in $(awk '$2 == "invalid-version" { print $1 }' <<<"$checked"); do problem "not a version: $t"; done
+  targets=$(awk '$2 != "invalid-version" { print $1 }' <<<"$checked")
+  while IFS=$'\t' read -r id state kind path enabled; do
+    local origin=managed requirement pins pin entry candidate manifest
+    [[ "$path" == "$HOME/.paseo/plugins/"* ]] || origin=dev
+    printf 'plugin=%s status=%s kind=%s origin=%s enabled=%s path=%s\n' "$id" "$state" "$kind" "$origin" "$enabled" "$path"
+    [[ -d "$path" ]] || { problem "$id: path is missing"; continue; }
+    [[ "$enabled" != true || "$state" == running ]] || problem "$id: enabled but $state (paseo plugin logs $id)"
+    if [[ -f "$path/paseo-plugin.json" ]]; then
+      requirement=$(jq -r '.requirements.paseo // empty' "$path/paseo-plugin.json")
+      printf '  requires=%s\n' "${requirement:-<0.8.0 (daemon default)}"
+      check_requirement "$id" paseo "${requirement:-<0.8.0}" "$enabled" "$daemon" $targets
+    else
+      warn "$id: no paseo-plugin.json"
+    fi
+    entry=$(jq -c --arg id "$id" '.[] | select(.id == $id and .outcome == "update")' <<<"$updates")
+    if [[ -n "$entry" ]]; then
+      candidate=$(jq -r '.target.version // .target.commit[0:12]' <<<"$entry")
+      if manifest=$(candidate_manifest "$entry") && [[ -n "$manifest" ]] &&
+        requirement=$(jq -er '.requirements.paseo // ""' <<<"$manifest" 2>/dev/null); then
+        printf '  update=%s requires=%s\n' "$candidate" "${requirement:-<0.8.0 (daemon default)}"
+        check_requirement "$id" "update" "${requirement:-<0.8.0}" "$enabled" "$daemon" $targets
+      else
+        printf '  update=%s requires=unknown\n' "$candidate"
+        warn "$id: cannot read paseo-plugin.json of update $candidate"
+      fi
+    fi
+    if [[ -f "$path/package.json" ]]; then
+      pins=$(jq -r '[(.dependencies // {}), (.devDependencies // {}), (.peerDependencies // {})] | add | to_entries[] | select(.key | startswith("@getpaseo/")) | "\(.key)@\(.value)"' "$path/package.json")
+      for pin in $pins; do
+        printf '  pin=%s\n' "$pin"
+        [[ -z "$daemon" || "$origin" != dev || "${pin##*@}" == *"${daemon%.*}."* ]] || warn "$id: $pin, daemon is $daemon"
+      done
+    fi
+  done < <(jq -r '.[] | [.id, .status, (.installation.identity.kind // "directory"), .path, (.enabled|tostring)] | @tsv' <<<"$list")
+}
+
+upstream_file_from() {
+  gh api "repos/$1/contents/$2?ref=$3" --jq .content 2>/dev/null | base64 -d
+}
+
+upstream_file() {
+  upstream_file_from "$upstream" "$1" "$2"
+}
+
+strip_frontmatter() {
+  awk 'NR == 1 && /^---$/ { fm = 1; next } fm && /^---$/ { fm = 0; next } !fm'
+}
+
+# Single-line frontmatter description without surrounding quotes; the rest of the frontmatter is local.
+frontmatter_description() {
+  awk 'NR == 1 && /^---$/ { fm = 1; next } fm && /^---$/ { exit } fm && sub(/^description: */, "") { print }' |
+    sed -E '/^".*"$/ { s/^"(.*)"$/\1/; s/\\"/"/g; }'
+}
+
+daemon_tag() {
+  local daemon
+  daemon=$(daemon_version)
+  [[ -n "$daemon" ]] || { problem "daemon version unknown"; return 1; }
+  printf 'v%s\n' "$daemon"
+}
+
+upstream_skills() {
+  gh api "repos/$upstream/git/trees/$1?recursive=1" --jq '.tree[].path | select(test("^skills/[^/]+/SKILL.md$")) | split("/")[1]' 2>/dev/null
+}
+
+# Vendored skills: body must equal upstream at the daemon's tag; only frontmatter is local.
+vendor_skills() {
+  local tag skills skill local_file upstream_body
+  tag=$(daemon_tag) || return
+  skills=$(upstream_skills "$tag") && [[ -n "$skills" ]] || { problem "cannot read upstream tree at $tag"; return; }
+  printf 'upstream_tag=%s\n' "$tag"
+  for skill in $skills; do
+    local_file="$global_dir/skills/$skill/SKILL.md"
+    if [[ ! -f "$local_file" ]]; then
+      warn "skill $skill exists upstream but not in $global_dir/skills"
+      continue
+    fi
+    upstream_body=$(upstream_file "skills/$skill/SKILL.md" "$tag")
+    if ! diff -q <(strip_frontmatter <<<"$upstream_body") <(strip_frontmatter <"$local_file") >/dev/null; then
+      problem "skill $skill body differs from $tag"
+    elif [[ "$(frontmatter_description <<<"$upstream_body")" != "$(frontmatter_description <"$local_file")" ]]; then
+      problem "skill $skill description differs from $tag"
+    else
+      printf 'skill=%s in-sync\n' "$skill"
+    fi
+  done
+}
+
+# Workflow sections of orchestration-workflows.md ("## Title" with a quoted or fenced prompt) as
+# "wf-<slug>\t<body hash>".
+workflow_sections() {
+  upstream_file public-docs/orchestration-workflows.md "$1" | awk '
+    function flush() { if (slug != "" && prompt) { printf "%s\t", slug; cmd = "shasum | cut -c1-12"; printf "%s", body | cmd; close(cmd) } }
+    /^## / { flush(); slug = tolower(substr($0, 4)); gsub(/[^a-z0-9]+/, "-", slug); gsub(/^-|-$/, "", slug); slug = "wf-" slug; body = ""; prompt = 0; next }
+    slug != "" { body = body $0 "\n"; if (/^> / || /^```/) prompt = 1 }
+    END { flush() }'
+}
+
+# Vendored wf-* commands are adaptations, not copies: each must map to a section at the daemon's
+# tag, and a section that changed since <from> (default: previous app version) needs a re-read.
+vendor_commands() {
+  local tag from=${1:-} now before slug hash file
+  tag=$(daemon_tag) || return
+  [[ -n "$from" ]] || from=$(previous_version "${tag#v}")
+  [[ -z "$from" || "$from" == v* ]] || from="v$from"
+  now=$(workflow_sections "$tag")
+  [[ -n "$now" ]] || { problem "cannot read orchestration-workflows.md at $tag"; return; }
+  if [[ -n "$from" ]]; then
+    before=$(workflow_sections "$from")
+    [[ -n "$before" ]] || warn "cannot read orchestration-workflows.md at $from; changes not compared"
+  fi
+  printf 'upstream_tag=%s\ncompared_with=%s\n' "$tag" "${from:-none}"
+  for file in "$global_dir"/commands/paseo/wf-*.md; do
+    [[ -e "$file" ]] || continue
+    slug=$(basename "$file" .md)
+    hash=$(awk -F'\t' -v s="$slug" '$1 == s { print $2 }' <<<"$now")
+    if [[ -z "$hash" ]]; then
+      problem "command $slug has no matching section in orchestration-workflows.md at $tag"
+    elif [[ -n "${before:-}" && "$(awk -F'\t' -v s="$slug" '$1 == s { print $2 }' <<<"$before")" != "$hash" ]]; then
+      if cut -f1 <<<"$before" | command grep -qxF "$slug"; then
+        warn "command $slug: upstream section changed since $from; re-read it against ${file#"$repo_root"/}"
+      else
+        warn "command $slug: upstream section added after $from; re-read it against ${file#"$repo_root"/}"
+      fi
+    else
+      printf 'command=%s in-upstream\n' "$slug"
+    fi
+  done
+  for slug in $(cut -f1 <<<"$now"); do
+    [[ -e "$global_dir/commands/paseo/$slug.md" ]] || warn "upstream section $slug has no command in ${global_dir#"$repo_root"/}/commands/paseo"
+  done
+}
+
+# Own skills: paseo* skills of this repo that upstream does not ship. Each lists its eval entry
+# points; the helper never runs them.
+own_skills() {
+  local tag vendored dir name evals e
+  tag=$(daemon_tag) || return
+  vendored=$(upstream_skills "$tag") && [[ -n "$vendored" ]] || { problem "cannot read upstream tree at $tag"; return; }
+  for dir in "$global_dir"/skills/paseo* "$repo_root"/.rulesync/skills/paseo*; do
+    [[ -f "$dir/SKILL.md" ]] || continue
+    name=$(basename "$dir")
+    command grep -qxF "$name" <<<"$vendored" && continue
+    evals=$(cd "$dir" && command find . -type f \( -name 'eval_run*' -o -path './evals/evals.json' \) | sed 's|^\./||' | sort)
+    printf 'own-skill=%s path=%s\n' "$name" "${dir#"$repo_root"/}"
+    [[ -n "$evals" ]] || { warn "$name: no eval entry point"; continue; }
+    for e in $evals; do
+      case $e in
+        evals/evals.json) printf '  eval=%s (agent evals, %s cases)\n' "$e" "$(jq '.evals | length' "$dir/$e")" ;;
+        *) printf '  eval=%s (stand)\n' "$e" ;;
+      esac
+    done
+  done
+}
+
+hooks() {
+  local hooks_file="$global_dir/hooks.json" events
+  paseo hooks --help >/dev/null 2>&1 || problem "paseo CLI has no 'hooks' subcommand"
+  [[ -f "$hooks_file" ]] || { problem "missing $hooks_file"; return; }
+  events=$(command grep -oE 'hooks (claude|codex|opencode) [A-Za-z]+' "$hooks_file" | sort -u)
+  [[ -n "$events" ]] || problem "no paseo hook invocations in $hooks_file"
+  printf '%s\n' "$events" | sed 's/^/hook=/'
+}
+
+logs() {
+  local list ids id out
+  list=$(paseo plugin ls --json 2>/dev/null) || { problem "paseo plugin ls failed"; return; }
+  # Load and runtime errors are kept by the daemon per plugin, not in main.log.
+  for id in $(jq -r '.[] | select(.enabled) | .id' <<<"$list"); do
+    out=$(paseo plugin logs "$id" --json 2>/dev/null) || { problem "paseo plugin logs $id failed"; continue; }
+    # Only the current load attempt: entries after the last "[paseo] Loading plugin".
+    jq -r --arg id "$id" '
+      (([to_entries[] | select(.value.message | startswith("[paseo] Loading plugin")) | .key] | last) // 0) as $start
+      | [.[$start:][] | select(.stream == "stderr")] | .[-5:][] | "\($id): \(.timestamp) \(.message)"' <<<"$out"
+  done
+  [[ -f "$main_log" ]] || { warn "no $main_log"; return; }
+  ids=$(jq -r '[.[].id] | join("|")' <<<"$list")
+  tail -n 20000 "$main_log" | command grep -E "\[error\].*(\[(${ids:-plugin})\]|[Pp]lugin)" | tail -n 30 | sed 's/^/main.log: /'
+}
+
+case ${1:-help} in
+  status) status ;;
+  update-check) shift; update_check "$@" ;;
+  plugins) shift; plugins "$@" ;;
+  changes) shift; changes "$@" ;;
+  vendor-skills) vendor_skills ;;
+  vendor-commands) shift; vendor_commands "$@" ;;
+  own-skills) own_skills ;;
+  hooks) hooks ;;
+  logs) logs ;;
+  all)
+    for section in status update_check plugins vendor_skills vendor_commands own_skills hooks logs; do
+      printf '== %s\n' "$section"
+      "$section"
+    done
+    ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac
+
+exit "$problems"
