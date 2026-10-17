@@ -11,6 +11,9 @@ description: >-
 claudecode:
   model: sonnet
   skills: ["visual-explainer"]
+codexcli:
+  model: gpt-6-luna
+  model_reasoning_effort: max
 opencode:
   mode: subagent
   permission:
