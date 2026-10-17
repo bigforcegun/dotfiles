@@ -42,7 +42,12 @@
     "permission": {
       "*": "allow",
       "external_directory": "ask",
-      "doom_loop": "ask"
+      "doom_loop": "ask",
+      // visual-explainer is loaded only by the artificer subagent
+      "skill": {
+        "*": "allow",
+        "visual-explainer": "deny"
+      }
     }
   },
   "codexcli": {

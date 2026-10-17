@@ -24,5 +24,14 @@
   "simulateCommands": false,
   "simulateSubagents": false,
   "simulateSkills": false,
-  "gitignoreTargetsOnly": true
+  "gitignoreTargetsOnly": true,
+  "sources": [
+    // git transport: GitHub API transport hits the rate limit on ~48 files
+    {
+      "source": "https://github.com/nicobailon/visual-explainer",
+      "transport": "git",
+      "path": "plugins",
+      "skills": ["visual-explainer"]
+    }
+  ]
 }
