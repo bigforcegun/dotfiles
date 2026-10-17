@@ -157,7 +157,7 @@
       "quarantined": false
     },
     {
-      "name": "obsidian-bfg",
+      "name": "bfg-obsidian",
       "url": "${env:BFG_VAULT_MCP_URL}",
       "protocol": "http",
       "headers": {
@@ -253,7 +253,7 @@
       "name": "salotech-freshdesk",
       "url": "${env:SALOTECH_FRESHDESK_MCP_URL}",
       "protocol": "streamable-http",
-      "enabled": true,
+      "enabled": false,
       "oauth": {},
       "quarantined": false,
       "disabled_tools": []
@@ -270,11 +270,7 @@
         "scopes": []
       },
       "disabled_tools": [
-        "slack_add_reaction",
         "slack_create_canvas",
-        "slack_schedule_message",
-        "slack_send_message",
-        "slack_send_message_draft",
         "slack_update_canvas"
       ]
     },
@@ -294,6 +290,28 @@
       "name": "salotech-miro-isa",
       "protocol": "streamable-http",
       "url": "https://mcp.miro.com/",
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-allure",
+      "url": "${env:SALOTECH_ALLURE_HOST}",
+      "protocol": "streamable-http",
+      "headers": {
+        "Authorization": "api-token ${env:SALOTECH_ALLURE_TOKEN}"
+      },
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-jenkins",
+      "url": "${env:SALOTECH_JENKINS_HOST}",
+      "protocol": "streamable-http",
+      "headers": {
+        "Authorization": "Basic ${env:SALOTECH_JENKINS_BASIC_AUTH}"
+      },
       "oauth": null,
       "enabled": true,
       "quarantined": false
@@ -499,7 +517,7 @@
       "protocol": "stdio",
       "command": "/opt/homebrew/bin/qbittorrent-mcp-rs",
       "env": {
-        "QBITTORRENT_HOST": "${env:QBITTORRENT_HOST}"
+        "QBITTORRENT_QBITTORRENT_HOST": "${env:QBITTORRENT_HOST}"
       },
       "enabled": true,
       "quarantined": false,
@@ -539,7 +557,7 @@
         "bfg-nextcloud",
         "bfg-qbittorrent",
         "endless-library",
-        "obsidian-bfg",
+        "bfg-obsidian",
         "playwright",
         "playwright-vivaldi-personal",
         "context7"
@@ -549,7 +567,7 @@
       "name": "salotech",
       "servers": [
         "endless-library",
-        "obsidian-bfg",
+        "bfg-obsidian",
         "bfg-nextcloud",
         "playwright",
         "playwright-vivaldi-personal",
@@ -563,7 +581,9 @@
         "salotech-grafana",
         "salotech-opensearch",
         "salotech-miro-isa",
-        "salotech-redash"
+        "salotech-redash",
+        "salotech-allure",
+        "salotech-jenkins"
       ]
     },
     {
@@ -580,7 +600,7 @@
       "name": "dev",
       "servers": [
         "endless-library",
-        "obsidian-bfg",
+        "bfg-obsidian",
         "context7",
         "grep-app",
         "semble",
@@ -592,7 +612,7 @@
       "name": "gamedev",
       "servers": [
         "endless-library",
-        "obsidian-bfg",
+        "bfg-obsidian",
         "krita",
         "godot",
         "semble",
