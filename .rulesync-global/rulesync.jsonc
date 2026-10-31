@@ -32,6 +32,10 @@
       "transport": "git",
       "path": "plugins",
       "skills": ["visual-explainer"]
+    },
+    {
+      "source": "https://github.com/yoshiko-pg/difit",
+      "transport": "git"
     }
   ]
 }

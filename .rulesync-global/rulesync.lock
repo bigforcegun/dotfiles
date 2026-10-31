@@ -13,6 +13,22 @@
       "skillSelection": [
         "visual-explainer"
       ]
+    },
+    "yoshiko-pg/difit": {
+      "requestedRef": "main",
+      "resolvedRef": "82a765c037ec28fe7fe90ab2f1e4b5748032b4fa",
+      "resolvedAt": "2026-10-31T17:15:21.801Z",
+      "skills": {
+        "difit": {
+          "integrity": "sha256-b8e246b12004896391807ab0cfbc659c38e80409b4560f493c7777c0b12ba98d"
+        },
+        "difit-review": {
+          "integrity": "sha256-5e3065923c978ea5f338adfbd008f4b628f7ff496155a33047a08d5d38208c6c"
+        }
+      },
+      "skillSelection": [
+        "*"
+      ]
     }
   }
 }
