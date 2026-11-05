@@ -37,12 +37,18 @@ export function turnOutputTokens(scope: OutputUsageScope, output: number, previo
 /** Lives with one descriptor's runtime, survives view unmount, resets on epoch replacement. */
 export class TurnOutputRates {
   #epoch: string | undefined;
+  #lastCompleted: { id: string; turn: TurnOutput } | undefined;
   readonly #turns = new Map<string, TurnOutput>();
   readonly #cumulative = new Map<string, number>();
+
+  reset(epoch: string): void {
+    this.#epoch = epoch; this.#turns.clear(); this.#cumulative.clear(); this.#lastCompleted = undefined;
+  }
 
   epoch(epoch: string): void {
     if (this.#epoch !== undefined && this.#epoch !== epoch) {
       this.#turns.clear();
+      this.#lastCompleted = undefined;
       this.#cumulative.clear();
     }
     this.#epoch = epoch;
@@ -84,6 +90,7 @@ export class TurnOutputRates {
     if (completed) {
       turn.end = timestamp;
       turn.completed = true;
+      if (turn.tokens !== undefined && timestamp > turn.start && (!this.#lastCompleted || timestamp >= this.#lastCompleted.turn.end!)) this.#lastCompleted = { id, turn };
       if (scope === "cumulative") {
         if (output !== undefined && Number.isFinite(output) && output >= 0) this.#cumulative.set(provider, output);
         else this.#cumulative.delete(provider);
@@ -99,6 +106,10 @@ export class TurnOutputRates {
 
   retain(ids: ReadonlySet<string>): void {
     for (const id of this.#turns.keys()) if (!ids.has(id)) this.#turns.delete(id);
+    if (this.#lastCompleted && !this.#turns.has(this.#lastCompleted.id)) {
+      this.#lastCompleted = undefined;
+      for (const [id, turn] of this.#turns) if (turn.completed && turn.tokens !== undefined && turn.end! > turn.start && (!this.#lastCompleted || turn.end! >= this.#lastCompleted.turn.end!)) this.#lastCompleted = { id, turn };
+    }
   }
 
   rate(activeId: string | undefined, now: number): OutputRate | undefined {
@@ -113,11 +124,7 @@ export class TurnOutputRates {
       const live = measure(activeId!, active, true);
       if (live) return live;
     }
-    const completed = [...this.#turns].filter(([, turn]) => turn.completed).sort((a, b) => b[1].end! - a[1].end!);
-    for (const [id, turn] of completed) {
-      const result = measure(id, turn, false);
-      if (result) return result;
-    }
+    if (this.#lastCompleted) return measure(this.#lastCompleted.id, this.#lastCompleted.turn, false);
     return undefined;
   }
 }

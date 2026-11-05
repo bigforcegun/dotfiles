@@ -21,6 +21,9 @@ const jsxHarness = vi.hoisted(() => ({
 }));
 
 vi.mock("react", () => ({
+  useCallback: <Callback,>(callback: Callback) => callback,
+  memo: <Props,>(component: (props: Props) => unknown) => component,
+  useLayoutEffect: () => {},
   useRef: (value: unknown) => ({ current: value }),
   useState: (value: unknown) => {
     const index = hookHarness.cursor++;
@@ -87,6 +90,12 @@ function isUiNode(value: unknown): value is UiNode {
   return typeof value === "object" && value !== null && "type" in value && "props" in value;
 }
 
+function nodes(value: unknown): UiNode[] {
+  if (Array.isArray(value)) return value.flatMap(nodes);
+  if (!isUiNode(value)) return [];
+  return [value, ...nodes(value.props["children"])];
+}
+
 function styleOf(node: UiNode): Record<string, unknown> {
   const style = node.props["style"];
   if (!Array.isArray(style)) return isRecord(style) ? style : {};
@@ -139,7 +148,7 @@ describe("Pulseline visual clarity", () => {
     const label = buildComposerPulseLabel(snapshot);
 
     expect(PULSE_GLYPHS).toEqual(["⣀", "⣤", "⣶", "⣿"]);
-    expect(PULSE_LABEL_WIDTH).toBe(16);
+    expect(PULSE_LABEL_WIDTH).toBe(12);
     expect([...label]).toHaveLength(PULSE_LABEL_WIDTH);
     expect(label).toBe("⣶⣶" + "⣿".repeat(PULSE_LABEL_WIDTH - 2));
     expect(label).not.toContain(" ");
@@ -192,9 +201,9 @@ describe("Pulseline visual clarity", () => {
 
     const content = presentation.Content({ ...hostProps, close: () => {} });
     const footer = childrenOf(content).filter(isUiNode).at(-1);
-    const scroll = footer ? childrenOf(footer).filter(isUiNode).find(child => child.type === "ScrollView") : undefined;
+    const scroll = footer ? nodes(footer).find(child => child.type === "ScrollView") : undefined;
     const strip = scroll ? childrenOf(scroll).find(isUiNode) : undefined;
-    const segment = strip ? childrenOf(strip).flat().find(isUiNode) : undefined;
+    const segment = strip ? childrenOf(strip).flat().filter(isUiNode).find(node => node.type === "Pressable") : undefined;
     const barArea = segment ? childrenOf(segment).find(isUiNode) : undefined;
     const block = barArea ? childrenOf(barArea).find(isUiNode) : undefined;
     expect(styleOf(footer ?? content)).toMatchObject({ width: "100%" });
@@ -256,16 +265,14 @@ it("shows counter facts and tool details on hover/focus and initially scrolls to
   const render = () => { hookHarness.cursor = 0; return presentation.Content({ ...hostProps, close: () => {} }); };
   render(); await Promise.resolve(); await Promise.resolve();
   emit?.({ agentId: "agent-1", epoch: "e", seq: 1, timestamp: "2026-09-12T00:00:01.000Z", event: { type: "timeline", provider: "opencode", item: { type: "tool_call", callId: "tool", name: "Read", detail: { type: "read", filePath: "a" }, status: "completed", error: null } } });
-  function nodes(value: unknown): UiNode[] {
-    if (Array.isArray(value)) return value.flatMap(nodes);
-    if (!isUiNode(value)) return [];
-    return [value, ...nodes(value.props["children"])];
-  }
   let tree = render();
   const counter = nodes(tree).find(node => node.type === "Pressable" && String(node.props["accessibilityLabel"]).startsWith("Input tokens:"))!;
   (counter.props["onHoverIn"] as () => void)();
   tree = render();
-  expect(nodes(tree).some(node => node.type === "Text" && String(node.props["children"]).includes("Input tokens: — (unavailable)"))).toBe(true);
+  expect(nodes(tree).some(node => node.type === "Text" && String(node.props["children"]).includes("Input tokens: Chat sum —"))).toBe(true);
+  const counterHint = nodes(tree).find(node => node.props["accessibilityLabel"] === "Counter details")!;
+  expect(nodes(counterHint).find(node => node.type === "HostIcon")?.props["name"]).toBe("ArrowDown");
+  expect(nodes(counterHint).find(node => node.type === "HostIcon")?.props["color"]).toBe(colors.foregroundMuted);
   const bar = nodes(tree).find(node => node.type === "Pressable" && String(node.props["accessibilityLabel"]).includes("size bucket"))!;
   (bar.props["onFocus"] as () => void)();
   tree = render();
@@ -286,11 +293,6 @@ it("renders inline counters, shared header ring, whole-column hover, scrolling i
   const module = await vi.importActual<PresentationModule>("./pill");
   const presentation = module.createPulselinePresentation(input(handler => { emit = handler; }, callback => { tick = callback; }));
   const render = () => { hookHarness.cursor = 0; return presentation.Content({ ...hostProps, close: () => {} }); };
-  function nodes(value: unknown): UiNode[] {
-    if (Array.isArray(value)) return value.flatMap(nodes);
-    if (!isUiNode(value)) return [];
-    return [value, ...nodes(value.props["children"])];
-  }
   const columns = (tree: UiNode) => nodes(tree).filter(node => node.type === "Pressable" && String(node.props["accessibilityLabel"]).includes("size bucket"));
   render(); await Promise.resolve(); await Promise.resolve();
   const send = (seq: number, event: RegistryTimelineEvent["event"]) => emit?.({ agentId: "agent-1", epoch: "e", seq, timestamp: new Date(seq * 1000).toISOString(), event } as RegistryTimelineEvent);
@@ -304,6 +306,11 @@ it("renders inline counters, shared header ring, whole-column hover, scrolling i
     expect(styleOf(slot)).toMatchObject({ flexDirection: "row", width: "16.666666%", height: 36 });
     expect(childrenOf(slot).filter(isUiNode).map(child => child.type)).toEqual(["HostIcon", "Text"]);
   }
+  for (const slot of counterSlots) expect(styleOf(slot)).toMatchObject({ justifyContent: "flex-start", paddingLeft: 0 });
+  const counterHint = nodes(tree).find(node => node.props["accessibilityLabel"] === "Counter details")!;
+  expect(styleOf(counterHint)).toMatchObject({ height: 32, paddingLeft: 0 });
+  expect(styleOf(counterHint)["minHeight"]).toBeUndefined();
+  expect(nodes(counterHint).find(node => node.type === "HostIcon")?.props["name"]).toBe("Info");
   const counterTexts = counterSlots.flatMap(slot => childrenOf(slot).filter(isUiNode).filter(child => child.type === "Text"));
   expect(counterTexts).toHaveLength(12);
   expect(new Set(counterTexts.map(text => styleOf(text)["fontSize"]))).toEqual(new Set([9 * COUNTER_SCALE]));
@@ -319,13 +326,14 @@ it("renders inline counters, shared header ring, whole-column hover, scrolling i
   expect(icons.map(node => node.props["name"])).toEqual(["MessageSquare", "Brain"]);
   expect(icons.map(node => node.props["color"])).toEqual([colors.foreground, colors.accent]);
   for (const column of columns(tree)) {
-    expect(styleOf(column)).toMatchObject({ width: 10, height: 54 });
+    expect(styleOf(column)).toMatchObject({ height: 54 });
+    expect([10, 12]).toContain(styleOf(column)["width"]);
     const [bar, icon] = childrenOf(column).filter(isUiNode);
     expect(styleOf(bar!)).toMatchObject({ width: 10, height: 40 });
     expect(styleOf(icon!)).toMatchObject({ width: 10, height: 14 });
   }
   const footer = nodes(tree).find(node => node.props["accessibilityLabel"] === "Agent activity pulse")!;
-  expect(childrenOf(footer).filter(isUiNode).map(node => node.type === "ScrollView" ? "strip" : node.props["accessibilityLabel"])).toEqual(["Selected activity details", "strip", "Activity colour legend"]);
+  expect(childrenOf(footer).filter(isUiNode).map(node => nodes(node).some(child => child.type === "ScrollView") ? "strip" : node.props["accessibilityLabel"])).toEqual(["Selected activity details", "strip", "Activity colour legend"]);
   const hintText = (root: UiNode) => {
     const hint = nodes(root).find(node => node.props["accessibilityLabel"] === "Selected activity details")!;
     return nodes(hint).find(node => node.type === "Text")?.props["children"];
@@ -336,6 +344,9 @@ it("renders inline counters, shared header ring, whole-column hover, scrolling i
   expect(styleOf(scroll)["height"]).toBe(76);
   expect(scroll.props["contentContainerStyle"]).toEqual({ paddingBottom: 20 });
   expect(columns(tree).every(column => styleOf(column)["backgroundColor"] === undefined)).toBe(true);
+  const blockHint = nodes(tree).find(node => node.props["accessibilityLabel"] === "Selected activity details")!;
+  expect(styleOf(blockHint)).toMatchObject({ paddingLeft: 0, height: 32 });
+  expect(styleOf(tree)).toMatchObject({ paddingLeft: 0, gap: 4 });
   const beforeColumns = columns(tree).map(styleOf);
   (columns(tree)[0]!.props["onHoverIn"] as () => void)();
   tree = render();

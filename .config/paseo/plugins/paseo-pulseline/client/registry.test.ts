@@ -1,3 +1,4 @@
+import { PULSE_LABEL_WIDTH } from "./pulse-view";
 import { setImmediate } from "node:timers/promises";
 import type { PluginButton, PluginButtonRegistration, PluginComposerPillContribution } from "@getpaseo/plugin/client";
 import { describe, expect, it, vi } from "vitest";
@@ -160,10 +161,10 @@ describe("Pulseline registry", () => {
     host.emitAgent({ kind: "upsert", agent: agent({ id: "agent-1", provider: "claude", workspaceId: "workspace-1", activeTurn: { turnId: "turn-1", startedAt: null } }) });
 
     // Then
-    expect(host.created[0]?.labels).toContain("⣀");
-    expect(host.created[0]?.labels.at(-1)).toBe("⣀");
+    expect(host.created[0]?.labels).toContain("⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"));
+    expect(host.created[0]?.labels.at(-1)).toBe("⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"));
     expect(host.created[0]?.contribution.button).toMatchObject({
-      label: "⣀",
+      label: "⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"),
       Label: expect.any(Function),
     });
     unmount();

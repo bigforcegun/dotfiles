@@ -12,6 +12,9 @@ const hookHarness = vi.hoisted(() => {
 });
 
 vi.mock("react", () => ({
+  useCallback: <Callback,>(callback: Callback) => callback,
+  memo: <Props,>(component: (props: Props) => unknown) => component,
+  useLayoutEffect: () => {},
   useRef: (value: unknown) => ({ current: value }),
   useState: (value: unknown) => [value, () => {}],
   useEffect: () => {},

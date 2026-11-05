@@ -65,9 +65,9 @@ describe("UI rework regressions", () => {
     const unavailable = buildPulseView(empty).metrics;
     expect(unavailable.map(line => line.id)).toEqual(["input", "output", "cache", "output-rate", "text-rate", "turn", "chat", "tool-count", "tool-average", "tool-total", "context", "cost"]);
     expect(unavailable.every(line => line.value === "—")).toBe(true);
-    const input = buildPulseView({ ...empty, metrics: { inputTokens: { value: 1234, approximate: true } } }).metrics[0]!;
+    const input = buildPulseView({ ...empty, tokenTotals: { inputTokens: { value: 1234, approximate: true } }, metrics: { inputTokens: { value: 1234 } } }).metrics[0]!;
     expect(input.value).toBe("~1.2k");
-    expect(input.hint).toContain("1234 (~ approximate)");
+    expect(input.hint).toContain("Chat sum 1234 (~ approximate)");
   });
 
   it("renders more than 36 bars in chronological order, retaining tool metadata", () => {
@@ -75,8 +75,8 @@ describe("UI rework regressions", () => {
       metadata: { type: "tool" as const, name: "Read", detail: "read", status: order === 1 ? "running" : "completed" } }));
     const view = buildHistoryView({ ...empty, busy: true, blocks });
     expect(view.segments.map(segment => segment.id)).toEqual(blocks.map(block => block.id));
-    expect(view.segments[1]?.active).toBe(false);
-    expect(view.segments.at(-1)?.active).toBe(true);
+    expect(view.segments[1]?.active).toBe(true);
+    expect(view.segments.at(-1)?.active).toBe(false);
     expect(view.segments[1]?.metadata).toEqual(blocks[1]?.metadata);
     expect(buildPulseView({ ...empty, busy: true, blocks }, 12).segments).toHaveLength(12);
   });

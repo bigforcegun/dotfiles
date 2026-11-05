@@ -33,7 +33,8 @@ export function createPulselineRuntime(input: PulselineRuntimeInput): PulselineR
   const listeners = new Set<() => void>();
   let agent = input.agent;
   let current = cold;
-  let fingerprint = JSON.stringify(cold);
+  let publishedSource: TimelineSnapshot | undefined;
+  let publishedPhase: number | undefined;
   let store: TimelineStore | undefined;
   let active: ActiveRuntime | undefined;
   let disposed = false;
@@ -44,42 +45,41 @@ export function createPulselineRuntime(input: PulselineRuntimeInput): PulselineR
     input.onSnapshot(next);
     for (const listener of listeners) listener();
   };
-  const publish = (next: TimelineSnapshot) => {
-    const nextFingerprint = JSON.stringify(next);
-    if (nextFingerprint === fingerprint) return;
-    fingerprint = nextFingerprint;
-    notify(next);
+  const publish = (source: TimelineSnapshot) => {
+    const phase = source.busy ? pulsePhase : undefined;
+    if (source === publishedSource && phase === publishedPhase) return;
+    publishedSource = source;
+    publishedPhase = phase;
+    notify(phase === undefined ? source : { ...source, pulsePhase });
   };
   const refresh = (advancePulse = false) => {
+    // A late tick or controller callback after stop() must not touch the kept store.
+    if (!active && store) return;
     if (advancePulse) {
-      if (!current.busy) {
-        pulsePhase = 0;
-        return;
-      }
+      if (!current.busy) { pulsePhase = 0; return; }
       pulsePhase = pulsePhase === 0 ? 1 : pulsePhase === 1 ? 2 : 0;
-      notify({ ...(store?.snapshot() ?? current), pulsePhase });
-      return;
     }
-    const next = store?.snapshot() ?? cold;
-    if (!next.busy) {
-      pulsePhase = 0;
-      publish(next);
-      return;
-    }
-    publish({ ...next, pulsePhase });
+    const next = store?.snapshot(advancePulse ? Date.now() : undefined) ?? cold;
+    if (!next.busy) pulsePhase = 0;
+    publish(next);
   };
   const stop = () => {
     const runtime = active;
     if (!runtime) return;
     active = undefined;
-    store = undefined;
+    // Keep the store: live-only facts (tool timings, per-turn rates, usage) cannot be
+    // rebuilt from history, so leaving the chat must not forget them. The next mount
+    // refetches the tail into this same store, which dedupes by block id.
     runtime.stopTimer();
     runtime.controller.stop();
-    publish(cold);
+    store?.interruptObservation();
+    pulsePhase = 0;
+    if (store) publish({ ...store.snapshot(), busy: false });
   };
   const start = () => {
     if (disposed || active) return;
-    const nextStore = new TimelineStore(input.label, outputRates);
+    const nextStore = store ?? new TimelineStore(input.label, outputRates);
+    nextStore.demoteLiveAuthority();
     nextStore.updateAgent(agent);
     store = nextStore;
     const controller = createTimelineController(input.timeline(), nextStore, () => refresh());

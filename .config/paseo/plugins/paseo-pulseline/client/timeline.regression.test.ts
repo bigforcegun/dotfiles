@@ -1,5 +1,5 @@
 import { setImmediate } from "node:timers/promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createTimelineController,
   type RegistryTimelineEvent,
@@ -67,12 +67,13 @@ describe("timeline regressions", () => {
       startCursor: { epoch: "e", seq: 3 },
       entries: [{ provider: "opencode", timestamp: "2026-09-12T00:00:03.000Z", seqStart: 3, seqEnd: 3, item: { type: "tool_call", callId: "tool-1", name: "Read", detail: { type: "read", filePath: "a" }, status: "completed", error: null } }],
     })));
-    source.responses.push(Promise.reject(new Error("older unavailable")));
+
     const store = new TimelineStore("Pulseline");
 
     // When
-    createTimelineController(source, store, () => {});
+    const controller = createTimelineController(source, store, () => {});
     await setImmediate();
+    await vi.waitFor(() => expect(store.snapshot().historyFailed).toBe(true), { interval: 1 });
 
     // Then
     expect(store.snapshot().blocks.map(({ id }) => id)).toEqual(["tool:tool-1"]);
@@ -133,17 +134,21 @@ describe("timeline regressions", () => {
     expect(store.snapshot().blocks[0]).toMatchObject({ id: "tool:tool-1", order: 4, metadata: { status: "completed" } });
   });
 
-  it("replaces authoritative agent usage instead of retaining stale fields", () => {
+  it("merges partial agent usage so mid-turn context-only snapshots keep token counters", () => {
     // Given
     const store = new TimelineStore("Pulseline");
-    store.updateAgent({ provider: "opencode", lastUsage: { inputTokens: 10, outputTokens: 5 } });
+    store.updateAgent({ provider: "opencode", lastUsage: { inputTokens: 10, outputTokens: 5, cachedInputTokens: 3 } });
 
     // When
+    store.updateAgent({ provider: "opencode", lastUsage: { contextWindowUsedTokens: 900, contextWindowMaxTokens: 6_000 } });
     store.updateAgent({ provider: "opencode", lastUsage: { outputTokens: 7 } });
+    store.updateAgent({ provider: "opencode" });
 
     // Then
-    expect(store.snapshot().metrics.inputTokens).toBeUndefined();
-    expect(store.snapshot().metrics.outputTokens).toEqual({ value: 7 });
+    expect(store.snapshot().metrics).toEqual(expect.objectContaining({
+      inputTokens: { value: 10 }, outputTokens: { value: 7 }, cachedInputTokens: { value: 3 },
+      contextWindowUsedTokens: { value: 900 },
+    }));
   });
 
   it("merges only fields present in a completion usage update", () => {

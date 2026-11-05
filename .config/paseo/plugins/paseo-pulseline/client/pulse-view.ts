@@ -2,7 +2,11 @@ import { heightIndexForTokens, type MetricValue, type PulseBlock, type PulseHeig
 import type { TimelineSnapshot } from "./store";
 
 export const PULSE_GLYPHS = ["⣀", "⣤", "⣶", "⣿"] as const;
-export const PULSE_LABEL_WIDTH = 16;
+// Host pill: maxWidth 160 - padding 24 - icon 16 - gap 8 = ~112px of 12px text.
+// Measured (macOS system font, 12pt): one braille cell = 8.2px, so 12 cells = 98px fit,
+// 14 = 115px and 16 = 131px overflow; numberOfLines=1 then cuts the newest glyphs on the
+// right and only the U+2800 left padding stays visible.
+export const PULSE_LABEL_WIDTH = 12;
 
 const PULSE_HEIGHTS = [4, 6, 8, 10, 12, 14, 16, 18] as const;
 const ACTIVE_HEIGHT_INDEX = [1, 2, 3, 4, 5, 6, 7, 7] as const;
@@ -57,51 +61,38 @@ export interface PulseView {
   readonly metrics: readonly PulseMetricLine[];
 }
 
-interface BlockAnalysis {
-  readonly runningToolIndex: number;
-  readonly latestTurnDuration: number | undefined;
-}
+const activityCache = new WeakMap<readonly PulseBlock[], { latestTurn: string | undefined; selected: Map<string | undefined, PulseBlock | null> }>();
 
-const blockAnalysis = new WeakMap<readonly PulseBlock[], BlockAnalysis>();
-
-
-function analyzeBlocks(blocks: readonly PulseBlock[]): BlockAnalysis {
-  const cached = blockAnalysis.get(blocks);
-  if (cached) return cached;
-  let runningToolIndex = -1;
-  let latestTurnId: string | undefined;
-  let turnStart = Number.POSITIVE_INFINITY;
-  let turnEnd = Number.NEGATIVE_INFINITY;
-  for (let index = blocks.length - 1; index >= 0; index -= 1) {
-    const block = blocks[index];
-    if (!block) continue;
-    if (runningToolIndex < 0 && block.metadata?.type === "tool" && block.metadata.status === "running") {
-      runningToolIndex = index;
-    }
-    if (latestTurnId === undefined && block.turnId !== undefined) latestTurnId = block.turnId;
-    if (latestTurnId !== undefined && block.turnId === latestTurnId) {
-      turnStart = Math.min(turnStart, block.timestamp);
-      turnEnd = Math.max(turnEnd, block.timestamp);
-    }
+/** One selection rule for strip, header, composer and icon: newest running tool, else newest block. */
+export function activePulseBlock(snapshot: TimelineSnapshot): PulseBlock | undefined {
+  if (snapshot.activityBlock !== undefined) return snapshot.activityBlock ?? undefined;
+  let cached = activityCache.get(snapshot.blocks);
+  if (!cached) {
+    cached = { latestTurn: snapshot.blocks.findLast(item => item.turnId !== undefined)?.turnId, selected: new Map() };
+    activityCache.set(snapshot.blocks, cached);
   }
-  const analysis = {
-    runningToolIndex,
-    latestTurnDuration: Number.isFinite(turnStart) ? turnEnd - turnStart : undefined,
-  };
-  blockAnalysis.set(blocks, analysis);
-  return analysis;
+  const turn = snapshot.activeTurnId ?? cached.latestTurn;
+  if (cached.selected.has(turn)) return cached.selected.get(turn) ?? undefined;
+  const last = snapshot.blocks.at(-1);
+  const running = snapshot.blocks.findLast(item => item.turnId === turn && item.metadata?.type === "tool" && item.metadata.status === "running");
+  const block = running ?? (last?.metadata?.type === "tool" && last.metadata.status === "running" && last.turnId !== turn ? undefined : last);
+  cached.selected.set(turn, block ?? null);
+  return block;
 }
 
 function segment(block: PulseBlock, active: boolean, phase: 0 | 1 | 2): PulseSegment {
   const heightIndex = active && phase === 1
     ? ACTIVE_HEIGHT_INDEX[block.heightIndex]
     : block.heightIndex;
-  const glyphIndex = (active ? ACTIVE_GLYPH_INDEX : PASSIVE_GLYPH_INDEX)[heightIndex];
+  // The string label cannot express opacity. Animate in glyph space so that
+  // adjacent height buckets folding to the same glyph still visibly blink.
+  const baseGlyph = (active ? ACTIVE_GLYPH_INDEX : PASSIVE_GLYPH_INDEX)[block.heightIndex];
+  const glyphIndex = active && phase === 1 ? (baseGlyph === 3 ? 2 : baseGlyph + 1) : baseGlyph;
   return {
     id: block.id,
     kind: block.kind,
     ...(block.metadata ? { metadata: block.metadata } : {}),
-    glyph: PULSE_GLYPHS[glyphIndex],
+    glyph: PULSE_GLYPHS[glyphIndex]!,
     volumeTokens: block.volumeTokens,
     sizeBucket: block.heightIndex + 1,
     heightIndex,
@@ -115,26 +106,23 @@ function segment(block: PulseBlock, active: boolean, phase: 0 | 1 | 2): PulseSeg
 
 function pulseSegments(snapshot: TimelineSnapshot, limit: number): readonly PulseSegment[] {
   const blocks = snapshot.blocks;
-  const analysis = analyzeBlocks(blocks);
-  const activeIndex = snapshot.busy
-    ? (analysis.runningToolIndex >= 0 ? analysis.runningToolIndex : blocks.length - 1)
-    : -1;
+  const activeBlock = snapshot.busy ? activePulseBlock(snapshot) : undefined;
+  const hasActive = activeBlock !== undefined;
   const phase = snapshot.pulsePhase ?? 0;
   const count = Number.isFinite(limit)
     ? Math.max(1, Math.floor(limit))
     : PULSE_LABEL_WIDTH;
   const passive: PulseSegment[] = [];
-  const passiveCount = activeIndex >= 0 ? count - 1 : count;
+  const passiveCount = hasActive ? count - 1 : count;
   for (let index = blocks.length - 1; index >= 0 && passive.length < passiveCount; index -= 1) {
-    if (index === activeIndex) continue;
+    if (blocks[index] === activeBlock) continue;
     const block = blocks[index];
     if (block) passive.push(segment(block, false, phase));
   }
   passive.reverse();
   let active: PulseSegment | undefined;
-  if (activeIndex >= 0) {
-    const activeBlock = blocks[activeIndex];
-    if (activeBlock) active = segment(activeBlock, true, phase);
+  if (activeBlock) {
+    active = segment(activeBlock, true, phase);
   } else if (snapshot.busy) {
     active = segment({ id: "active", kind: "reasoning", order: 0, timestamp: 0, volumeTokens: 1, heightIndex: 0 }, true, phase);
   }
@@ -160,13 +148,14 @@ function prefix(metric: MetricValue): string {
 
 function compact(metric: MetricValue): string {
   const value = metric.value;
-  if (Math.abs(value) < 1_000) return `${prefix(metric)}${Math.round(value)}`;
+  if (Math.abs(value) < 999.5) return `${prefix(metric)}${Math.round(value)}`;
   const scaled = value / 1_000;
-  const formatted = Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
+  const formatted = String(Number(scaled.toFixed(1)));
   return `${prefix(metric)}${formatted}k`;
 }
 
 function oneDecimal(metric: MetricValue, suffix: string): string {
+  if (Math.abs(metric.value) >= 999.95) return `${compact(metric)}${suffix}`;
   return `${prefix(metric)}${metric.value.toFixed(1)}${suffix}`;
 }
 
@@ -182,8 +171,8 @@ function clock(metric: MetricValue): string {
 }
 
 export function statusHeader(snapshot: TimelineSnapshot): string {
-  const running = snapshot.blocks.findLast(block => block.metadata?.type === "tool" && block.metadata.status === "running");
-  if (running?.metadata?.type === "tool") return `Running ${running.metadata.name}`;
+  const running = activePulseBlock(snapshot);
+  if (snapshot.busy && running?.metadata?.type === "tool" && running.metadata.status === "running") return `Running ${running.metadata.name}`;
   if (snapshot.busy) return "Working";
   if (snapshot.historyFailed) return "History unavailable";
   if (snapshot.historyLoaded === false) return "Loading…";
@@ -207,10 +196,16 @@ function metricLines(snapshot: TimelineSnapshot): readonly PulseMetricLine[] {
   const used = m.contextWindowUsedTokens;
   const max = m.contextWindowMaxTokens;
   const context = used || max ? { value: used?.value ?? max!.value, ...((used?.approximate || max?.approximate) ? { approximate: true as const } : {}) } : undefined;
-  return [
-    line("input", "ArrowDown", "Input tokens", m.inputTokens, "Latest provider usage; not chat total."),
-    line("output", "ArrowUp", "Output tokens", m.outputTokens, "Latest provider usage; not chat total."),
-    line("cache", "Database", "Cached input tokens", m.cachedInputTokens, "Provider-reported cache reads."),
+  const tokens = (id: string, icon: string, name: string, field: "inputTokens" | "outputTokens" | "cachedInputTokens") => {
+    const sum = snapshot.tokenTotals?.[field];
+    const latest = m[field];
+    const since = snapshot.usageObservedSince === undefined ? "" : (() => { const date = new Date(snapshot.usageObservedSince); return ` since ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} — earlier turns not observed`; })();
+    return { ...line(id, icon, name, sum, ""), hint: `${name}: Chat sum ${sum?.value ?? "—"} (~ approximate). Latest request ${latest?.value ?? "—"} (${latest ? "exact, provider-reported" : "unavailable"}).${snapshot.earlierUsageUnobserved ? since : ""}${snapshot.usageObservationGaps ? " some turns not observed (observation interrupted)." : ""}` };
+  };
+  const lines = [
+    tokens("input", "ArrowDown", "Input tokens", "inputTokens"),
+    tokens("output", "ArrowUp", "Output tokens", "outputTokens"),
+    tokens("cache", "Database", "Cached input tokens", "cachedInputTokens"),
     line("output-rate", "Zap", "Output tokens per second", snapshot.outputRate,
       snapshot.outputRate ? `Approximate ${snapshot.outputRate.turn} (${snapshot.outputRate.turnId}): ${snapshot.outputRate.tokens} output tokens / ${snapshot.outputRate.durationMs} ms; ${snapshot.outputRate.source}; includes waits.` : "No retained turn has measured output tokens and duration.", outputRate),
     line("text-rate", "Gauge", "Text units per second", m.textRateCharsPerSecond, "Unique assistant UTF-16 units / observed work spans.", rate),
@@ -225,12 +220,47 @@ function metricLines(snapshot: TimelineSnapshot): readonly PulseMetricLine[] {
     line("cost", "DollarSign", "Cost (USD)", m.totalCostUsd, "Latest provider-reported cost; no inferred pricing.", metric =>
       `${prefix(metric)}${metric.value > 0 && metric.value < .01 ? "<$0.01" : metric.value >= 100 ? "$99+" : `$${metric.value.toFixed(2)}`}`),
   ];
+  const unreported = new Set([
+    ...(!m.inputTokens ? ["input"] : []), ...(!m.outputTokens ? ["output", "output-rate"] : []),
+    ...(!m.cachedInputTokens ? ["cache"] : []), ...(!used && !max ? ["context"] : []), ...(!m.totalCostUsd ? ["cost"] : []),
+  ]);
+  return lines.map(line => ({ ...line,
+    value: snapshot.loadingOlder && line.value !== "—" && !line.value.startsWith("~") ? `~${line.value}` : line.value,
+    hint: `${line.hint}${line.value === "—" && unreported.has(line.id) ? " not reported for this chat." : ""}${snapshot.historyDerivedMetrics?.includes(line.id) ? " Includes estimates derived from history (row timestamps and turn boundaries)." : ""}${snapshot.loadingOlder ? " History loading; chat-derived totals are provisional." : ""}`,
+  }));
 }
 
+export interface PulseStripData {
+  readonly indices: ReadonlyMap<string, number>;
+  readonly legend: readonly { label: string; color: PulseColor }[];
+}
+const stripDataCache = new WeakMap<readonly PulseSegment[], PulseStripData>();
+export function pulseStripData(segments: readonly PulseSegment[]): PulseStripData {
+  let data = stripDataCache.get(segments);
+  if (!data) { data = { indices: new Map(segments.map((item, index) => [item.id, index])), legend: pulseLegend(segments) }; stripDataCache.set(segments, data); }
+  return data;
+}
+
+const historyCache = new WeakMap<readonly PulseBlock[], { base: readonly PulseSegment[]; indices: Map<string, number>; views: Map<string, { label: string; segments: readonly PulseSegment[] }> }>();
 export function buildHistoryView(snapshot: TimelineSnapshot): PulseView {
-  const segments = snapshot.blocks.map((block, index) => segment(block,
-    snapshot.busy && index === snapshot.blocks.length - 1, snapshot.pulsePhase ?? 0));
-  return { label: segments.map(item => item.glyph).join(""), segments, metrics: metricLines(snapshot) };
+  let cached = historyCache.get(snapshot.blocks);
+  if (!cached) {
+    cached = { base: snapshot.blocks.map(block => segment(block, false, 0)), indices: new Map(snapshot.blocks.map((block, index) => [block.id, index])), views: new Map() };
+    historyCache.set(snapshot.blocks, cached);
+  }
+  const active = snapshot.busy ? activePulseBlock(snapshot) : undefined;
+  const phase = snapshot.pulsePhase === 1 ? 1 : 0;
+  const key = `${active?.id ?? "idle"}:${phase}`;
+  let view = cached.views.get(key);
+  if (!view) {
+    const segments = cached.base.slice();
+    if (active) { const index = cached.indices.get(active.id); if (index !== undefined) segments[index] = segment(active, true, phase); }
+    view = { label: segments.map(item => item.glyph).join(""), segments };
+    if (cached.views.size > 3) cached.views.clear();
+    stripDataCache.set(segments, pulseStripData(cached.base));
+    cached.views.set(key, view);
+  }
+  return { ...view, metrics: metricLines(snapshot) };
 }
 
 export function buildPulseView(snapshot: TimelineSnapshot, limit = PULSE_LABEL_WIDTH): PulseView {
@@ -243,19 +273,36 @@ export function buildPulseView(snapshot: TimelineSnapshot, limit = PULSE_LABEL_W
 }
 
 export function buildComposerPulseLabel(snapshot: TimelineSnapshot): string {
-  return buildPulseView(snapshot, PULSE_LABEL_WIDTH).label;
+  return pulseSegments(snapshot, PULSE_LABEL_WIDTH).map(item => item.glyph).join("").padStart(PULSE_LABEL_WIDTH, "⠀");
 }
 
 
 export function pulseActivityColor(snapshot: TimelineSnapshot): PulseColor {
   if (snapshot.blocks.at(-1)?.kind === "error") return "statusDanger";
-  return buildPulseView(snapshot, 1).segments.at(-1)?.color ?? "accent";
+  const block = activePulseBlock(snapshot);
+  return block ? PULSE_COLORS[block.kind] : "accent";
 }
 
 export function pulseSegmentIcon(item: PulseSegment): string {
+  if (item.metadata?.type === "turn") {
+    switch (item.metadata.outcome) {
+      case "completed": return "CircleCheck";
+      case "failed": return "CircleX";
+      case "canceled": return "Ban";
+    }
+  }
   if (item.kind === "error") return "AlertTriangle";
   if (item.metadata?.type === "compaction") return "Archive";
+  if (item.metadata?.type === "notification") return "Bell";
+  if (item.metadata?.type === "unknown") {
+    switch (item.metadata.sourceType) {
+      case "todo": return "ListTodo";
+      case "plugin": return "Puzzle";
+      default: return "CircleHelp";
+    }
+  }
   if (item.metadata?.type === "tool") {
+    if (isMcpTool(item.metadata)) return "Plug";
     switch (item.metadata.detail) {
       case "read": return "FileText";
       case "edit": case "write": return "Pencil";
@@ -271,16 +318,40 @@ export function pulseSegmentIcon(item: PulseSegment): string {
     case "text": return "MessageSquare";
     case "read": return "FileText";
     case "write": return "Pencil";
-    default: return "Wrench";
+    case "tool": return "Wrench";
+    case "success": return "CircleCheck";
+    default: return "CircleHelp";
   }
 }
 
+// Protocol 0.14 has no MCP detail variant. Names preserve the provider's MCP
+// namespace even when the detail is classified as read/search/etc.
+function isMcpTool(metadata: Extract<NonNullable<PulseSegment["metadata"]>, { type: "tool" }>): boolean {
+  return /^(mcp__|mcp:)/i.test(metadata.name);
+}
+
+function legendLabel(item: PulseSegment): string {
+  const metadata = item.metadata;
+  if (metadata?.type === "turn") return metadata.outcome === "completed" ? "done" : metadata.outcome;
+  if (metadata?.type === "notification") return "note";
+  if (metadata?.type === "compaction") return "compaction";
+  if (metadata?.type === "unknown") return metadata.sourceType === "todo" || metadata.sourceType === "plugin" ? metadata.sourceType : "unknown";
+  if (metadata?.type === "tool" && isMcpTool(metadata)) return "mcp";
+  if (item.kind === "success") return "done";
+  return item.kind === "tool" && metadata?.type === "tool" && metadata.status === "running" ? "running" : item.kind;
+}
+
+const legendCache = new WeakMap<readonly PulseSegment[], readonly { label: string; color: PulseColor }[]>();
 export function pulseLegend(segments: readonly PulseSegment[]): readonly { label: string; color: PulseColor }[] {
+  const cached = legendCache.get(segments);
+  if (cached) return cached;
   const entries = new Map<string, { label: string; color: PulseColor }>();
   for (const item of segments) {
-    const label = item.kind === "success" ? "ok" : item.kind === "tool" && item.metadata?.type === "tool" && item.metadata.status === "running" ? "running" : item.kind;
+    const label = legendLabel(item);
     const key = `${label}:${item.color}`;
     if (!entries.has(key)) entries.set(key, { label, color: item.color });
   }
-  return [...entries.values()];
+  const result = [...entries.values()];
+  legendCache.set(segments, result);
+  return result;
 }

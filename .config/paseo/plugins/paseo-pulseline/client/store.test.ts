@@ -245,8 +245,8 @@ describe("timeline store", () => {
     }
 
     // Then
-    const snapshot = store.snapshot();
     const sizes = store.accountingSizes();
+    const snapshot = store.snapshot();
     const maxAccounting = Math.max(...Object.values(sizes));
     console.log(`F2_ACCOUNTING input.tools=10000 input.turns=10000 max=${maxAccounting} retained=${snapshot.blocks.length} active=${snapshot.blocks.some(({ id }) => id === "tool:active-tool") ? 1 : 0} newest=${snapshot.blocks.at(-1)?.text} gap=${snapshot.gap}`);
     expect(maxAccounting).toBeLessThanOrEqual(5000);

@@ -1,3 +1,4 @@
+import { PULSE_LABEL_WIDTH } from "./pulse-view";
 import process from "node:process";
 import type { PluginButton, PluginButtonRegistration, PluginComposerPillContribution } from "@getpaseo/plugin/client";
 import { expect, it, vi } from "vitest";
@@ -107,11 +108,11 @@ it("drives history and live timeline state through cleanup with binary observabl
 
   expect({
     registration: active.size === 1,
-    descriptor: descriptor?.title === "Pulseline" && descriptor.label === "⣀",
+    descriptor: descriptor?.title === "Pulseline" && descriptor.label === "⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"),
     icon: typeof descriptor?.icon === "function",
     popover: behavior?.kind === "popover" && typeof behavior.Content === "function",
     history: mounted.getSnapshot().blocks.some(({ text }) => text === "history"),
-    live: labels.at(-1) === "⣀⣀",
+    live: labels.at(-1) === "⣀⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"),
     labelOnly: updates.length > 0 && updates.every((patch) => Object.keys(patch).join() === "label"),
     behaviorStable: descriptor?.behavior === behavior,
     catalogSubscribed,

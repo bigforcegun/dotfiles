@@ -64,7 +64,7 @@ describe("timeline controller", () => {
       entries: [{ provider: "opencode", timestamp: "2026-09-12T00:00:01.000Z", seqStart: 1, seqEnd: 1, item: { type: "assistant_message", text: "history" } }],
     })));
     const store = new TimelineStore("Pulseline");
-    createTimelineController(source, store, vi.fn());
+    const controller = createTimelineController(source, store, vi.fn());
 
     // When
     source.emit({ agentId: "agent-1", epoch: "epoch-1", seq: 3, timestamp: "2026-09-12T00:00:03.000Z", event: { type: "timeline", provider: "opencode", item: { type: "reasoning", text: "live" } } });
@@ -75,6 +75,7 @@ describe("timeline controller", () => {
       entries: [{ provider: "opencode", timestamp: "2026-09-12T00:00:02.000Z", seqStart: 2, seqEnd: 2, item: { type: "user_message", text: "prompt" } }],
     }));
     await setImmediate();
+    await vi.waitFor(() => expect(source.requests).toHaveLength(2), { interval: 1 });
 
     // Then
     expect(source.requests).toEqual([
@@ -190,8 +191,9 @@ describe("timeline controller", () => {
     const store = new TimelineStore("Pulseline");
 
     // When
-    createTimelineController(source, store, vi.fn());
-    for (let index = 0; index < 10; index += 1) await setImmediate();
+    const controller = createTimelineController(source, store, vi.fn());
+    await setImmediate();
+    await vi.waitFor(() => expect(source.requests).toHaveLength(300), { interval: 1, timeout: 3000 });
 
     // Then
     expect(source.requests).toHaveLength(300);
@@ -212,6 +214,7 @@ it("continues across gap pages, stops repeated cursors and exposes lifecycle fla
   const controller = createTimelineController(source, store, vi.fn());
   expect(store.snapshot().historyLoaded).toBe(false);
   await setImmediate();
+  await vi.waitFor(() => expect(source.requests).toHaveLength(2), { interval: 1 });
   expect(source.requests).toHaveLength(2);
   expect(store.snapshot()).toMatchObject({ historyLoaded: true, historyFailed: false, gap: true });
   controller.stop();
