@@ -1,0 +1,1790 @@
+{
+  "source": "probe-ef223c39.md, final three user-message spans; content removed, tool IDs aliased, timestamps shifted to offsets",
+  "rows": [
+    {
+      "seqStart": 1194,
+      "seqEnd": 1194,
+      "offsetMs": 0,
+      "type": "user_message",
+      "textLength": 866
+    },
+    {
+      "seqStart": 1195,
+      "seqEnd": 1196,
+      "offsetMs": 13909,
+      "type": "reasoning",
+      "textLength": 86
+    },
+    {
+      "seqStart": 1197,
+      "seqEnd": 1197,
+      "offsetMs": 14025,
+      "type": "assistant_message",
+      "textLength": 319
+    },
+    {
+      "seqStart": 1198,
+      "seqEnd": 1198,
+      "offsetMs": 484,
+      "type": "tool_call",
+      "callId": "call-1",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1199,
+      "seqEnd": 1199,
+      "offsetMs": 484,
+      "type": "tool_call",
+      "callId": "call-2",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1200,
+      "seqEnd": 1200,
+      "offsetMs": 484,
+      "type": "tool_call",
+      "callId": "call-3",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1201,
+      "seqEnd": 1201,
+      "offsetMs": 484,
+      "type": "tool_call",
+      "callId": "call-4",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1202,
+      "seqEnd": 1202,
+      "offsetMs": 484,
+      "type": "tool_call",
+      "callId": "call-5",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1203,
+      "seqEnd": 1203,
+      "offsetMs": 30074,
+      "type": "reasoning",
+      "textLength": 45
+    },
+    {
+      "seqStart": 1204,
+      "seqEnd": 1204,
+      "offsetMs": 32491,
+      "type": "assistant_message",
+      "textLength": 303
+    },
+    {
+      "seqStart": 1205,
+      "seqEnd": 1205,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-6",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1206,
+      "seqEnd": 1206,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-7",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1207,
+      "seqEnd": 1207,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-8",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1208,
+      "seqEnd": 1208,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-9",
+      "status": "failed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1209,
+      "seqEnd": 1209,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-10",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1210,
+      "seqEnd": 1210,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-11",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1211,
+      "seqEnd": 1211,
+      "offsetMs": 25923,
+      "type": "tool_call",
+      "callId": "call-12",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1212,
+      "seqEnd": 1216,
+      "offsetMs": 64011,
+      "type": "reasoning",
+      "textLength": 243
+    },
+    {
+      "seqStart": 1217,
+      "seqEnd": 1217,
+      "offsetMs": 64040,
+      "type": "assistant_message",
+      "textLength": 313
+    },
+    {
+      "seqStart": 1218,
+      "seqEnd": 1218,
+      "offsetMs": 40482,
+      "type": "tool_call",
+      "callId": "call-13",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1219,
+      "seqEnd": 1219,
+      "offsetMs": 40482,
+      "type": "tool_call",
+      "callId": "call-14",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1220,
+      "seqEnd": 1220,
+      "offsetMs": 40482,
+      "type": "tool_call",
+      "callId": "call-15",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1221,
+      "seqEnd": 1221,
+      "offsetMs": 40482,
+      "type": "tool_call",
+      "callId": "call-16",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1222,
+      "seqEnd": 1222,
+      "offsetMs": 73738,
+      "type": "reasoning",
+      "textLength": 33
+    },
+    {
+      "seqStart": 1223,
+      "seqEnd": 1223,
+      "offsetMs": 70075,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1224,
+      "seqEnd": 1224,
+      "offsetMs": 81209,
+      "type": "reasoning",
+      "textLength": 24
+    },
+    {
+      "seqStart": 1225,
+      "seqEnd": 1225,
+      "offsetMs": 78656,
+      "type": "tool_call",
+      "callId": "call-17",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1226,
+      "seqEnd": 1226,
+      "offsetMs": 85462,
+      "type": "reasoning",
+      "textLength": 43
+    },
+    {
+      "seqStart": 1227,
+      "seqEnd": 1227,
+      "offsetMs": 83324,
+      "type": "tool_call",
+      "callId": "call-18",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1228,
+      "seqEnd": 1229,
+      "offsetMs": 98314,
+      "type": "reasoning",
+      "textLength": 93
+    },
+    {
+      "seqStart": 1230,
+      "seqEnd": 1230,
+      "offsetMs": 90274,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1231,
+      "seqEnd": 1231,
+      "offsetMs": 102972,
+      "type": "reasoning",
+      "textLength": 37
+    },
+    {
+      "seqStart": 1232,
+      "seqEnd": 1232,
+      "offsetMs": 100783,
+      "type": "tool_call",
+      "callId": "call-19",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1233,
+      "seqEnd": 1233,
+      "offsetMs": 109077,
+      "type": "reasoning",
+      "textLength": 49
+    },
+    {
+      "seqStart": 1234,
+      "seqEnd": 1234,
+      "offsetMs": 112768,
+      "type": "assistant_message",
+      "textLength": 301
+    },
+    {
+      "seqStart": 1235,
+      "seqEnd": 1235,
+      "offsetMs": 105997,
+      "type": "tool_call",
+      "callId": "call-20",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1236,
+      "seqEnd": 1236,
+      "offsetMs": 105997,
+      "type": "tool_call",
+      "callId": "call-21",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1237,
+      "seqEnd": 1237,
+      "offsetMs": 105997,
+      "type": "tool_call",
+      "callId": "call-22",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1238,
+      "seqEnd": 1239,
+      "offsetMs": 130836,
+      "type": "reasoning",
+      "textLength": 111
+    },
+    {
+      "seqStart": 1240,
+      "seqEnd": 1240,
+      "offsetMs": 118176,
+      "type": "tool_call",
+      "callId": "call-23",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1241,
+      "seqEnd": 1241,
+      "offsetMs": 139962,
+      "type": "reasoning",
+      "textLength": 47
+    },
+    {
+      "seqStart": 1242,
+      "seqEnd": 1242,
+      "offsetMs": 134834,
+      "type": "tool_call",
+      "callId": "call-24",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1243,
+      "seqEnd": 1247,
+      "offsetMs": 172854,
+      "type": "reasoning",
+      "textLength": 239
+    },
+    {
+      "seqStart": 1248,
+      "seqEnd": 1248,
+      "offsetMs": 150863,
+      "type": "tool_call",
+      "callId": "call-25",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1249,
+      "seqEnd": 1249,
+      "offsetMs": 150863,
+      "type": "tool_call",
+      "callId": "call-26",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1250,
+      "seqEnd": 1250,
+      "offsetMs": 178212,
+      "type": "reasoning",
+      "textLength": 31
+    },
+    {
+      "seqStart": 1251,
+      "seqEnd": 1251,
+      "offsetMs": 175423,
+      "type": "tool_call",
+      "callId": "call-27",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1252,
+      "seqEnd": 1256,
+      "offsetMs": 207423,
+      "type": "reasoning",
+      "textLength": 249
+    },
+    {
+      "seqStart": 1257,
+      "seqEnd": 1257,
+      "offsetMs": 179967,
+      "type": "tool_call",
+      "callId": "call-28",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1258,
+      "seqEnd": 1258,
+      "offsetMs": 222275,
+      "type": "reasoning",
+      "textLength": 50
+    },
+    {
+      "seqStart": 1259,
+      "seqEnd": 1259,
+      "offsetMs": 219556,
+      "type": "tool_call",
+      "callId": "call-29",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1260,
+      "seqEnd": 1260,
+      "offsetMs": 219556,
+      "type": "tool_call",
+      "callId": "call-30",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1261,
+      "seqEnd": 1262,
+      "offsetMs": 242900,
+      "type": "reasoning",
+      "textLength": 95
+    },
+    {
+      "seqStart": 1263,
+      "seqEnd": 1263,
+      "offsetMs": 227656,
+      "type": "tool_call",
+      "callId": "call-31",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1264,
+      "seqEnd": 1264,
+      "offsetMs": 227656,
+      "type": "tool_call",
+      "callId": "call-32",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1265,
+      "seqEnd": 1265,
+      "offsetMs": 227656,
+      "type": "tool_call",
+      "callId": "call-33",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1266,
+      "seqEnd": 1267,
+      "offsetMs": 284445,
+      "type": "reasoning",
+      "textLength": 81
+    },
+    {
+      "seqStart": 1268,
+      "seqEnd": 1268,
+      "offsetMs": 284667,
+      "type": "assistant_message",
+      "textLength": 281
+    },
+    {
+      "seqStart": 1269,
+      "seqEnd": 1269,
+      "offsetMs": 278053,
+      "type": "tool_call",
+      "callId": "call-34",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1270,
+      "seqEnd": 1270,
+      "offsetMs": 278053,
+      "type": "tool_call",
+      "callId": "call-35",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1271,
+      "seqEnd": 1272,
+      "offsetMs": 296193,
+      "type": "reasoning",
+      "textLength": 94
+    },
+    {
+      "seqStart": 1273,
+      "seqEnd": 1273,
+      "offsetMs": 296452,
+      "type": "assistant_message",
+      "textLength": 796
+    },
+    {
+      "seqStart": 1274,
+      "seqEnd": 1276,
+      "offsetMs": 321296,
+      "type": "reasoning",
+      "textLength": 170
+    },
+    {
+      "seqStart": 1277,
+      "seqEnd": 1277,
+      "offsetMs": 321357,
+      "type": "assistant_message",
+      "textLength": 357
+    },
+    {
+      "seqStart": 1278,
+      "seqEnd": 1278,
+      "offsetMs": 306431,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1279,
+      "seqEnd": 1279,
+      "offsetMs": 329342,
+      "type": "reasoning",
+      "textLength": 40
+    },
+    {
+      "seqStart": 1280,
+      "seqEnd": 1280,
+      "offsetMs": 325534,
+      "type": "tool_call",
+      "callId": "call-36",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1281,
+      "seqEnd": 1281,
+      "offsetMs": 325534,
+      "type": "tool_call",
+      "callId": "call-37",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1282,
+      "seqEnd": 1282,
+      "offsetMs": 325534,
+      "type": "tool_call",
+      "callId": "call-38",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1283,
+      "seqEnd": 1283,
+      "offsetMs": 325534,
+      "type": "tool_call",
+      "callId": "call-39",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1284,
+      "seqEnd": 1284,
+      "offsetMs": 344679,
+      "type": "reasoning",
+      "textLength": 64
+    },
+    {
+      "seqStart": 1285,
+      "seqEnd": 1285,
+      "offsetMs": 342543,
+      "type": "tool_call",
+      "callId": "call-40",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1286,
+      "seqEnd": 1287,
+      "offsetMs": 365151,
+      "type": "reasoning",
+      "textLength": 96
+    },
+    {
+      "seqStart": 1288,
+      "seqEnd": 1288,
+      "offsetMs": 365207,
+      "type": "assistant_message",
+      "textLength": 360
+    },
+    {
+      "seqStart": 1289,
+      "seqEnd": 1289,
+      "offsetMs": 353915,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1290,
+      "seqEnd": 1290,
+      "offsetMs": 371921,
+      "type": "reasoning",
+      "textLength": 41
+    },
+    {
+      "seqStart": 1291,
+      "seqEnd": 1291,
+      "offsetMs": 369329,
+      "type": "tool_call",
+      "callId": "call-41",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1292,
+      "seqEnd": 1292,
+      "offsetMs": 377892,
+      "type": "reasoning",
+      "textLength": 32
+    },
+    {
+      "seqStart": 1293,
+      "seqEnd": 1293,
+      "offsetMs": 374712,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1294,
+      "seqEnd": 1295,
+      "offsetMs": 386796,
+      "type": "reasoning",
+      "textLength": 118
+    },
+    {
+      "seqStart": 1296,
+      "seqEnd": 1296,
+      "offsetMs": 386810,
+      "type": "assistant_message",
+      "textLength": 782
+    },
+    {
+      "seqStart": 1297,
+      "seqEnd": 1297,
+      "offsetMs": 431755,
+      "type": "user_message",
+      "textLength": 984
+    },
+    {
+      "seqStart": 1298,
+      "seqEnd": 1299,
+      "offsetMs": 445688,
+      "type": "reasoning",
+      "textLength": 96
+    },
+    {
+      "seqStart": 1300,
+      "seqEnd": 1300,
+      "offsetMs": 445689,
+      "type": "assistant_message",
+      "textLength": 497
+    },
+    {
+      "seqStart": 1301,
+      "seqEnd": 1301,
+      "offsetMs": 432202,
+      "type": "tool_call",
+      "callId": "call-42",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1302,
+      "seqEnd": 1302,
+      "offsetMs": 432202,
+      "type": "tool_call",
+      "callId": "call-43",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1303,
+      "seqEnd": 1303,
+      "offsetMs": 432202,
+      "type": "tool_call",
+      "callId": "call-44",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1304,
+      "seqEnd": 1305,
+      "offsetMs": 459127,
+      "type": "reasoning",
+      "textLength": 85
+    },
+    {
+      "seqStart": 1306,
+      "seqEnd": 1306,
+      "offsetMs": 459128,
+      "type": "assistant_message",
+      "textLength": 221
+    },
+    {
+      "seqStart": 1307,
+      "seqEnd": 1307,
+      "offsetMs": 452483,
+      "type": "tool_call",
+      "callId": "call-45",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1308,
+      "seqEnd": 1308,
+      "offsetMs": 452483,
+      "type": "tool_call",
+      "callId": "call-46",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1309,
+      "seqEnd": 1309,
+      "offsetMs": 452483,
+      "type": "tool_call",
+      "callId": "call-47",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1310,
+      "seqEnd": 1310,
+      "offsetMs": 452483,
+      "type": "tool_call",
+      "callId": "call-48",
+      "status": "failed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1311,
+      "seqEnd": 1311,
+      "offsetMs": 452483,
+      "type": "tool_call",
+      "callId": "call-49",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1312,
+      "seqEnd": 1312,
+      "offsetMs": 452483,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1313,
+      "seqEnd": 1314,
+      "offsetMs": 479503,
+      "type": "reasoning",
+      "textLength": 90
+    },
+    {
+      "seqStart": 1315,
+      "seqEnd": 1315,
+      "offsetMs": 479505,
+      "type": "assistant_message",
+      "textLength": 271
+    },
+    {
+      "seqStart": 1316,
+      "seqEnd": 1316,
+      "offsetMs": 471525,
+      "type": "tool_call",
+      "callId": "call-50",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1317,
+      "seqEnd": 1317,
+      "offsetMs": 471525,
+      "type": "tool_call",
+      "callId": "call-51",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1318,
+      "seqEnd": 1318,
+      "offsetMs": 471525,
+      "type": "tool_call",
+      "callId": "call-52",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1319,
+      "seqEnd": 1319,
+      "offsetMs": 471525,
+      "type": "tool_call",
+      "callId": "call-53",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1320,
+      "seqEnd": 1320,
+      "offsetMs": 492080,
+      "type": "reasoning",
+      "textLength": 42
+    },
+    {
+      "seqStart": 1321,
+      "seqEnd": 1321,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-54",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1322,
+      "seqEnd": 1322,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-55",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1323,
+      "seqEnd": 1323,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-56",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1324,
+      "seqEnd": 1324,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-57",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1325,
+      "seqEnd": 1325,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-58",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1326,
+      "seqEnd": 1326,
+      "offsetMs": 487469,
+      "type": "tool_call",
+      "callId": "call-59",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1327,
+      "seqEnd": 1327,
+      "offsetMs": 503731,
+      "type": "reasoning",
+      "textLength": 39
+    },
+    {
+      "seqStart": 1328,
+      "seqEnd": 1328,
+      "offsetMs": 499033,
+      "type": "tool_call",
+      "callId": "call-60",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1329,
+      "seqEnd": 1332,
+      "offsetMs": 519957,
+      "type": "reasoning",
+      "textLength": 188
+    },
+    {
+      "seqStart": 1333,
+      "seqEnd": 1333,
+      "offsetMs": 506321,
+      "type": "tool_call",
+      "callId": "call-61",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1334,
+      "seqEnd": 1334,
+      "offsetMs": 506321,
+      "type": "tool_call",
+      "callId": "call-62",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1335,
+      "seqEnd": 1335,
+      "offsetMs": 506321,
+      "type": "tool_call",
+      "callId": "call-63",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1336,
+      "seqEnd": 1336,
+      "offsetMs": 506321,
+      "type": "tool_call",
+      "callId": "call-64",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1337,
+      "seqEnd": 1337,
+      "offsetMs": 529277,
+      "type": "reasoning",
+      "textLength": 41
+    },
+    {
+      "seqStart": 1338,
+      "seqEnd": 1338,
+      "offsetMs": 527309,
+      "type": "tool_call",
+      "callId": "call-65",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1339,
+      "seqEnd": 1339,
+      "offsetMs": 527309,
+      "type": "tool_call",
+      "callId": "call-66",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1340,
+      "seqEnd": 1340,
+      "offsetMs": 527309,
+      "type": "tool_call",
+      "callId": "call-67",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1341,
+      "seqEnd": 1341,
+      "offsetMs": 527309,
+      "type": "tool_call",
+      "callId": "call-68",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1342,
+      "seqEnd": 1342,
+      "offsetMs": 527309,
+      "type": "tool_call",
+      "callId": "call-69",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1343,
+      "seqEnd": 1352,
+      "offsetMs": 580161,
+      "type": "reasoning",
+      "textLength": 445
+    },
+    {
+      "seqStart": 1353,
+      "seqEnd": 1353,
+      "offsetMs": 536952,
+      "type": "tool_call",
+      "callId": "call-70",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1354,
+      "seqEnd": 1354,
+      "offsetMs": 588550,
+      "type": "reasoning",
+      "textLength": 34
+    },
+    {
+      "seqStart": 1355,
+      "seqEnd": 1355,
+      "offsetMs": 582693,
+      "type": "tool_call",
+      "callId": "call-71",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1356,
+      "seqEnd": 1357,
+      "offsetMs": 598754,
+      "type": "reasoning",
+      "textLength": 71
+    },
+    {
+      "seqStart": 1358,
+      "seqEnd": 1358,
+      "offsetMs": 592095,
+      "type": "tool_call",
+      "callId": "call-72",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1359,
+      "seqEnd": 1366,
+      "offsetMs": 635637,
+      "type": "reasoning",
+      "textLength": 383
+    },
+    {
+      "seqStart": 1367,
+      "seqEnd": 1367,
+      "offsetMs": 599921,
+      "type": "tool_call",
+      "callId": "call-73",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1368,
+      "seqEnd": 1368,
+      "offsetMs": 641166,
+      "type": "reasoning",
+      "textLength": 40
+    },
+    {
+      "seqStart": 1369,
+      "seqEnd": 1369,
+      "offsetMs": 637476,
+      "type": "tool_call",
+      "callId": "call-74",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1370,
+      "seqEnd": 1371,
+      "offsetMs": 652779,
+      "type": "reasoning",
+      "textLength": 82
+    },
+    {
+      "seqStart": 1372,
+      "seqEnd": 1372,
+      "offsetMs": 652956,
+      "type": "assistant_message",
+      "textLength": 345
+    },
+    {
+      "seqStart": 1373,
+      "seqEnd": 1373,
+      "offsetMs": 643224,
+      "type": "tool_call",
+      "callId": "call-75",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1374,
+      "seqEnd": 1374,
+      "offsetMs": 671370,
+      "type": "reasoning",
+      "textLength": 52
+    },
+    {
+      "seqStart": 1375,
+      "seqEnd": 1375,
+      "offsetMs": 672960,
+      "type": "assistant_message",
+      "textLength": 260
+    },
+    {
+      "seqStart": 1376,
+      "seqEnd": 1376,
+      "offsetMs": 667586,
+      "type": "tool_call",
+      "callId": "call-76",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1377,
+      "seqEnd": 1377,
+      "offsetMs": 667586,
+      "type": "tool_call",
+      "callId": "call-77",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1378,
+      "seqEnd": 1378,
+      "offsetMs": 667586,
+      "type": "tool_call",
+      "callId": "call-78",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1379,
+      "seqEnd": 1379,
+      "offsetMs": 667586,
+      "type": "tool_call",
+      "callId": "call-79",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1380,
+      "seqEnd": 1380,
+      "offsetMs": 682039,
+      "type": "reasoning",
+      "textLength": 42
+    },
+    {
+      "seqStart": 1381,
+      "seqEnd": 1381,
+      "offsetMs": 677265,
+      "type": "tool_call",
+      "callId": "call-80",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1382,
+      "seqEnd": 1382,
+      "offsetMs": 677265,
+      "type": "tool_call",
+      "callId": "call-81",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1383,
+      "seqEnd": 1383,
+      "offsetMs": 677265,
+      "type": "tool_call",
+      "callId": "call-82",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1384,
+      "seqEnd": 1384,
+      "offsetMs": 677265,
+      "type": "tool_call",
+      "callId": "call-83",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1385,
+      "seqEnd": 1385,
+      "offsetMs": 677265,
+      "type": "tool_call",
+      "callId": "call-84",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1386,
+      "seqEnd": 1387,
+      "offsetMs": 702563,
+      "type": "reasoning",
+      "textLength": 91
+    },
+    {
+      "seqStart": 1388,
+      "seqEnd": 1388,
+      "offsetMs": 687860,
+      "type": "tool_call",
+      "callId": "call-85",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1389,
+      "seqEnd": 1390,
+      "offsetMs": 718882,
+      "type": "reasoning",
+      "textLength": 76
+    },
+    {
+      "seqStart": 1391,
+      "seqEnd": 1391,
+      "offsetMs": 703728,
+      "type": "tool_call",
+      "callId": "call-86",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1392,
+      "seqEnd": 1392,
+      "offsetMs": 729268,
+      "type": "reasoning",
+      "textLength": 31
+    },
+    {
+      "seqStart": 1393,
+      "seqEnd": 1393,
+      "offsetMs": 723474,
+      "type": "tool_call",
+      "callId": "call-87",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1394,
+      "seqEnd": 1398,
+      "offsetMs": 754406,
+      "type": "reasoning",
+      "textLength": 239
+    },
+    {
+      "seqStart": 1399,
+      "seqEnd": 1399,
+      "offsetMs": 730769,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1400,
+      "seqEnd": 1407,
+      "offsetMs": 791864,
+      "type": "reasoning",
+      "textLength": 375
+    },
+    {
+      "seqStart": 1408,
+      "seqEnd": 1408,
+      "offsetMs": 791928,
+      "type": "assistant_message",
+      "textLength": 357
+    },
+    {
+      "seqStart": 1409,
+      "seqEnd": 1409,
+      "offsetMs": 756796,
+      "type": "tool_call",
+      "callId": "call-88",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1410,
+      "seqEnd": 1410,
+      "offsetMs": 756796,
+      "type": "tool_call",
+      "callId": "call-89",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1411,
+      "seqEnd": 1411,
+      "offsetMs": 756796,
+      "type": "tool_call",
+      "callId": "call-90",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1412,
+      "seqEnd": 1416,
+      "offsetMs": 820102,
+      "type": "reasoning",
+      "textLength": 239
+    },
+    {
+      "seqStart": 1417,
+      "seqEnd": 1417,
+      "offsetMs": 820222,
+      "type": "assistant_message",
+      "textLength": 295
+    },
+    {
+      "seqStart": 1418,
+      "seqEnd": 1418,
+      "offsetMs": 798425,
+      "type": "tool_call",
+      "callId": "call-91",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1419,
+      "seqEnd": 1419,
+      "offsetMs": 834011,
+      "type": "reasoning",
+      "textLength": 29
+    },
+    {
+      "seqStart": 1420,
+      "seqEnd": 1420,
+      "offsetMs": 830418,
+      "type": "tool_call",
+      "callId": "call-92",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1421,
+      "seqEnd": 1421,
+      "offsetMs": 840862,
+      "type": "reasoning",
+      "textLength": 34
+    },
+    {
+      "seqStart": 1422,
+      "seqEnd": 1422,
+      "offsetMs": 835959,
+      "type": "tool_call",
+      "callId": "call-93",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1423,
+      "seqEnd": 1423,
+      "offsetMs": 835959,
+      "type": "tool_call",
+      "callId": "call-94",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1424,
+      "seqEnd": 1424,
+      "offsetMs": 850613,
+      "type": "reasoning",
+      "textLength": 36
+    },
+    {
+      "seqStart": 1425,
+      "seqEnd": 1425,
+      "offsetMs": 846140,
+      "type": "tool_call",
+      "callId": "call-95",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1426,
+      "seqEnd": 1427,
+      "offsetMs": 865627,
+      "type": "reasoning",
+      "textLength": 88
+    },
+    {
+      "seqStart": 1428,
+      "seqEnd": 1428,
+      "offsetMs": 858760,
+      "type": "tool_call",
+      "callId": "call-96",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1429,
+      "seqEnd": 1429,
+      "offsetMs": 867016,
+      "type": "tool_call",
+      "callId": "call-97",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1430,
+      "seqEnd": 1430,
+      "offsetMs": 875461,
+      "type": "reasoning",
+      "textLength": 42
+    },
+    {
+      "seqStart": 1431,
+      "seqEnd": 1431,
+      "offsetMs": 870791,
+      "type": "tool_call",
+      "callId": "call-98",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1432,
+      "seqEnd": 1432,
+      "offsetMs": 870791,
+      "type": "tool_call",
+      "callId": "call-99",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1433,
+      "seqEnd": 1434,
+      "offsetMs": 886637,
+      "type": "reasoning",
+      "textLength": 80
+    },
+    {
+      "seqStart": 1435,
+      "seqEnd": 1435,
+      "offsetMs": 878134,
+      "type": "tool_call",
+      "callId": "call-100",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1436,
+      "seqEnd": 1436,
+      "offsetMs": 889498,
+      "type": "tool_call",
+      "callId": "call-101",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1437,
+      "seqEnd": 1437,
+      "offsetMs": 889498,
+      "type": "tool_call",
+      "callId": "call-102",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1438,
+      "seqEnd": 1438,
+      "offsetMs": 902340,
+      "type": "reasoning",
+      "textLength": 40
+    },
+    {
+      "seqStart": 1439,
+      "seqEnd": 1439,
+      "offsetMs": 898215,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1440,
+      "seqEnd": 1442,
+      "offsetMs": 922391,
+      "type": "reasoning",
+      "textLength": 188
+    },
+    {
+      "seqStart": 1443,
+      "seqEnd": 1443,
+      "offsetMs": 924895,
+      "type": "assistant_message",
+      "textLength": 257
+    },
+    {
+      "seqStart": 1444,
+      "seqEnd": 1444,
+      "offsetMs": 908575,
+      "type": "tool_call",
+      "callId": "call-103",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1445,
+      "seqEnd": 1445,
+      "offsetMs": 908575,
+      "type": "tool_call",
+      "callId": "call-104",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1446,
+      "seqEnd": 1446,
+      "offsetMs": 908575,
+      "type": "tool_call",
+      "callId": "call-105",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1447,
+      "seqEnd": 1450,
+      "offsetMs": 965963,
+      "type": "reasoning",
+      "textLength": 193
+    },
+    {
+      "seqStart": 1451,
+      "seqEnd": 1451,
+      "offsetMs": 944386,
+      "type": "tool_call",
+      "callId": "call-106",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1452,
+      "seqEnd": 1453,
+      "offsetMs": 981370,
+      "type": "reasoning",
+      "textLength": 105
+    },
+    {
+      "seqStart": 1454,
+      "seqEnd": 1454,
+      "offsetMs": 981511,
+      "type": "assistant_message",
+      "textLength": 436
+    },
+    {
+      "seqStart": 1455,
+      "seqEnd": 1455,
+      "offsetMs": 969833,
+      "type": "tool_call",
+      "callId": "call-107",
+      "status": "completed",
+      "detailType": "plain_text"
+    },
+    {
+      "seqStart": 1456,
+      "seqEnd": 1457,
+      "offsetMs": 1000108,
+      "type": "reasoning",
+      "textLength": 91
+    },
+    {
+      "seqStart": 1458,
+      "seqEnd": 1458,
+      "offsetMs": 985819,
+      "type": "tool_call",
+      "callId": "call-108",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1459,
+      "seqEnd": 1459,
+      "offsetMs": 1025624,
+      "type": "reasoning",
+      "textLength": 38
+    },
+    {
+      "seqStart": 1460,
+      "seqEnd": 1460,
+      "offsetMs": 1029465,
+      "type": "assistant_message",
+      "textLength": 320
+    },
+    {
+      "seqStart": 1461,
+      "seqEnd": 1461,
+      "offsetMs": 1020357,
+      "type": "tool_call",
+      "callId": "call-109",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1462,
+      "seqEnd": 1462,
+      "offsetMs": 14723666,
+      "type": "user_message",
+      "textLength": 651
+    },
+    {
+      "seqStart": 1463,
+      "seqEnd": 1471,
+      "offsetMs": 14763752,
+      "type": "reasoning",
+      "textLength": 475
+    },
+    {
+      "seqStart": 1472,
+      "seqEnd": 1472,
+      "offsetMs": 14763755,
+      "type": "assistant_message",
+      "textLength": 376
+    },
+    {
+      "seqStart": 1473,
+      "seqEnd": 1473,
+      "offsetMs": 14723973,
+      "type": "tool_call",
+      "callId": "call-110",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1474,
+      "seqEnd": 1474,
+      "offsetMs": 14771911,
+      "type": "assistant_message",
+      "textLength": 289
+    },
+    {
+      "seqStart": 1475,
+      "seqEnd": 1475,
+      "offsetMs": 14767556,
+      "type": "tool_call",
+      "callId": "call-111",
+      "status": "failed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1476,
+      "seqEnd": 1476,
+      "offsetMs": 14778730,
+      "type": "reasoning",
+      "textLength": 52
+    },
+    {
+      "seqStart": 1477,
+      "seqEnd": 1477,
+      "offsetMs": 14774489,
+      "type": "tool_call",
+      "callId": "call-112",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1478,
+      "seqEnd": 1479,
+      "offsetMs": 14808679,
+      "type": "reasoning",
+      "textLength": 90
+    },
+    {
+      "seqStart": 1480,
+      "seqEnd": 1480,
+      "offsetMs": 14800329,
+      "type": "tool_call",
+      "callId": "call-113",
+      "status": "completed",
+      "detailType": "read"
+    },
+    {
+      "seqStart": 1481,
+      "seqEnd": 1483,
+      "offsetMs": 14821264,
+      "type": "reasoning",
+      "textLength": 137
+    },
+    {
+      "seqStart": 1484,
+      "seqEnd": 1484,
+      "offsetMs": 14822693,
+      "type": "assistant_message",
+      "textLength": 297
+    },
+    {
+      "seqStart": 1485,
+      "seqEnd": 1485,
+      "offsetMs": 14811524,
+      "type": "tool_call",
+      "callId": "call-114",
+      "status": "completed",
+      "detailType": "edit"
+    },
+    {
+      "seqStart": 1486,
+      "seqEnd": 1487,
+      "offsetMs": 14842154,
+      "type": "reasoning",
+      "textLength": 90
+    },
+    {
+      "seqStart": 1488,
+      "seqEnd": 1488,
+      "offsetMs": 14828678,
+      "type": "tool_call",
+      "callId": "call-115",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1489,
+      "seqEnd": 1489,
+      "offsetMs": 14828678,
+      "type": "tool_call",
+      "callId": "call-116",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1490,
+      "seqEnd": 1490,
+      "offsetMs": 14828678,
+      "type": "tool_call",
+      "callId": "call-117",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1491,
+      "seqEnd": 1491,
+      "offsetMs": 14828678,
+      "type": "tool_call",
+      "callId": "call-118",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1492,
+      "seqEnd": 1495,
+      "offsetMs": 14864811,
+      "type": "reasoning",
+      "textLength": 174
+    },
+    {
+      "seqStart": 1496,
+      "seqEnd": 1496,
+      "offsetMs": 14850329,
+      "type": "tool_call",
+      "callId": "call-119",
+      "status": "completed",
+      "detailType": "shell"
+    },
+    {
+      "seqStart": 1497,
+      "seqEnd": 1499,
+      "offsetMs": 14883830,
+      "type": "reasoning",
+      "textLength": 133
+    },
+    {
+      "seqStart": 1500,
+      "seqEnd": 1500,
+      "offsetMs": 14868186,
+      "type": "tool_call",
+      "callId": "call-120",
+      "status": "completed",
+      "detailType": "unknown"
+    },
+    {
+      "seqStart": 1501,
+      "seqEnd": 1502,
+      "offsetMs": 14894632,
+      "type": "reasoning",
+      "textLength": 74
+    },
+    {
+      "seqStart": 1503,
+      "seqEnd": 1503,
+      "offsetMs": 14885501,
+      "type": "todo"
+    },
+    {
+      "seqStart": 1504,
+      "seqEnd": 1505,
+      "offsetMs": 14909369,
+      "type": "reasoning",
+      "textLength": 106
+    },
+    {
+      "seqStart": 1506,
+      "seqEnd": 1506,
+      "offsetMs": 14910954,
+      "type": "assistant_message",
+      "textLength": 1377
+    }
+  ]
+}

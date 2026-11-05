@@ -1,6 +1,7 @@
 export interface RaceHandlers<Value> {
   readonly value: (value: Value) => void;
   readonly error: (error: unknown) => void;
+  readonly abandonedValue?: (value: Value) => void;
 }
 
 export interface Abandonment {
@@ -13,6 +14,7 @@ interface ReactionCell<Value> {
   value: ((value: Value) => void) | undefined;
   error: ((error: unknown) => void) | undefined;
   release: (() => void) | undefined;
+  abandonedValue?: ((value: Value) => void) | undefined;
 }
 
 export function createAbandonment(): Abandonment {
@@ -33,12 +35,15 @@ export function createAbandonment(): Abandonment {
         (value) => {
           const handler = cell.value;
           cell.release?.();
-          handler?.(value);
+          if (handler) handler(value);
+          else cell.abandonedValue?.(value);
+          cell.abandonedValue = undefined;
         },
         (error: unknown) => {
           const handler = cell.error;
           cell.release?.();
           handler?.(error);
+          cell.abandonedValue = undefined;
         },
       );
     },

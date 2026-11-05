@@ -60,6 +60,10 @@ const scheduleRefresh: ScheduleRefresh = (callback) => {
   return () => clearInterval(timer);
 };
 
+function releaseDirectoryPage(page: { readonly subscription?: { release(): Promise<void> } | undefined }): void {
+  void page.subscription?.release().catch(() => {});
+}
+
 export function createPulselineRegistry(
   host: RegistryHost,
   schedule: ScheduleRefresh = scheduleRefresh,
@@ -151,8 +155,9 @@ export function createPulselineRegistry(
         ...(first ? { subscribe: {} } : {}),
       }),
       {
+        abandonedValue: releaseDirectoryPage,
         value(page) {
-          if (stopped) return;
+          if (stopped) { releaseDirectoryPage(page); return; }
           if (first) directory = page.subscription;
           for (const { agent } of page.entries) {
             if (!changedDuringInitialList.has(agent.id)) sync(agent);

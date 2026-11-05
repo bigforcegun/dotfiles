@@ -1,3 +1,4 @@
+import { PULSE_LABEL_WIDTH } from "./pulse-view";
 import type {
   PluginButtonRegistration,
   PluginComposerPillContribution,
@@ -130,7 +131,7 @@ describe("Pulseline client contribution", () => {
       true,
     );
     expect(fixture.contributions.every(({ button }) => button.title === "Pulseline")).toBe(true);
-    expect(fixture.contributions.every(({ button }) => button.label === "⣀")).toBe(true);
+    expect(fixture.contributions.every(({ button }) => button.label === "⣀".padStart(PULSE_LABEL_WIDTH, "\u2800"))).toBe(true);
     cleanup();
   });
 
@@ -187,7 +188,7 @@ describe("Pulseline client contribution", () => {
 
     // Then
     expect(behavior?.kind).toBe("popover");
-    expect(fixture.updates.at(-1)).toEqual({ label: "⣤" });
+    expect(fixture.updates.at(-1)).toEqual({ label: "⣤".padStart(PULSE_LABEL_WIDTH, "\u2800") });
     expect(fixture.updates.every((patch) => Object.keys(patch).join() === "label")).toBe(true);
     expect(fixture.contributions[0]?.button.behavior).toBe(behavior);
     unmount();

@@ -22,6 +22,9 @@ const jsxHarness = vi.hoisted(() => ({
 }));
 
 vi.mock("react", () => ({
+  useCallback: <Callback,>(callback: Callback) => callback,
+  memo: <Props,>(component: (props: Props) => unknown) => component,
+  useLayoutEffect: () => {},
   useRef: (value: unknown) => ({ current: value }),
   useState: (value: unknown) => [value, () => {}],
   useEffect: () => {},
@@ -249,6 +252,7 @@ describe("Pulseline independent review regressions", () => {
     // Given
     const snapshot: TimelineSnapshot = {
       ...empty,
+      tokenTotals: { inputTokens: { value: 999 }, outputTokens: { value: 1000 }, cachedInputTokens: { value: 1250 } },
       metrics: {
         inputTokens: { value: 999 }, outputTokens: { value: 1_000 }, cachedInputTokens: { value: 1_250 },
         totalCostUsd: { value: 1.235 }, chatDurationMs: { value: 800_000 }, toolCount: { value: 1_000 },
