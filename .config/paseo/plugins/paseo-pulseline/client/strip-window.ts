@@ -1,6 +1,8 @@
-export const STRIP_COLUMN_WIDTH = 10;
+/** Gap between neighbouring bars; 2px keeps same-kind neighbours distinct. */
+export const STRIP_BAR_GAP = 2;
 export const STRIP_COLUMN_PITCH = 12;
-export function stripExtent(count: number): number { return Math.max(0, count * STRIP_COLUMN_PITCH - 2); }
+export const STRIP_COLUMN_WIDTH = STRIP_COLUMN_PITCH - STRIP_BAR_GAP;
+export function stripExtent(count: number): number { return Math.max(0, count * STRIP_COLUMN_PITCH - STRIP_BAR_GAP); }
 export function stripWindow(count: number, offset: number, viewport: number) {
   offset = Math.max(0, Math.min(offset, Math.max(0, stripExtent(count) - viewport)));
   const screens = Math.max(1, Math.ceil(viewport / STRIP_COLUMN_PITCH));
