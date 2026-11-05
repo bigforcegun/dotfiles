@@ -2,7 +2,7 @@ import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, expect, it, vi } from "vitest";
 import { buildHistoryView } from "./pulse-view";
-import { stripExtent, stripWindow, prependOffset } from "./strip-window";
+import { STRIP_BAR_GAP, stripExtent, stripWindow, prependOffset } from "./strip-window";
 import { createPulselineRuntime } from "./runtime";
 import { setImmediate } from "node:timers/promises";
 import type { PluginButtonContentProps } from "@getpaseo/plugin/client";
@@ -57,7 +57,7 @@ it("background prepend preserves a detached horizontal offset", async () => {
 it("11a: spacers preserve the exact scroll extent at every offset", () => {
   for (const offset of [-100, 0, 120, 30000, stripExtent(5000) - 360, 100000]) {
     const window = stripWindow(5000, offset, 360);
-    const columns = (window.end - window.first) * 12 - (window.end === 5000 ? 2 : 0);
+    const columns = (window.end - window.first) * 12 - (window.end === 5000 ? STRIP_BAR_GAP : 0);
     expect(window.leading + columns + window.trailing).toBe(stripExtent(5000));
     expect(window.end - window.first).toBeLessThanOrEqual(151);
   }
