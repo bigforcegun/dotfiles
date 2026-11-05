@@ -157,6 +157,14 @@
       "quarantined": false
     },
     {
+      "name": "salotech-display",
+      "url": "https://api.display.dev/v1/mcp",
+      "protocol": "streamable-http",
+      "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
       "name": "bfg-obsidian",
       "url": "${env:BFG_VAULT_MCP_URL}",
       "protocol": "http",
@@ -189,6 +197,23 @@
       "quarantined": false
     },
     {
+      "name": "blender",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://projects.blender.org/lab/blender_mcp.git#subdirectory=mcp",
+        "blender-mcp"
+      ],
+      "env": {
+        "BLENDER_MCP_HOST": "127.0.0.1",
+        "BLENDER_MCP_PORT": "9876",
+        "BLENDER_PATH": "/opt/homebrew/bin/blender"
+      },
+      "enabled": true,
+      "quarantined": false
+    },
+    {
       "name": "godot",
       "protocol": "stdio",
       "command": "npx",
@@ -198,7 +223,7 @@
       "env": {
         "GODOT_PATH": "${env:GODOT_PATH}"
       },
-      "enabled": false,
+      "enabled": true,
       "quarantined": false
     },
     {
@@ -528,6 +553,24 @@
         "shutdown_app",
         "ban_peers"
       ]
+    },
+    {
+      "name": "tripo-api",
+      "protocol": "stdio",
+      "command": "uvx",
+      "args": [
+        "--refresh-package",
+        "tripo-mcp",
+        "--from",
+        "/Users/bigforcegun/Sources/tripo-mcp",
+        "tripo-mcp"
+      ],
+      "env": {
+        "TRIPO_API_KEY": "${env:TRIPO_API_KEY}",
+        "TRIPO_OUTPUT_DIR": "/Users/bigforcegun/Documents/Tripo"
+      },
+      "enabled": true,
+      "quarantined": false
     }
   ],
   "observability": {
@@ -583,7 +626,8 @@
         "salotech-miro-isa",
         "salotech-redash",
         "salotech-allure",
-        "salotech-jenkins"
+        "salotech-jenkins",
+        "salotech-display"
       ]
     },
     {
@@ -614,7 +658,9 @@
         "endless-library",
         "bfg-obsidian",
         "krita",
+        "blender",
         "godot",
+        "tripo-api",
         "semble",
         "context7"
       ]

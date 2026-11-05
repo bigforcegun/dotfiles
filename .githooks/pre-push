@@ -1,0 +1,4 @@
+#!/bin/sh
+h="$(git rev-parse --path-format=absolute --git-common-dir)/hooks/$(basename "$0")"
+[ -x "$h" ] && exec "$h" "$@"
+exit 0

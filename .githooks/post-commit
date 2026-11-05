@@ -4,3 +4,5 @@
 # git log -1 --format=format:%h | pbcopy
 
 # Add other post-commit hooks
+h="$(git rev-parse --path-format=absolute --git-common-dir)/hooks/post-commit"
+[ -x "$h" ] && exec "$h" "$@"
