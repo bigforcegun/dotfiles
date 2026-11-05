@@ -276,7 +276,7 @@ it("shows counter facts and tool details on hover/focus and initially scrolls to
   const bar = nodes(tree).find(node => node.type === "Pressable" && String(node.props["accessibilityLabel"]).includes("size bucket"))!;
   (bar.props["onFocus"] as () => void)();
   tree = render();
-  expect(nodes(tree).some(node => node.type === "Text" && String(node.props["children"]).includes("Read · completed · size bucket"))).toBe(true);
+  expect(nodes(tree).some(node => node.type === "Text" && String(node.props["children"]).includes("Read · completed · ~"))).toBe(true);
   const scroll = nodes(tree).find(node => node.type === "ScrollView")!;
   const scrollToEnd = vi.fn();
   (scroll.props["ref"] as { current: unknown }).current = { scrollToEnd };

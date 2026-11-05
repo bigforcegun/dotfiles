@@ -9,6 +9,7 @@ import {
   type TimelineSourceItem,
 } from "./model";
 import { TurnOutputRates, type OutputRate } from "./output-rate";
+import { reasoningRuns } from "./reasoning-runs";
 import { TokenTotals } from "./token-totals";
 import { TimelineAccounting } from "./store-accounting";
 import { MAX_BUFFERED_LIVE_EVENTS, MAX_RETAINED_BLOCKS, blockActivity, removeBoundedBlock, setBoundedBlock } from "./store-bounds";
@@ -56,6 +57,7 @@ export interface TimelineSnapshot {
   readonly busy: boolean;
   readonly gap: boolean;
   readonly blocks: readonly PulseBlock[];
+  readonly retainedBlockCount?: number;
   readonly metrics: PulseMetrics;
   readonly label: string;
   readonly historyLoaded?: boolean;
@@ -99,6 +101,8 @@ export class TimelineStore {
   #sequenceHighWater: number | undefined;
   #nextOrder = 1;
   #sortedBlocks: readonly PulseBlock[] | undefined;
+  #displaySource: readonly PulseBlock[] | undefined;
+  #display = reasoningRuns([], new Map());
   #eventsSincePrune = 0;
   #version = 0;
   #cached: TimelineSnapshot | undefined;
@@ -236,9 +240,15 @@ export class TimelineStore {
     if (this.#cached && (this.#activeTurnId === undefined || now === undefined || now === this.#cachedAt)) return this.#cached;
     now ??= Date.now();
     this.#cachedAt = now;
-    const blocks = this.#sortedBlocks ??= [...this.#blocks.values()].sort((left, right) => left.order - right.order);
+    const source = this.#sortedBlocks ??= [...this.#blocks.values()].sort((left, right) => left.order - right.order);
+    if (this.#displaySource !== source) {
+      this.#display = reasoningRuns(source, this.#rangeStarts);
+      this.#displaySource = source;
+    }
+    const blocks = this.#display.blocks;
     const metrics = { ...this.#reported, ...this.#accounting.metrics(this.#gap || this.#hasOlder || this.#loadingOlder, this.#activeTurnId, now) };
-    const activeBlock = blockActivity(this.#blocks, this.#activeTurnId);
+    const rawActive = blockActivity(this.#blocks, this.#activeTurnId);
+    const activeBlock = rawActive ? this.#display.bySource.get(rawActive.id) ?? rawActive : undefined;
     const lastBlock = blocks.at(-1);
     const tokenTotal = (metrics.inputTokens?.value ?? 0) + (metrics.outputTokens?.value ?? 0);
     const suffix = this.#activeTurnId
@@ -261,6 +271,7 @@ export class TimelineStore {
       ...this.#accounting.latestTurn(this.#activeTurnId, now),
       gap: this.#gap || this.#hasOlder,
       blocks,
+      retainedBlockCount: this.#blocks.size,
       metrics,
       historyDerivedMetrics: this.#accounting.historyDerived(this.#activeTurnId),
       label: suffix ? `${this.#label} · ${suffix}` : this.#label,

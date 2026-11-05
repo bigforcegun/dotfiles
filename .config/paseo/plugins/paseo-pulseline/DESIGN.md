@@ -294,3 +294,19 @@ text lengths only, aliased call IDs and shifted timestamp offsets. Tests cover
 reverse paging/refetch, native IDs, import clocks, status pairs arriving after
 the completed block, backwards tool timestamps, mixed live/history deduplication,
 epoch reset, numerator/denominator scope and no history rebuild on live ticks.
+
+## Growing reasoning columns
+
+The store projects consecutive reasoning records in the same turn into one
+display block. Its ID uses the first sequence (canonical seqStart), and its
+height uses the combined text estimate. Both composer and popover use this
+projection, including the active block. A different kind, turn, or sequence
+gap ends the run; invisible user/turn events therefore remain boundaries.
+The protocol offers no reasoning-part identity here, so this is a conservative
+adjacency rule, not an inference about internal model thought boundaries.
+
+Raw records, sequence ranges, paging checkpoints, retention limits and usage
+accounting stay separate. Canonical range replacement still deduplicates raw
+chunks before projection, including partial refetches. History loading progress
+counts retained source blocks, not the smaller number of display columns.
+The projection is cached between data changes; pulse ticks reuse its identity.

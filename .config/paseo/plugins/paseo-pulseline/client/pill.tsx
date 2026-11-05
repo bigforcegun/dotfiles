@@ -93,7 +93,7 @@ export function PulseFooter({ segments, colors, historyLoaded, loadingOlder = fa
   const data = pulseStripData(segments);
   const index = hoveredId === null ? undefined : data.indices.get(hoveredId);
   const selected = index === undefined ? segments.at(-1) : segments[index];
-  const description = selected ? `${selected.kind}${selected.metadata?.type === "tool" ? ` · ${selected.metadata.name} · ${selected.metadata.status}` : ""} · size bucket ${selected.sizeBucket}/8 (~${selected.volumeTokens} tokens)` : "No activity yet";
+  const description = selected ? `${selected.kind}${selected.metadata?.type === "tool" ? ` · ${selected.metadata.name} · ${selected.metadata.status}` : ""} · ~${selected.volumeTokens} tokens` : "No activity yet";
   return <View accessibilityLabel="Agent activity pulse" style={{ width: "100%" }}>
     <BlockHint description={description} icon={selected ? pulseSegmentIcon(selected) : "Activity"} color={colors.foregroundMuted} />
     <View style={{ width: "100%" }}>
@@ -178,7 +178,7 @@ export function createPulselinePresentation(input: PulselineRuntimeInput): Pulse
           </View>
           {snapshot.gap && !snapshot.loadingOlder ? <Text style={{ color: theme.colors.foregroundMuted, fontSize: 10 }}>Incomplete history</Text> : null}
         </View>
-        <Metrics colors={theme.colors} lines={view.metrics} loading={snapshot.loadingOlder === true} loadedBlocks={snapshot.blocks.length} />
+        <Metrics colors={theme.colors} lines={view.metrics} loading={snapshot.loadingOlder === true} loadedBlocks={snapshot.retainedBlockCount ?? snapshot.blocks.length} />
         <PulseFooter colors={theme.colors} segments={view.segments} historyLoaded={snapshot.historyLoaded === true} loadingOlder={snapshot.loadingOlder ?? false} />
       </View>
     );

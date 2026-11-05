@@ -62,10 +62,12 @@ it("2: coalesced tail ranges replace live reasoning/text chunks without inflatin
   for (const [seq, item] of [[1, { type: "reasoning", text: "aa" }], [2, { type: "reasoning", text: "bb" }], [3, { type: "assistant_message", text: "12345" }], [4, { type: "assistant_message", text: "67890" }]] as const)
     emit({ agentId: "a", epoch: "e", seq, timestamp: new Date(seq * 1000).toISOString(), event: { type: "timeline", provider: "codex", turnId: "t", item } });
   const rate = runtime.getSnapshot().metrics.textRateCharsPerSecond;
-  expect(runtime.getSnapshot().blocks).toHaveLength(4);
+  expect(runtime.getSnapshot().blocks).toHaveLength(3);
+  const reasoningId = runtime.getSnapshot().blocks[0]!.id;
   for (let i = 0; i < 3; i++) {
     unmount(); unmount = runtime.subscribe(() => {}); await Promise.resolve(); await Promise.resolve();
     expect(runtime.getSnapshot().blocks).toHaveLength(2);
+    expect(runtime.getSnapshot().blocks[0]!.id).toBe(reasoningId);
     expect(runtime.getSnapshot().blocks.map(block => block.text)).toEqual(["aabb", "1234567890"]);
     expect(runtime.getSnapshot().metrics.textRateCharsPerSecond).toEqual(rate);
   }

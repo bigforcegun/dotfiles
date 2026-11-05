@@ -166,11 +166,12 @@ it("scroll and layout cannot start additional data requests after history comple
 
 it.each([
   ["append", true], ["growth", true], ["append", false], ["growth", false],
+  ["reasoning-growth", true], ["reasoning-growth", false],
 ] as const)("real runtime %s follows only when near right end (pinned=%s)", async (change, pinned) => {
   let emit!: (event: RegistryTimelineEvent) => void;
   const runtime = createPulselineRuntime({ agent: { provider: "codex", activeTurn: { turnId: "t", startedAt: new Date(1000).toISOString() } }, label: "", onSnapshot: () => {}, schedule: () => () => {}, timeline: () => ({
     subscribe: handler => { emit = handler; return Object.assign(() => {}, { ready: Promise.resolve() }); },
-    refetch: async () => ({ epoch: "e", reset: false, gap: false, hasOlder: false, startCursor: null, error: null, entries: Array.from({ length: 300 }, (_, i) => ({ provider: "codex", turnId: "t", timestamp: new Date((i + 1) * 1000).toISOString(), seqStart: i + 1, seqEnd: i + 1, item: i === 299 ? { type: "assistant_message" as const, messageId: "last", text: "x" } : { type: "reasoning" as const, text: "x" } })) }),
+    refetch: async () => ({ epoch: "e", reset: false, gap: false, hasOlder: false, startCursor: null, error: null, entries: Array.from({ length: 300 }, (_, i) => ({ provider: "codex", turnId: "t", timestamp: new Date((i + 1) * 1000).toISOString(), seqStart: i + 1, seqEnd: i + 1, item: i === 299 && change === "reasoning-growth" ? { type: "reasoning" as const, text: "x" } : { type: "assistant_message" as const, messageId: i === 299 ? "last" : `history-${i}`, text: "x" } })) }),
   }) });
   function Connected() {
     const snapshot = React.useSyncExternalStore(runtime.subscribe, runtime.getSnapshot, runtime.getSnapshot);
