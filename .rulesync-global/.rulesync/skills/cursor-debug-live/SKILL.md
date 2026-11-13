@@ -1,5 +1,5 @@
 ---
-name: debug-live
+name: cursor-debug-live
 description: >-
   Drive an interactive VS Code debugger to investigate bugs, failing tests,
   wrong/null variable values, unexpected runtime behavior, and other "it doesn't

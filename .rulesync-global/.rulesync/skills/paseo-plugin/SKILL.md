@@ -14,7 +14,7 @@ codexcli:
 
 Build or manage the requested plugin directly. Use the current public docs to catch contract changes, but keep working from this skill if the network is unavailable.
 
-**User's request:** $ARGUMENTS
+Use the user's request and current conversation as input, including any arguments supplied with the skill invocation.
 
 ## Check current documentation
 

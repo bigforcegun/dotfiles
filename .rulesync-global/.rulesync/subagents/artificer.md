@@ -4,8 +4,9 @@ targets: ["*"]
 description: >-
   Renders a static HTML artifact with the visual-explainer skill: report,
   comparison table, diagram, flow, chart, slide deck, research summary.
-  Use when the user asks to visualize, render, draw, make it pretty, or says
-  отчёт, схема, диаграмма, график, слайды, презентация, визуализируй,
+  Use only for an explicitly ordered visualization, not for any plain-text
+  report: the user asks to visualize, render, draw, make it pretty, or says
+  HTML-отчёт, схема, диаграмма, график, слайды, презентация, визуализируй,
   нарисуй, покажи красиво, HTML-артефакт. Pass the facts and, if known, the
   output path; it returns only the path.
 claudecode:
