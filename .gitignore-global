@@ -1,0 +1,14 @@
+# global excludes (core.excludesfile), applied to every repo
+
+.DS_Store
+.idea
+*.bak
+*.bak-*
+*.log
+__pycache__
+node_modules/
+.playwright-mcp/
+.omo/
+token-usage-output.txt
+**/.claude/settings.local.json
+/tags

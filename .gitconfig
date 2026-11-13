@@ -7,7 +7,7 @@
 
 [core]
 	autocrlf = input
-	excludesfile = ~/.gitignore
+	excludesfile = ~/.gitignore-global
 	hooksPath = ~/.githooks
 	ignorecase = false
 

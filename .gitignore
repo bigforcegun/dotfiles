@@ -14,11 +14,7 @@ env
 
 # trash
 
-.DS_Store
-*.bak
-*.bak-*
 .backups/
-token-usage-output.txt
 *.zwc
 *.tar
 *.tar.*
@@ -35,16 +31,9 @@ token-usage-output.txt
 
 # runtime
 
-.idea
-tags
-tags*
 vendor/bundle
-.playwright-mcp/
-node_modules/
-__pycache__
 *.antigen-compat
 .maid/maid.log
-*.log
 .magic.mgc
 .uuid
 .ruby-version

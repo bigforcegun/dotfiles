@@ -23,7 +23,7 @@ link ".bundle/config"
 
 link ".gitconfig"
 link ".gitconfig-private"
-link ".gitignore"
+link ".gitignore-global"
 link ".ignore"
 
 link ".tmux.conf"
