@@ -250,7 +250,7 @@
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_WATCHER_URI}"
       },
-      "enabled": true,
+      "enabled": false,
       "quarantined": false,
       "disabled_tools": [
         "export"
@@ -267,6 +267,24 @@
       ],
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_MONITOR_URI}"
+      },
+      "enabled": false,
+      "quarantined": false,
+      "disabled_tools": [
+        "export"
+      ]
+    },
+    {
+      "name": "salotech-mongodb-freshdesk-mcp",
+      "protocol": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server",
+        "--readOnly"
+      ],
+      "env": {
+        "MDB_MCP_CONNECTION_STRING": "${env:SALOTECH_MONGODB_FREDHESK_MCP_URI}"
       },
       "enabled": true,
       "quarantined": false,
@@ -302,13 +320,12 @@
     {
       "name": "salotech-atlassian",
       "protocol": "streamable-http",
-      "url": "https://mcp.atlassian.com/v1/mcp",
+      "url": "https://mcp.atlassian.com/v2/mcp?tools=all",
       "oauth": null,
       "enabled": true,
       "quarantined": false,
       "disabled_tools": [
-        "createConfluenceFooterComment",
-        "createConfluenceInlineComment"
+        "createConfluenceComment"
       ]
     },
     {
@@ -316,6 +333,19 @@
       "protocol": "streamable-http",
       "url": "https://mcp.miro.com/",
       "oauth": null,
+      "enabled": true,
+      "quarantined": false
+    },
+    {
+      "name": "salotech-figma",
+      "protocol": "streamable-http",
+      "url": "https://mcp.figma.com/mcp",
+      "oauth": {
+        "client_id": "${env:SALOTECH_FIGMA_CLIENT_ID}",
+        "client_secret": "${env:SALOTECH_FIGMA_CLIENT_SECRET}",
+        "redirect_uri": "${env:SALOTECH_FIGMA_REDIRECT_URI}",
+        "scopes": ["mcp:connect"]
+      },
       "enabled": true,
       "quarantined": false
     },
@@ -621,9 +651,11 @@
         "salotech-freshdesk",
         "salotech-mongodb-watcher",
         "salotech-mongodb-ticket-monitor",
+        "salotech-mongodb-freshdesk-mcp",
         "salotech-grafana",
         "salotech-opensearch",
         "salotech-miro-isa",
+        "salotech-figma",
         "salotech-redash",
         "salotech-allure",
         "salotech-jenkins",
